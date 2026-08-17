@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SpeechEvent",
+  "description": "Speech state transition and transcription event emitted by the voice pipeline.",
+  "type": "object",
+  "properties": {
+    "node_id": {
+      "type": "string",
+      "description": "Unique identifier of the emitting node"
+    },
+    "timestamp": {
+      "type": "number",
+      "description": "Unix timestamp in seconds or milliseconds"
+    },
+    "state": {
+      "type": "string",
+      "enum": ["LISTENING", "THINKING", "SPEAKING"],
+      "description": "Current lifecycle state of the voice loop"
+    },
+    "raw_transcript": {
+      "type": "string",
+      "description": "Raw, unmodified STT transcript segment"
+    },
+    "cleaned_prompt": {
+      "type": "string",
+      "description": "Sanitized and normalized prompt text passed to the LLM router"
+    },
+    "is_final": {
+      "type": "boolean",
+      "description": "Whether this transcript chunk marks end-of-speech / final utterance"
+    }
+  },
+  "required": ["node_id", "timestamp", "state", "raw_transcript", "cleaned_prompt", "is_final"],
+  "additionalProperties": false
+}

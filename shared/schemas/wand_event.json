@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WandEvent",
+  "description": "Hardware input and sensor event emitted by the ESP32 Wand controller.",
+  "type": "object",
+  "properties": {
+    "event": {
+      "type": "string",
+      "enum": ["button_down", "button_up", "ptt_audio", "inspect_snap"],
+      "description": "Wand hardware event type"
+    },
+    "button": {
+      "type": "string",
+      "enum": ["shutter", "ptt", "inspect", "cycle_hud", "mute"],
+      "description": "Physical switch or button triggering the event"
+    },
+    "gpio": {
+      "type": "integer",
+      "description": "ESP32 GPIO pin number associated with the switch"
+    },
+    "timestamp_ms": {
+      "type": "integer",
+      "description": "Microcontroller millisecond timestamp"
+    },
+    "payload": {
+      "type": ["string", "object", "null"],
+      "description": "Optional payload such as base64 encoded audio or macro snapshot"
+    }
+  },
+  "required": ["event", "button", "gpio", "timestamp_ms"],
+  "additionalProperties": false
+}

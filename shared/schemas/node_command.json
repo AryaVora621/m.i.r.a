@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NodeCommand",
+  "description": "RPC command dispatched across nodes via WebSocket or IPC router.",
+  "type": "object",
+  "properties": {
+    "command_id": {
+      "type": "string",
+      "description": "Unique UUID identifying this command invocation"
+    },
+    "target_node": {
+      "type": "string",
+      "description": "Destination node identifier or broadcast target ('all', 'pi-projector', 'mac-host', etc.)"
+    },
+    "action": {
+      "type": "string",
+      "description": "Action name to execute on the target node"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Action-specific parameter dictionary"
+    },
+    "timeout_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum execution timeout in milliseconds before failing"
+    }
+  },
+  "required": ["command_id", "target_node", "action", "payload", "timeout_ms"],
+  "additionalProperties": false
+}

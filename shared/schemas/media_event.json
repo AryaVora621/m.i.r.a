@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MediaEvent",
+  "description": "Media playback state and synchronized lyrics event emitted by media controllers.",
+  "type": "object",
+  "properties": {
+    "node_id": {
+      "type": "string",
+      "description": "Unique identifier of the emitting node"
+    },
+    "timestamp": {
+      "type": "number",
+      "description": "Unix timestamp in seconds or milliseconds"
+    },
+    "track": {
+      "type": "string",
+      "description": "Title of current track"
+    },
+    "artist": {
+      "type": "string",
+      "description": "Track artist name"
+    },
+    "album": {
+      "type": "string",
+      "description": "Album title"
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total track duration in milliseconds"
+    },
+    "position_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Current playback position in milliseconds"
+    },
+    "is_playing": {
+      "type": "boolean",
+      "description": "True if actively playing, false if paused or stopped"
+    },
+    "lyrics": {
+      "type": "array",
+      "description": "Optional array of timestamped lyric lines for ambient synchronized display",
+      "items": {
+        "type": "object",
+        "properties": {
+          "time_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["time_ms", "text"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "node_id",
+    "timestamp",
+    "track",
+    "artist",
+    "album",
+    "duration_ms",
+    "position_ms",
+    "is_playing"
+  ],
+  "additionalProperties": false
+}

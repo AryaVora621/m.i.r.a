@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GestureEvent",
+  "description": "Spatial hand gesture event emitted by the vision microservice or camera nodes.",
+  "type": "object",
+  "properties": {
+    "node_id": {
+      "type": "string",
+      "description": "Unique identifier of the emitting node (e.g. pi-projector, mac-host, desk-node)"
+    },
+    "timestamp": {
+      "type": "number",
+      "description": "Unix timestamp in seconds or milliseconds when gesture was recognized"
+    },
+    "gesture_type": {
+      "type": "string",
+      "enum": [
+        "PINCH",
+        "POINT",
+        "SWIPE_LEFT",
+        "SWIPE_RIGHT",
+        "PALM_STOP",
+        "HOVER",
+        "PINCH_DRAG",
+        "FIST_GRAB"
+      ],
+      "description": "Recognized gesture pose/action"
+    },
+    "coordinates": {
+      "type": "object",
+      "description": "Normalized (0.0 to 1.0) or projected spatial coordinates of the primary hand landmark",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "required": ["x", "y", "z"],
+      "additionalProperties": false
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Model confidence score for the detected gesture"
+    }
+  },
+  "required": ["node_id", "timestamp", "gesture_type", "coordinates", "confidence"],
+  "additionalProperties": false
+}

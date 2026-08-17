@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TelemetryEvent",
+  "description": "Hardware and system health telemetry event emitted periodically by all nodes.",
+  "type": "object",
+  "properties": {
+    "node_id": {
+      "type": "string",
+      "description": "Unique identifier of the emitting node"
+    },
+    "timestamp": {
+      "type": "number",
+      "description": "Unix timestamp in seconds or milliseconds"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["OK", "DEGRADED", "ERROR"],
+      "description": "Overall operational status of the reporting node"
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Hardware utilization metrics",
+      "properties": {
+        "cpu_percent": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 100.0,
+          "description": "Current CPU utilization percentage (0.0 to 100.0)"
+        },
+        "vram_used_gb": {
+          "type": "number",
+          "minimum": 0.0,
+          "description": "VRAM used in Gigabytes (e.g. on Tesla P40 Homelab GPU)"
+        },
+        "vram_total_gb": {
+          "type": "number",
+          "minimum": 0.0,
+          "description": "Total available VRAM in Gigabytes"
+        },
+        "fps": {
+          "type": "number",
+          "minimum": 0.0,
+          "description": "Frames per second for vision ingestion or UI rendering loop"
+        },
+        "temp_c": {
+          "type": "number",
+          "description": "Core temperature in degrees Celsius"
+        }
+      },
+      "required": ["cpu_percent", "vram_used_gb", "vram_total_gb", "fps", "temp_c"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["node_id", "timestamp", "status", "metrics"],
+  "additionalProperties": false
+}
