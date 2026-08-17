@@ -43,9 +43,8 @@ The UI enforces **Fluid Container Layouts & Media Queries** (`@media (aspect-rat
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ [Top-Left: WidgetClock]                     [Top-Right: WidgetNodeStatus]│
-│  21:20 (Zen Dots, Compact)                   ● M.I.R.A. ONLINE 60 FPS  │
-│  Mon, Aug 17 • 72°F (Geo)                                               │
+│ [Top-Left: WidgetClock Pill]               [Top-Right: WidgetNodeStatus Pill]│
+│  [ 21:21 MON ]                             [ ● M.I.R.A. ]               │
 │                                                                         │
 │                                                                         │
 │                    ┌───────────────────────────────┐                    │
@@ -58,18 +57,18 @@ The UI enforces **Fluid Container Layouts & Media Queries** (`@media (aspect-rat
 │                         Glowing Orange Reticle                          │
 │                         (60 FPS CSS translate3d)                        │
 │                                                                         │
-│                                             [Bottom-Right: WidgetMusic] │
-│                                              ⚡ STARBOY - The Weeknd     │
-│                                             [||||| EQ Frequency Bars]   │
+│ [Bottom-Left: WidgetWeather Pill]           [Bottom-Right: WidgetMusic Pill]│
+│  [ ☀️ 72°F ]                                [ 🎵 STARBOY ]              │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 3.1 Component Directory Structure (`web/src/`)
 - `components/WallCanvas.tsx`: Fullscreen root container matching projector viewport bounds.
 - `components/WireframeGlobe.tsx`: Concentric 3D SVG wireframe globe with electric purple latitude/longitude curves and neon orange axis joints (`#ff6b00`).
-- `components/WidgetClock.tsx`: Compact glassmorphic top-left card displaying `Zen Dots` time and `Geo` weather data.
-- `components/WidgetMusic.tsx`: Compact glassmorphic bottom-right music player with active CSS EQ frequency bar animation.
-- `components/WidgetNodeStatus.tsx`: Top-right status pill displaying daemon connection state and FPS.
+- `components/WidgetClock.tsx`: Micro-pill top-left widget displaying `Zen Dots` time and date.
+- `components/WidgetWeather.tsx`: Micro-pill bottom-left widget displaying ambient room temperature/weather.
+- `components/WidgetMusic.tsx`: Micro-pill bottom-right widget displaying current playing track info (`🎵 STARBOY`).
+- `components/WidgetNodeStatus.tsx`: Micro-pill top-right status indicator displaying node connection state.
 - `components/SpatialCursor.tsx`: Hardware-accelerated CSS ring reticle positioned via `transform: translate3d(x, y, 0)`.
 
 ---
