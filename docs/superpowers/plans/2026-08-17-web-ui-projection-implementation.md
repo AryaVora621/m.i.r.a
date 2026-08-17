@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Scaffold and build the M.I.R.A. Ambient Web Projection UI (`/web`) in TypeScript React + Vite, customized for a compact $30'' \times 40''$ Raspberry Pi Wall Projector surface with `#000000` true-black canvas, Electric Purple & Neon Orange accents, 3D Wireframe Globe, `Zen Dots` / `Geo` fonts, 60 FPS spatial cursor, and local WebSocket test harness.
+**Goal:** Scaffold and build the M.I.R.A. Ambient Web Projection UI (`/web`) in TypeScript React + Vite, customized for a compact $30'' \times 40''$ Raspberry Pi Wall Projector surface with `#000000` true-black canvas, Electric Purple & Neon Orange accents, 3D Wireframe Globe, `Zen Dots` / `Geo` fonts, uniform micro-pill corner widgets, 60 FPS spatial cursor, and local WebSocket test harness.
 
-**Architecture:** A lightweight React 19 SPA powered by Vite and vanilla CSS custom properties. Component hierarchy: `WallCanvas` root -> `WireframeGlobe` center -> `WidgetClock` top-left -> `WidgetNodeStatus` top-right -> `WidgetMusic` bottom -> `SpatialCursor` overlay. Connected to native WebSockets (`ws://localhost:8080/ws`).
+**Architecture:** A lightweight React 19 SPA powered by Vite and vanilla CSS custom properties. Component hierarchy: `WallCanvas` root -> `WireframeGlobe` center -> `WidgetClock` micro-pill top-left -> `WidgetNodeStatus` micro-pill top-right -> `WidgetWeather` micro-pill bottom-left -> `WidgetMusic` micro-pill bottom-right -> `SpatialCursor` overlay. Connected to native WebSockets (`ws://localhost:8080/ws`).
 
 **Tech Stack:** React 19, TypeScript, Vite, CSS Custom Properties (`index.css`), Google Fonts (`Zen Dots` + `Geo`), Node.js `ws` library for mock server.
 
