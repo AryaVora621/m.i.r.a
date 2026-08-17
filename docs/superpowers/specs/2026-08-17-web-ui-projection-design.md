@@ -76,7 +76,10 @@ Every non-ambient overlay view (`ExpandedMediaView`, `SyncedLyricsView`, `Calibr
 - `components/CalibrationView.tsx` **[Screen 4]**: Projector optical alignment screen with 4-corner ArUco crosshairs ($P_1 - P_4$) and live Homography matrix reprojection metrics ($\epsilon < 0.5\text{ px}$).
 - `components/SmartHomeControlView.tsx` **[Screen 5]**: Tabbed spatial room control center featuring 3 sub-tabs:
   - **Tab 1: `🖨️ PRINTERS`**: Multi-printer fleet monitoring for 3–4 Klipper 3D printers (Voron 2.4, Ender 3, RatRig, etc.) via Moonraker API, displaying real-time print progress bars, nozzle/bed temperatures, active G-code file names, and ETA countdowns.
-  - **Tab 2: `🖥️ HOMELAB`**: System hardware telemetry (CPU/GPU temps, RAM usage, Tesla P40 VRAM utilization, node network latencies, worker fleet status).
+  - **Tab 2: `🖥️ HOMELAB`**: System hardware telemetry rendered as **Live SVG Sparkline Waveform Graphs**:
+    - *Tesla P40 GPU VRAM Waveform Graph*: Electric Purple glowing curve (`14.2 / 24 GB` VRAM, $48^\circ\text{C}$).
+    - *macOS Host CPU/RAM Load Graph*: Neon Orange dual sparkline (`CPU 18%`, `RAM 12.4GB`).
+    - *Pi Projector Thermal Graph*: Mint Emerald line ($44^\circ\text{C}$, $60\text{ FPS}$).
   - **Tab 3: `💡 LIGHTS`**: ESP32 + IR Module LED strip presets (`PURPLE`, `WARM`, `OFF`) and Alexa smart plug bridge status.
   - **Mandatory `🏠 HOME` Exit Button**.
 
