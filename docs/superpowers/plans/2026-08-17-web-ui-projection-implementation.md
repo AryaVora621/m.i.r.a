@@ -546,11 +546,127 @@ export const App: React.FC = () => {
 export default App;
 ```
 
-- [ ] **Step 3: Commit Task 5**
+### Task 5B: Build `ExpandedMediaView` Component with Spotify-Style Synced Lyrics (Screen 2)
+
+**Files:**
+- Create: `web/src/components/ExpandedMediaView.tsx`
+
+- [ ] **Step 1: Create `src/components/ExpandedMediaView.tsx`**
+
+```typescript
+import React, { useState } from 'react';
+import { useWebSocket } from '../context/WebSocketContext';
+
+export const ExpandedMediaView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { media } = useWebSocket();
+  const [showLyrics, setShowLyrics] = useState(true);
+
+  const sampleLyrics = [
+    { text: "I'm tryna put you in the worst mood, ah", active: false },
+    { text: "P1 cleaner than your church shoes, ah", active: false },
+    { text: "Look what you've done, I'm a motherfuckin' starboy", active: true },
+    { text: "Every day a nigga try to test me, ah", active: false },
+    { text: "Every day a nigga try to end me, ah", active: false }
+  ];
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, backgroundColor: '#000000', zIndex: 500, padding: '20px' }}>
+      {/* Top Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button className="glass-card" onClick={() => setShowLyrics(!showLyrics)} style={{ padding: '6px 14px', borderRadius: '20px', color: 'var(--orange-glow)', border: '1px solid rgba(255,107,0,0.3)', cursor: 'pointer', background: 'transparent' }}>
+          {showLyrics ? '🎤 LYRICS ACTIVE' : '🎵 ALBUM VIEW'}
+        </button>
+        <button className="glass-card" onClick={onClose} style={{ padding: '6px 14px', borderRadius: '20px', color: '#fff', border: '1px solid rgba(192,132,252,0.3)', cursor: 'pointer', background: 'transparent' }}>
+          ✕ AMBIENT
+        </button>
+      </div>
+
+      {showLyrics ? (
+        /* Near-Fullscreen Synced Lyrics Stream */
+        <div style={{ position: 'absolute', top: '75px', bottom: '60px', left: '20px', right: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '16px' }}>
+          {sampleLyrics.map((line, idx) => (
+            <div
+              key={idx}
+              style={{
+                fontFamily: line.active ? 'var(--font-display)' : 'var(--font-geo)',
+                fontSize: line.active ? '20px' : '18px',
+                color: line.active ? '#ffffff' : 'rgba(192, 132, 252, 0.35)',
+                textShadow: line.active ? '0 0 12px var(--orange-glow), 0 0 25px var(--purple-glow)' : 'none',
+                transition: 'all 0.4s ease'
+              }}
+            >
+              {line.text}
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* Album Stage & Visualizer */
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', width: '85%' }}>
+          <div style={{ width: '120px', height: '120px', margin: '0 auto 14px', borderRadius: '18px', background: 'linear-gradient(135deg, #7e22ce, #ea580c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '42px' }}>
+            ⚡
+          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', color: '#ffffff' }}>{media.track}</div>
+          <div style={{ fontFamily: 'var(--font-geo)', fontSize: '14px', color: 'var(--purple-glow)', marginTop: '4px' }}>{media.artist}</div>
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+- [ ] **Step 2: Commit Task 5B**
 
 ```bash
-git add web/src/components/WidgetMusic.tsx web/src/App.tsx
-git commit -m "feat(web): add WidgetMusic and assemble full WallCanvas in App.tsx"
+git add web/src/components/ExpandedMediaView.tsx
+git commit -m "feat(web): add ExpandedMediaView with near-fullscreen Spotify-style synced lyrics"
+```
+
+---
+
+### Task 5C: Build `CalibrationView` Component (Screen 4)
+
+**Files:**
+- Create: `web/src/components/CalibrationView.tsx`
+
+- [ ] **Step 1: Create `src/components/CalibrationView.tsx`**
+
+```typescript
+import React from 'react';
+import { useWebSocket } from '../context/WebSocketContext';
+
+export const CalibrationView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { telemetry } = useWebSocket();
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, backgroundColor: '#000000', border: '2px solid var(--orange-glow)', zIndex: 900, overflow: 'hidden' }}>
+      {/* 4 Corner Crosshairs */}
+      <div style={{ position: 'absolute', top: '12px', left: '12px', color: 'var(--orange-glow)', fontFamily: 'var(--font-geo)', fontSize: '10px' }}>P1 (0,0)</div>
+      <div style={{ position: 'absolute', top: '12px', right: '12px', color: 'var(--orange-glow)', fontFamily: 'var(--font-geo)', fontSize: '10px' }}>P2 (1,0)</div>
+      <div style={{ position: 'absolute', bottom: '12px', left: '12px', color: 'var(--orange-glow)', fontFamily: 'var(--font-geo)', fontSize: '10px' }}>P3 (0,1)</div>
+      <div style={{ position: 'absolute', bottom: '12px', right: '12px', color: 'var(--orange-glow)', fontFamily: 'var(--font-geo)', fontSize: '10px' }}>P4 (1,1)</div>
+
+      {/* Center Homography HUD Card */}
+      <div className="glass-card" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '82%', padding: '18px 16px', textAlign: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '12px', color: 'var(--orange-glow)' }}>HOMOGRAPHY CALIBRATION</div>
+        <div style={{ fontFamily: 'var(--font-geo)', fontSize: '14px', color: '#e2e8f0', margin: '8px 0 12px' }}>Aligning camera view with wall corners...</div>
+        <div style={{ display: 'flex', justifyContent: 'space-around', fontFamily: 'var(--font-geo)', fontSize: '12px', color: 'var(--text-muted)' }}>
+          <div>Error: <span style={{ color: 'var(--purple-glow)' }}>0.32 px</span></div>
+          <div>FPS: <span style={{ color: 'var(--purple-glow)' }}>{telemetry.fps}</span></div>
+        </div>
+        <button onClick={onClose} style={{ marginTop: '14px', padding: '6px 14px', borderRadius: '18px', background: 'rgba(255,107,0,0.2)', border: '1px solid var(--orange-glow)', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font-geo)' }}>
+          DONE
+        </button>
+      </div>
+    </div>
+  );
+};
+```
+
+- [ ] **Step 2: Commit Task 5C**
+
+```bash
+git add web/src/components/CalibrationView.tsx
+git commit -m "feat(web): add CalibrationView component for optical projector homography matrix alignment"
 ```
 
 ---
