@@ -70,6 +70,8 @@ The UI enforces **Fluid Container Layouts & Media Queries** (`@media (aspect-rat
 - `components/WidgetMusic.tsx`: Micro-pill bottom-right widget displaying current playing track info (`🎵 STARBOY`).
 - `components/WidgetNodeStatus.tsx`: Micro-pill top-right status indicator displaying node connection state.
 - `components/SpatialCursor.tsx`: Hardware-accelerated CSS ring reticle positioned via `transform: translate3d(x, y, 0)`.
+- `components/ExpandedMediaView.tsx` **[Screen 2]**: Full-stage media controls, large album cover art, 9-bar audio spectrum visualizer, and near-fullscreen Spotify-style synced lyrics stream.
+- `components/CalibrationView.tsx` **[Screen 4]**: Projector optical alignment screen with 4-corner ArUco crosshairs ($P_1 - P_4$) and live Homography matrix reprojection metrics ($\epsilon < 0.5\text{ px}$).
 
 ---
 
