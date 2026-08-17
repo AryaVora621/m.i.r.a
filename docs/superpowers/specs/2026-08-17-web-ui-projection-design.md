@@ -80,7 +80,10 @@ Every non-ambient overlay view (`ExpandedMediaView`, `SyncedLyricsView`, `Calibr
     - *Tesla P40 GPU VRAM Waveform Graph*: Electric Purple glowing curve (`14.2 / 24 GB` VRAM, $48^\circ\text{C}$).
     - *macOS Host CPU/RAM Load Graph*: Neon Orange dual sparkline (`CPU 18%`, `RAM 12.4GB`).
     - *Pi Projector Thermal Graph*: Mint Emerald line ($44^\circ\text{C}$, $60\text{ FPS}$).
-  - **Tab 3: `💡 LIGHTS`**: ESP32 + IR Module LED strip presets (`PURPLE`, `WARM`, `OFF`) and Alexa smart plug bridge status.
+  - **Tab 3: `💡 LIGHTS`**: ESP32 + IR Module room LED strip controls:
+    - *Color Preset Micro-Buttons*: `PURPLE`, `WARM`, `CYAN`, `OFF`.
+    - *Brightness Level Slider Bar*: Visual progress indicator ($85\%$ brightness).
+    - *Alexa Smart Plug & Lamp Bridge*: Desk Lamp and Wall Backdrop plug status toggles (`ON` / `OFF`).
   - **Mandatory `🏠 HOME` Exit Button**.
 
 ---
