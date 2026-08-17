@@ -137,3 +137,17 @@ Any future UI projection screen generated for M.I.R.A. **MUST** follow these 6 n
 4. **Uniform Micro-Pill Components**: All corner widgets, tab buttons, and action items must use the `.micro-pill` design token (`background: rgba(8, 6, 16, 0.9)`, `border-radius: 20px`, `padding: 5px 12px`).
 5. **Universal Always-On `🏠 HOME` Exit Pill**: Every overlay screen (non-ambient view) **MUST** include an always-on `🏠 HOME` micro-pill in the top-right header area for instant return to the default 3D Wireframe Globe screen.
 6. **60 FPS CSS Spatial Reticle**: Hand tracking cursors must be rendered via CSS `transform: translate3d(x, y, 0)` using normalized coordinates $(x, y) \in [0.0, 1.0]^2$.
+
+---
+
+## 8. Remote Web Admin Dashboard Specification (`mira.local/admin`)
+
+While the Raspberry Pi HDMI output strictly projects the fullscreen `#000000` pitch-black wall interface, any browser on local WiFi (laptop or phone) can access `http://mira.local/admin` to remotely manage and debug the system.
+
+### 8.1 Key Admin Panel Modules
+- **Live MediaPipe Camera Debugger**: View live webcam stream with 21-joint hand skeleton overlay and confidence thresholds ($0.50 - 0.95$).
+- **Manual Homography Offset Adjustments**: Nudge 4-corner perspective coordinates ($P_1 - P_4$) directly from phone/laptop to align projector bounds.
+- **Remote Display Force-Switcher**: Force the Pi wall display to instantly switch between any projection view (`Ambient Globe`, `Expanded Media/Lyrics`, `Google Visual Stage`, `3D Printers`, `Homelab`, `Lighting`).
+- **Hybrid LLM Router Controls**: Toggle model dispatch priority between `Tesla P40 GPU (Local)` and `Claude 3.5 Sonnet (Cloud)`.
+- **Node & Service Manager**: Restart Rust/Go daemon, Python vision service, or reboot Pi node.
+
