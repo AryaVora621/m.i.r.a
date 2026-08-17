@@ -74,11 +74,10 @@ Every non-ambient overlay view (`ExpandedMediaView`, `SyncedLyricsView`, `Calibr
 - `components/ActiveLLMStageView.tsx` **[Screen 3B - Explicit Code/Text Mode]**: Triggered only on explicit request (*"Mira show text/code"*), displaying full markdown answer, local P40 GPU vs Cloud router badge, and syntax-highlighted code container.
 - `components/ExpandedMediaView.tsx` **[Screen 2]**: Full-stage media controls, large album cover art, 9-bar audio spectrum visualizer, and near-fullscreen Spotify-style synced lyrics stream.
 - `components/CalibrationView.tsx` **[Screen 4]**: Projector optical alignment screen with 4-corner ArUco crosshairs ($P_1 - P_4$) and live Homography matrix reprojection metrics ($\epsilon < 0.5\text{ px}$).
-- `components/SmartHomeControlView.tsx` **[Screen 5]**: Interactive spatial room control stage featuring:
-  - **ESP32 + IR Module LED Strips**: Light preset buttons (`PURPLE`, `WARM`, `OFF`) and MQTT/IR trigger states.
-  - **Klipper 3D Printer Node (Moonraker API)**: Live print progress bar, nozzle/bed temperatures ($215^\circ\text{C} / 60^\circ\text{C}$), print completion percentage, and ETA countdown.
-  - **Alexa Smart Home Bridge**: Alexa smart plug/desk lamp status toggle.
-  - **Cluster Node Health**: `Tesla P40 GPU`, `macOS PC`, and `Pi Projector` telemetry.
+- `components/SmartHomeControlView.tsx` **[Screen 5]**: Tabbed spatial room control center featuring 3 sub-tabs:
+  - **Tab 1: `🖨️ PRINTERS`**: Multi-printer fleet monitoring for 3–4 Klipper 3D printers (Voron 2.4, Ender 3, RatRig, etc.) via Moonraker API, displaying real-time print progress bars, nozzle/bed temperatures, active G-code file names, and ETA countdowns.
+  - **Tab 2: `🖥️ HOMELAB`**: System hardware telemetry (CPU/GPU temps, RAM usage, Tesla P40 VRAM utilization, node network latencies, worker fleet status).
+  - **Tab 3: `💡 LIGHTS`**: ESP32 + IR Module LED strip presets (`PURPLE`, `WARM`, `OFF`) and Alexa smart plug bridge status.
   - **Mandatory `🏠 HOME` Exit Button**.
 
 ---
