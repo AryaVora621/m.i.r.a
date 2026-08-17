@@ -34,8 +34,8 @@ The UI enforces **Fluid Container Layouts & Media Queries** (`@media (aspect-rat
   - Text and widget dimensions scale down proportionally (Clock font size $\approx 18\text{px} - 22\text{px}$, subtext $\approx 10\text{px} - 12\text{px}$) to keep the wall projection crisp and non-intrusive.
   - `WidgetClock` anchors Top-Left or Top-Center.
   - `WireframeGlobe` scales proportionally in the central vertical zone.
-  - `WidgetMusic` anchors cleanly at the Bottom-Right.
-  - **No Voice Transcript Popups**: Voice activity text popups are omitted to keep the physical wall completely uncluttered.
+### 2.4 Universal Always-On "HOME" Exit Button Standard
+Every non-ambient overlay view (`ExpandedMediaView`, `SyncedLyricsView`, `CalibrationView`, `ActiveLLMStage`) **MUST** render an always-on `🏠 HOME` micro-pill button in the top-right header area. This guarantees that the user can force-exit back to the main 3D Wireframe Globe Ambient View at any time via hand pinch gesture or voice command (*"Mira go home"*).
 
 ---
 
