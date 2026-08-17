@@ -27,15 +27,15 @@ Unlike standard desktop admin panels, M.I.R.A. Web is designed for physical room
 - **Display & Headings**: **`Zen Dots`** (Google Fonts) — Used for major clock numerals, track titles, widget headers, and wake-word badges.
 - **Telemetry & Transcripts**: **`Geo`** (Google Fonts) — Used for date/weather readouts, node health metrics, and live intent speech stream text.
 
-### 2.3 Dynamic Aspect Ratio & Vertical Wall Adaptation (2:3, 3:4, 16:9)
-The UI enforces **Fluid Container Layouts & Media Queries** (`@media (aspect-ratio < 1)`) to seamlessly adapt when projected onto non-standard or vertical wall spaces (such as 2:3 or 3:4 portrait aspect ratios):
+### 2.3 Dynamic Aspect Ratio & Compact Wall Scaling (30" x 40" Vertical Wall)
+The UI enforces **Fluid Container Layouts & Media Queries** (`@media (aspect-ratio < 1)`) to seamlessly adapt when projected onto compact or vertical wall spaces (e.g. $30'' \text{ wide} \times 40'' \text{ high}$ portrait surface):
 - **Normalized Coordinate Mapping**: Spatial hand coordinates from Python MediaPipe vision service are normalized to $(x, y) \in [0.0, 1.0]^2$ via the 4-point Homography matrix ($H$). The CSS cursor scale maps $(x \times 100\%, y \times 100\%)$ regardless of aspect ratio.
-- **Widescreen Mode (16:9)**: Widgets anchor to the 4 corners surrounding the center 3D wireframe globe.
-- **Portrait / Vertical Wall Mode (2:3 / 3:4)**: 
-  - Layout automatically stacks into a vertical spatial column.
-  - `WidgetClock` shifts to Top-Center.
+- **Compact Portrait Mode ($30'' \times 40''$ Wall)**: 
+  - Text and widget dimensions scale down proportionally (Clock font size $\approx 18\text{px} - 22\text{px}$, subtext $\approx 10\text{px} - 12\text{px}$) to keep the wall projection crisp and non-intrusive.
+  - `WidgetClock` anchors Top-Left or Top-Center.
   - `WireframeGlobe` scales proportionally in the central vertical zone.
-  - `WidgetTranscript` and `WidgetMusic` anchor as stacked horizontal cards at the bottom.
+  - `WidgetMusic` anchors cleanly at the Bottom-Right.
+  - **No Voice Transcript Popups**: Voice activity text popups are omitted to keep the physical wall completely uncluttered.
 
 ---
 
@@ -44,7 +44,7 @@ The UI enforces **Fluid Container Layouts & Media Queries** (`@media (aspect-rat
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ [Top-Left: WidgetClock]                     [Top-Right: WidgetNodeStatus]│
-│  21:17 (Zen Dots)                            ● M.I.R.A. ONLINE 60 FPS  │
+│  21:20 (Zen Dots, Compact)                   ● M.I.R.A. ONLINE 60 FPS  │
 │  Mon, Aug 17 • 72°F (Geo)                                               │
 │                                                                         │
 │                                                                         │
@@ -58,18 +58,17 @@ The UI enforces **Fluid Container Layouts & Media Queries** (`@media (aspect-rat
 │                         Glowing Orange Reticle                          │
 │                         (60 FPS CSS translate3d)                        │
 │                                                                         │
-│ [Bottom-Left: WidgetTranscript]             [Bottom-Right: WidgetMusic] │
-│ 🎙️ Live Intent Stream                        ⚡ STARBOY - The Weeknd     │
-│ "Mira, set room lights..."                  [||||| EQ Frequency Bars]   │
+│                                             [Bottom-Right: WidgetMusic] │
+│                                              ⚡ STARBOY - The Weeknd     │
+│                                             [||||| EQ Frequency Bars]   │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 3.1 Component Directory Structure (`web/src/`)
-- `components/WallCanvas.tsx`: Fullscreen root container matching projector viewport bounds ($1920 \times 1080$).
+- `components/WallCanvas.tsx`: Fullscreen root container matching projector viewport bounds.
 - `components/WireframeGlobe.tsx`: Concentric 3D SVG wireframe globe with electric purple latitude/longitude curves and neon orange axis joints (`#ff6b00`).
-- `components/WidgetClock.tsx`: Glassmorphic top-left card displaying `Zen Dots` time and `Geo` weather data.
-- `components/WidgetMusic.tsx`: Glassmorphic bottom-right music player with active CSS EQ frequency bar animation.
-- `components/WidgetTranscript.tsx`: Glassmorphic bottom-left voice activity stream showing live STT transcripts.
+- `components/WidgetClock.tsx`: Compact glassmorphic top-left card displaying `Zen Dots` time and `Geo` weather data.
+- `components/WidgetMusic.tsx`: Compact glassmorphic bottom-right music player with active CSS EQ frequency bar animation.
 - `components/WidgetNodeStatus.tsx`: Top-right status pill displaying daemon connection state and FPS.
 - `components/SpatialCursor.tsx`: Hardware-accelerated CSS ring reticle positioned via `transform: translate3d(x, y, 0)`.
 
