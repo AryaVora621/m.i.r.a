@@ -1,0 +1,11 @@
+# Ignore local secrets and legacy reference folders
+.env
+.env.*
+*.env
+open-webui/
+.DS_Store
+*.log
+node_modules/
+target/
+__pycache__/
+*.pyc
