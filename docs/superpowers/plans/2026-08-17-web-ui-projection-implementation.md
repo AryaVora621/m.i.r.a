@@ -662,11 +662,67 @@ export const CalibrationView: React.FC<{ onClose: () => void }> = ({ onClose }) 
 };
 ```
 
-- [ ] **Step 2: Commit Task 5C**
+### Task 5D: Build `ActiveLLMStageView` Component (Screen 3)
+
+**Files:**
+- Create: `web/src/components/ActiveLLMStageView.tsx`
+
+- [ ] **Step 1: Create `src/components/ActiveLLMStageView.tsx`**
+
+```typescript
+import React from 'react';
+import { useWebSocket } from '../context/WebSocketContext';
+
+export const ActiveLLMStageView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { speech } = useWebSocket();
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, backgroundColor: '#000000', zIndex: 600, padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {/* Top Bar with Clock and Universal Home Pill */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="micro-pill">
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: '12px', color: '#fff' }}>21:27</span>
+        </div>
+        <div className="micro-pill" onClick={onClose} style={{ borderColor: 'rgba(255, 107, 0, 0.5)', background: 'rgba(255, 107, 0, 0.15)', color: '#fff', cursor: 'pointer' }}>
+          <span>🏠 HOME</span>
+        </div>
+      </div>
+
+      {/* User Spoken Query Pill */}
+      <div style={{ background: 'rgba(147, 51, 234, 0.15)', border: '1px solid rgba(192, 132, 252, 0.4)', borderRadius: '12px', padding: '8px 12px', fontFamily: 'var(--font-geo)', fontSize: '13px', color: 'var(--purple-glow)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span>🎙️ "{speech.transcript || 'Explain Rust WebSocket router'}"</span>
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: '9px', background: 'rgba(255, 107, 0, 0.2)', border: '1px solid var(--orange-glow)', color: 'var(--orange-glow)', padding: '2px 6px', borderRadius: '8px', marginLeft: 'auto' }}>
+          P40 GPU LOCAL
+        </span>
+      </div>
+
+      {/* Response Content Card */}
+      <div className="glass-card" style={{ padding: '12px', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '11px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span>🧠 RESPONSE</span>
+        </div>
+        <div style={{ fontFamily: 'var(--font-geo)', fontSize: '13px', color: '#cbd5e1', lineHeight: 1.35 }}>
+          Use the tokio-tungstenite async event loop for low-latency IPC socket routing:
+        </div>
+
+        {/* Syntax Code Snippet */}
+        <div style={{ background: '#000000', border: '1px solid rgba(255, 107, 0, 0.4)', borderRadius: '8px', padding: '8px 10px', fontFamily: 'var(--font-geo)', fontSize: '11px', color: 'var(--orange-glow)', lineHeight: 1.3 }}>
+          <span style={{ color: '#c084fc', fontWeight: 'bold' }}>async fn</span> handle_socket(stream: TcpStream) &#123;<br />
+          &nbsp;&nbsp;<span style={{ color: '#c084fc', fontWeight: 'bold' }}>let</span> ws = tokio_tungstenite::accept_async(stream).<span style={{ color: '#c084fc', fontWeight: 'bold' }}>await</span>?;<br />
+          &nbsp;&nbsp;println!(<span style={{ color: '#34d399' }}>"M.I.R.A. IPC Connected"</span>);<br />
+          &#125;
+        </div>
+      </div>
+    </div>
+  );
+};
+```
+
+- [ ] **Step 2: Commit Task 5D**
 
 ```bash
-git add web/src/components/CalibrationView.tsx
-git commit -m "feat(web): add CalibrationView component for optical projector homography matrix alignment"
+git add web/src/components/ActiveLLMStageView.tsx
+git commit -m "feat(web): add ActiveLLMStageView component for Screen 3 query responses and code snippets"
 ```
 
 ---
