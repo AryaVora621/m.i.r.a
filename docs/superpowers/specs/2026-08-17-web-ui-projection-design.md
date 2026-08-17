@@ -27,6 +27,16 @@ Unlike standard desktop admin panels, M.I.R.A. Web is designed for physical room
 - **Display & Headings**: **`Zen Dots`** (Google Fonts) — Used for major clock numerals, track titles, widget headers, and wake-word badges.
 - **Telemetry & Transcripts**: **`Geo`** (Google Fonts) — Used for date/weather readouts, node health metrics, and live intent speech stream text.
 
+### 2.3 Dynamic Aspect Ratio & Vertical Wall Adaptation (2:3, 3:4, 16:9)
+The UI enforces **Fluid Container Layouts & Media Queries** (`@media (aspect-ratio < 1)`) to seamlessly adapt when projected onto non-standard or vertical wall spaces (such as 2:3 or 3:4 portrait aspect ratios):
+- **Normalized Coordinate Mapping**: Spatial hand coordinates from Python MediaPipe vision service are normalized to $(x, y) \in [0.0, 1.0]^2$ via the 4-point Homography matrix ($H$). The CSS cursor scale maps $(x \times 100\%, y \times 100\%)$ regardless of aspect ratio.
+- **Widescreen Mode (16:9)**: Widgets anchor to the 4 corners surrounding the center 3D wireframe globe.
+- **Portrait / Vertical Wall Mode (2:3 / 3:4)**: 
+  - Layout automatically stacks into a vertical spatial column.
+  - `WidgetClock` shifts to Top-Center.
+  - `WireframeGlobe` scales proportionally in the central vertical zone.
+  - `WidgetTranscript` and `WidgetMusic` anchor as stacked horizontal cards at the bottom.
+
 ---
 
 ## 3. Key Interface Components
