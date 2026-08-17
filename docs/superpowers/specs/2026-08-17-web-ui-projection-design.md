@@ -138,16 +138,20 @@ Any future UI projection screen generated for M.I.R.A. **MUST** follow these 6 n
 5. **Universal Always-On `🏠 HOME` Exit Pill**: Every overlay screen (non-ambient view) **MUST** include an always-on `🏠 HOME` micro-pill in the top-right header area for instant return to the default 3D Wireframe Globe screen.
 6. **60 FPS CSS Spatial Reticle**: Hand tracking cursors must be rendered via CSS `transform: translate3d(x, y, 0)` using normalized coordinates $(x, y) \in [0.0, 1.0]^2$.
 
----
-
 ## 8. Remote Web Admin Dashboard Specification (`mira.local/admin`)
 
 While the Raspberry Pi HDMI output strictly projects the fullscreen `#000000` pitch-black wall interface, any browser on local WiFi (laptop or phone) can access `http://mira.local/admin` to remotely manage and debug the system.
 
 ### 8.1 Key Admin Panel Modules
-- **Live MediaPipe Camera Debugger**: View live webcam stream with 21-joint hand skeleton overlay and confidence thresholds ($0.50 - 0.95$).
-- **Manual Homography Offset Adjustments**: Nudge 4-corner perspective coordinates ($P_1 - P_4$) directly from phone/laptop to align projector bounds.
-- **Remote Display Force-Switcher**: Force the Pi wall display to instantly switch between any projection view (`Ambient Globe`, `Expanded Media/Lyrics`, `Google Visual Stage`, `3D Printers`, `Homelab`, `Lighting`).
+- **Interactive Drag-and-Drop Homography Calibration Canvas**: Drag 4 corner handles ($P_1 - P_4$) directly over the camera feed stage to set approximate projection bounds on non-flat walls.
+- **One-Click `⚡ AUTO-CALIBRATE & FLATTEN` Button**: Triggers OpenCV ArUco flash corner detection routine to compute sub-pixel perspective matrix $H$ ($\epsilon < 0.30\text{ px}$).
+- **Automated Wall View Auto-Swapping Rules**:
+  - *Music Playing* -> Auto-swaps wall to **Screen 2: Expanded Media / Synced Lyrics**.
+  - *Spoken Query* -> Auto-swaps wall to **Screen 3A: Google Visual Stage**.
+  - *Explicit Code Request* -> Auto-swaps wall to **Screen 3B: Active LLM Code Stage**.
+  - *3D Printer Alert* -> Auto-swaps wall to **Screen 5: Klipper 3D Printers Fleet**.
+  - *Idle Timeout (60s)* -> Auto-returns wall to **Screen 1: Ambient 3D Wireframe Globe**.
+- **Live MediaPipe Camera Debugger**: View live webcam stream with 21-joint hand skeleton overlay and confidence metrics.
 - **Hybrid LLM Router Controls**: Toggle model dispatch priority between `Tesla P40 GPU (Local)` and `Claude 3.5 Sonnet (Cloud)`.
 - **Node & Service Manager**: Restart Rust/Go daemon, Python vision service, or reboot Pi node.
 
