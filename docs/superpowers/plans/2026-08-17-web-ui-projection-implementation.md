@@ -718,11 +718,96 @@ export const ActiveLLMStageView: React.FC<{ onClose: () => void }> = ({ onClose 
 };
 ```
 
-- [ ] **Step 2: Commit Task 5D**
+### Task 5E: Build `SmartHomeControlView` Component (Screen 5)
+
+**Files:**
+- Create: `web/src/components/SmartHomeControlView.tsx`
+
+- [ ] **Step 1: Create `src/components/SmartHomeControlView.tsx`**
+
+```typescript
+import React, { useState } from 'react';
+
+export const SmartHomeControlView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const [activePreset, setActivePreset] = useState<'PURPLE' | 'WARM' | 'NIGHT'>('PURPLE');
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, backgroundColor: '#000000', zIndex: 700, padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Header with Clock and Mandatory Home Pill */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="micro-pill">
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: '12px', color: '#fff' }}>21:30</span>
+        </div>
+        <div className="micro-pill" onClick={onClose} style={{ borderColor: 'rgba(255, 107, 0, 0.5)', background: 'rgba(255, 107, 0, 0.15)', color: '#fff', cursor: 'pointer' }}>
+          <span>🏠 HOME</span>
+        </div>
+      </div>
+
+      {/* Lighting Presets */}
+      <div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '10px', color: 'var(--orange-glow)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
+          💡 Room Lighting Presets
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          {(['PURPLE', 'WARM', 'NIGHT'] as const).map((preset) => (
+            <div
+              key={preset}
+              onClick={() => setActivePreset(preset)}
+              style={{
+                background: activePreset === preset ? 'rgba(255, 107, 0, 0.2)' : 'rgba(8, 6, 16, 0.9)',
+                border: activePreset === preset ? '1px solid var(--orange-glow)' : '1px solid rgba(192, 132, 252, 0.3)',
+                borderRadius: '12px',
+                padding: '10px 6px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                boxShadow: activePreset === preset ? '0 0 15px rgba(255, 107, 0, 0.3)' : 'none'
+              }}
+            >
+              <div style={{ fontSize: '18px', marginBottom: '4px' }}>
+                {preset === 'PURPLE' ? '🔮' : preset === 'WARM' ? '🔥' : '🌙'}
+              </div>
+              <div style={{ fontFamily: 'var(--font-geo)', fontSize: '11px', color: '#fff' }}>{preset}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Cluster Node Status List */}
+      <div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '10px', color: 'var(--orange-glow)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
+          🖥️ Multi-Node Cluster Status
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div className="glass-card" style={{ padding: '8px 12px', display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+            <span style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#34d399' }} /> Pi Projector
+            </span>
+            <span style={{ color: 'var(--purple-glow)', fontSize: '11px' }}>60 FPS • 42°C</span>
+          </div>
+          <div className="glass-card" style={{ padding: '8px 12px', display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+            <span style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#34d399' }} /> macOS PC
+            </span>
+            <span style={{ color: 'var(--purple-glow)', fontSize: '11px' }}>IDLE • Core OK</span>
+          </div>
+          <div className="glass-card" style={{ padding: '8px 12px', display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+            <span style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#34d399' }} /> Tesla P40 GPU
+            </span>
+            <span style={{ color: 'var(--purple-glow)', fontSize: '11px' }}>24GB VRAM • 0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+```
+
+- [ ] **Step 2: Commit Task 5E**
 
 ```bash
-git add web/src/components/ActiveLLMStageView.tsx
-git commit -m "feat(web): add ActiveLLMStageView component for Screen 3 query responses and code snippets"
+git add web/src/components/SmartHomeControlView.tsx
+git commit -m "feat(web): add SmartHomeControlView component for Screen 5 room lighting and node cluster status"
 ```
 
 ---
