@@ -75,6 +75,7 @@ gantt
 | **Proactive & MCP Spec** | [`specs/2026-08-17-innovative-features-and-future-expansions.md`](./docs/superpowers/specs/2026-08-17-innovative-features-and-future-expansions.md) | ✅ Ready | Ambient modes & spatial sound |
 | **Ambient Presence Spec** | [`specs/2026-08-17-ambient-presence-and-proactive-night-mode.md`](./docs/superpowers/specs/2026-08-17-ambient-presence-and-proactive-night-mode.md) | ✅ Ready | 24/7 webcam wall UI tracking & ESP32 MQTT relays |
 | **Multimodal Wand Spec** | [`specs/2026-08-17-handheld-multimodal-controller-wand.md`](./docs/superpowers/specs/2026-08-17-handheld-multimodal-controller-wand.md) | ✅ Ready | Seeed XIAO ESP32-S3 macro wand & tactile desk controller |
+| **Web Dashboard Spec** | [`specs/2026-08-17-web-ui-projection-design.md`](./docs/superpowers/specs/2026-08-17-web-ui-projection-design.md) | ✅ Ready | Pi Projector `#000000` canvas, Purple/Orange palette, 3D Wireframe Globe, `Zen Dots`+`Geo` fonts |
 | **Shared IPC Schemas** | JSON Schema / Protobuf | ⏳ Pending Phase 1 | Schema files in `shared/schemas/` |
 | **Core Daemon** | Rust / Go | ⏳ Pending Phase 1 | Daemon skeleton in `daemon/` |
 | **Web Dashboard** | TypeScript (Vite/React) | ⏳ Pending Phase 1 | UI skeleton in `web/` |
