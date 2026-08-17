@@ -116,5 +116,24 @@ To enable complete frontend development and testing while away from physical har
 1. Scaffold React 19 + Vite app under `web/`.
 2. Configure `index.css` design system with `Zen Dots` and `Geo` Google Fonts imports.
 3. Build `WebSocketProvider` context and `SpatialCursor` hardware-accelerated overlay.
-4. Scaffold `WireframeGlobe`, `WidgetClock`, `WidgetMusic`, `WidgetTranscript`, and `WidgetNodeStatus`.
-5. Build `mock-server.cjs` harness for vacation testing.
+4. Scaffold `WireframeGlobe`, `WidgetClock`, `WidgetWeather`, `WidgetMusic`, and `WidgetNodeStatus` micro-pills.
+5. Scaffold `ExpandedMediaView` (Screen 2 with Spotify-style Synced Lyrics), `VisualResponseView` (Screen 3A default), `ActiveLLMStageView` (Screen 3B text/code), `CalibrationView` (Screen 4), and `SmartHomeControlView` (Screen 5 3-tab system).
+6. Build `mock-server.cjs` harness for vacation testing.
+
+---
+
+## 7. M.I.R.A. Consistent UI Theme Rules (Design System Blueprint for Future Screens)
+
+Any future UI projection screen generated for M.I.R.A. **MUST** follow these 6 non-negotiable rules:
+
+1. **Zero-Luminance `#000000` True-Black Canvas**: The background must remain `#000000` pitch black everywhere to eliminate projector light halos on physical room walls.
+2. **Color Palette Tokens**:
+   - Primary Accent: **Electric Purple** (`#9333ea` / glow `#c084fc`).
+   - Secondary Accent: **Vivid Neon Orange** (`#ff6b00` / glow `#ff9e00`).
+   - Success/Online State: **Mint Emerald** (`#34d399`).
+3. **Typography Standard**:
+   - Headings, Clock Numerals, Track Titles, & Badges: **`Zen Dots`** (Google Fonts).
+   - Telemetry, Body Text, Subtext, & Timestamps: **`Geo`** (Google Fonts).
+4. **Uniform Micro-Pill Components**: All corner widgets, tab buttons, and action items must use the `.micro-pill` design token (`background: rgba(8, 6, 16, 0.9)`, `border-radius: 20px`, `padding: 5px 12px`).
+5. **Universal Always-On `🏠 HOME` Exit Pill**: Every overlay screen (non-ambient view) **MUST** include an always-on `🏠 HOME` micro-pill in the top-right header area for instant return to the default 3D Wireframe Globe screen.
+6. **60 FPS CSS Spatial Reticle**: Hand tracking cursors must be rendered via CSS `transform: translate3d(x, y, 0)` using normalized coordinates $(x, y) \in [0.0, 1.0]^2$.
