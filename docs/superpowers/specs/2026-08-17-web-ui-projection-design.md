@@ -155,3 +155,15 @@ While the Raspberry Pi HDMI output strictly projects the fullscreen `#000000` pi
 - **Hybrid LLM Router Controls**: Toggle model dispatch priority between `Tesla P40 GPU (Local)` and `Claude 3.5 Sonnet (Cloud)`.
 - **Node & Service Manager**: Restart Rust/Go daemon, Python vision service, or reboot Pi node.
 
+---
+
+## 9. Ambient Multitasking & Active Task Micro-Dock Specification
+
+To allow seamless multitasking (e.g. searching a topic while music is playing or a 3D print job is active):
+
+### 9.1 Multitasking UI Components
+1. **Top Active Task Micro-Dock**: Renders micro-pills for active background tasks (`[ 🧠 SEARCH ]`, `[ 🎵 MUSIC ]`, `[ 🖨️ PRINT (68%) ]`) under the top clock header. Pinching any pill switches active focus.
+2. **Floating Picture-in-Picture (PiP) Cards**: Active background tasks (e.g. playing music track with 4-bar spectrum equalizer) automatically minimize to a sleek bottom glass card while the primary stage displays search results or code snippets.
+3. **Universal `🏠 HOME` Reset**: Pinching `🏠 HOME` at any time clears active tasks and restores the resting 3D Wireframe Globe screen.
+
+
