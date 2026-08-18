@@ -1,8 +1,11 @@
 # Jarvis Project Status & Roadmap
 
-> **Current Phase**: Phase 0 — Comprehensive Architecture & Design Complete  
-> **Last Updated**: August 17, 2026  
-> **Status**: 100% Design & Blueprint Phase Complete — Ready for Phase 1 Monorepo Implementation
+> **Current Phase**: Phase 1 — Core Foundation (MacBook Offline Development Mode)  
+> **Active Branch**: `feat/macbook-offline-core-sim`  
+> **Active Plan**: [`docs/superpowers/plans/2026-08-17-mira-macbook-offline-development-plan.md`](./docs/superpowers/plans/2026-08-17-mira-macbook-offline-development-plan.md)  
+> **Progress Ledger**: [`.superpowers/sdd/progress.md`](./.superpowers/sdd/progress.md)  
+> **Last Updated**: August 19, 2026  
+> **Status**: Task 1 Complete (`shared/schemas/` & types in `aa8bc51`). Ready to resume at Task 2 (Rust Core Daemon).
 
 ---
 
@@ -76,10 +79,11 @@ gantt
 | **Ambient Presence Spec** | [`specs/2026-08-17-ambient-presence-and-proactive-night-mode.md`](./docs/superpowers/specs/2026-08-17-ambient-presence-and-proactive-night-mode.md) | ✅ Ready | 24/7 webcam wall UI tracking & ESP32 MQTT relays |
 | **Multimodal Wand Spec** | [`specs/2026-08-17-handheld-multimodal-controller-wand.md`](./docs/superpowers/specs/2026-08-17-handheld-multimodal-controller-wand.md) | ✅ Ready | Seeed XIAO ESP32-S3 macro wand & tactile desk controller |
 | **Web Dashboard Spec** | [`specs/2026-08-17-web-ui-projection-design.md`](./docs/superpowers/specs/2026-08-17-web-ui-projection-design.md) | ✅ Ready | Pi Projector `#000000` canvas, Purple/Orange palette, 3D Wireframe Globe, `Zen Dots`+`Geo` fonts |
-| **Shared IPC Schemas** | JSON Schema / Protobuf | ⏳ Pending Phase 1 | Schema files in `shared/schemas/` |
-| **Core Daemon** | Rust / Go | ⏳ Pending Phase 1 | Daemon skeleton in `daemon/` |
-| **Web Dashboard** | TypeScript (Vite/React) | ⏳ Pending Phase 1 | UI skeleton in `web/` |
-| **Vision Service** | Python (MediaPipe/OpenCV) | ⏳ Pending Phase 1 | Vision service in `vision/` |
+| **Shared IPC Schemas** | JSON Schema / Protobuf | ✅ Complete | Schemas in `shared/schemas/`, TS types in `shared/types/index.ts`, Python models in `shared/types/events.py` (commit `aa8bc51`) |
+| **Core Daemon** | Rust | ⏳ Next Up (Task 2) | Daemon skeleton & WebSocket broker in `daemon/` |
+| **Web Dashboard** | TypeScript (Vite/React) | ⏳ Pending (Task 6-10) | UI skeleton in `web/` |
+| **Vision Service** | Python (MediaPipe/OpenCV) | ⏳ Pending (Task 11-13) | Vision service in `vision/` |
+| **Hardware Simulators** | Python / Node.js / HTML | ⏳ Pending (Task 14-15) | Virtual GPU, Wand, & Printer nodes in `nodes/simulator/` |
 
 ---
 

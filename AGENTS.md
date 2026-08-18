@@ -1,6 +1,13 @@
 # AI Agent Guidelines & Context (`AGENTS.md`)
 
-Welcome, AI Agent! This document serves as your operational blueprint, mission context, and rules of engagement when working on this repository.
+> 🛑 **START HERE — RESUMING ACTIVE WORK (MacBook-Only Offline Development)**  
+> - **Active Branch**: `feat/macbook-offline-core-sim`
+> - **Active Implementation Plan**: [`docs/superpowers/plans/2026-08-17-mira-macbook-offline-development-plan.md`](./docs/superpowers/plans/2026-08-17-mira-macbook-offline-development-plan.md)
+> - **Progress Ledger**: [`.superpowers/sdd/progress.md`](./.superpowers/sdd/progress.md)
+> - **Current Status**: Task 1 (Shared IPC Schemas & Types) is **COMPLETE** (`commit aa8bc51`).
+> - **Next Task to Execute**: **Task 2: Rust Daemon Core Scaffolding & WebSocket Broker** (`daemon/`).
+> - **Execution Method**: Follow Subagent-Driven Development (SDD) or Executing Plans. Extract task briefs via `bash /Users/aryavora/.gemini/config/plugins/superpowers/skills/subagent-driven-development/scripts/task-brief docs/superpowers/plans/2026-08-17-mira-macbook-offline-development-plan.md <TASK_NUM>`, execute via TDD, verify with unit tests, and update `.superpowers/sdd/progress.md`.
+> - **Hardware Simulation Notice**: The user is currently developing exclusively on a MacBook without physical hardware access. All missing hardware (Homelab Tesla P40 GPU, ESP32 Wand, Moonraker 3D Printers, Raspberry Pi Wall Projector) must use their respective mock simulators in `nodes/simulator/` and native MacBook hardware (FaceTime HD camera, mic).
 
 ---
 
