@@ -126,7 +126,11 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
         .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
         .unwrap_or_default();
 
-    // Subscribe before registering — see the note in Task 4's broker.rs.
+    // Subscribe before registering: registry.register() makes this node visible to other
+    // connections' registry.contains()/broadcasts immediately, and the ack send below is a
+    // real async I/O flush that yields the task. If we subscribed after that yield, any event
+    // published by another node during the window between registration and subscription would
+    // be silently lost. A broadcast::Receiver created early just buffers until we start reading.
     let mut rx = registry.subscribe();
 
     if let Err(RegisterError::DuplicateNodeId) = registry.register(node_id.clone(), topics.clone()).await {
@@ -156,6 +160,15 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
         return;
     }
 
+    // Outbound channel for capability-dispatch replies. GuardrailClient::dispatch can take up
+    // to its full 5s timeout on a slow/stuck guardrail; if we awaited it inline inside the
+    // select! loop below, this connection would stop polling the broadcast arm (and incoming
+    // reads) for that whole window, which can silently drop unrelated broadcast events for this
+    // node (Lagged(_) => continue) or miss a Close frame. So each CapabilityRequest is dispatched
+    // on its own spawned task that reports back over this channel, and a dedicated select! arm
+    // drains it — the guardrail round trip no longer blocks anything else on this connection.
+    let (capability_tx, mut capability_rx) = tokio::sync::mpsc::unbounded_channel::<MiraEnvelopeV2>();
+
     loop {
         tokio::select! {
             incoming = socket.recv() => {
@@ -166,9 +179,13 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
                                 let request_event_id = envelope.event_id.clone();
                                 match serde_json::from_value::<CapabilityRequest>(envelope.payload.clone()) {
                                     Ok(request) => {
-                                        let receipt = guardrail.dispatch(&request).await;
-                                        let reply = capability_receipt_envelope(&request_event_id, receipt);
-                                        if !send_envelope(&mut socket, &reply).await { break; }
+                                        let guardrail = guardrail.clone();
+                                        let capability_tx = capability_tx.clone();
+                                        tokio::spawn(async move {
+                                            let receipt = guardrail.dispatch(&request).await;
+                                            let reply = capability_receipt_envelope(&request_event_id, receipt);
+                                            let _ = capability_tx.send(reply);
+                                        });
                                     }
                                     Err(_) => {
                                         let _ = send_envelope(&mut socket, &error_envelope(&node_id, "malformed CapabilityRequest payload")).await;
@@ -195,6 +212,11 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
                     }
                     Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
                     Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+                }
+            }
+            capability_reply = capability_rx.recv() => {
+                if let Some(reply) = capability_reply {
+                    if !send_envelope(&mut socket, &reply).await { break; }
                 }
             }
         }
