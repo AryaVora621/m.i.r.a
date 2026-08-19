@@ -3,7 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use futures_util::SinkExt;
 use futures_util::StreamExt;
-use mira_daemon::{build_router_with_registry, Registry};
+use mira_daemon::Registry;
 use mira_protocol::{AuthContext, AuthMode, EventKind, MiraEnvelopeV2};
 use tokio::net::TcpListener;
 use tokio_tungstenite::connect_async;
@@ -12,7 +12,11 @@ use uuid::Uuid;
 
 async fn spawn_daemon() -> (SocketAddr, Registry) {
     let registry = Registry::new();
-    let router = build_router_with_registry(registry.clone());
+    let state = mira_daemon::AppState {
+        registry: registry.clone(),
+        guardrail: mira_daemon::GuardrailClient::new(std::path::PathBuf::from("/tmp/mira-dev-unused.sock")),
+    };
+    let router = mira_daemon::broker::router(state);
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move {

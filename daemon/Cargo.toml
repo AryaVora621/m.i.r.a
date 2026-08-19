@@ -18,3 +18,5 @@ thiserror = "1.0"
 
 [dev-dependencies]
 tokio-tungstenite = "0.24"
+mira-guardrail = { path = "../guardrail" }
+tempfile = "3.13"

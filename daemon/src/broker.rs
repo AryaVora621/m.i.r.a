@@ -11,16 +11,23 @@ use std::collections::HashSet;
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
-use mira_protocol::{AuthContext, AuthMode, EventKind, MiraEnvelopeV2};
+use mira_protocol::{AuthContext, AuthMode, CapabilityRequest, EventKind, MiraEnvelopeV2};
 
+use crate::guardrail_client::GuardrailClient;
 use crate::registry::{RegisterError, Registry};
 
-pub fn router(registry: Registry) -> Router {
-    Router::new().route("/ws", get(ws_handler)).with_state(registry)
+#[derive(Clone)]
+pub struct AppState {
+    pub registry: Registry,
+    pub guardrail: GuardrailClient,
 }
 
-async fn ws_handler(ws: WebSocketUpgrade, State(registry): State<Registry>) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_socket(socket, registry))
+pub fn router(state: AppState) -> Router {
+    Router::new().route("/ws", get(ws_handler)).with_state(state)
+}
+
+async fn ws_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_socket(socket, state))
 }
 
 fn now_unix() -> f64 {
@@ -47,14 +54,33 @@ fn error_envelope(sender_node: &str, message: &str) -> MiraEnvelopeV2 {
     }
 }
 
-async fn send_envelope(socket: &mut WebSocket, envelope: &MiraEnvelopeV2) -> bool {
-    socket
-        .send(Message::Text(serde_json::to_string(envelope).unwrap()))
-        .await
-        .is_ok()
+fn capability_receipt_envelope(request_event_id: &str, receipt: mira_protocol::CapabilityReceipt) -> MiraEnvelopeV2 {
+    MiraEnvelopeV2 {
+        protocol_version: 2,
+        event_id: Uuid::new_v4().to_string(),
+        trace_id: Uuid::new_v4().to_string(),
+        topic: "capability".into(),
+        event_kind: EventKind::CapabilityReceipt,
+        sender_node: "gateway".into(),
+        timestamp: now_unix(),
+        auth_context: AuthContext {
+            node_id: "gateway".into(),
+            auth_mode: AuthMode::LoopbackTrusted,
+            token: None,
+            cert_fingerprint: None,
+        },
+        payload: serde_json::to_value(&receipt).unwrap(),
+        ack_ref: Some(request_event_id.to_string()),
+    }
 }
 
-async fn handle_socket(mut socket: WebSocket, registry: Registry) {
+async fn send_envelope(socket: &mut WebSocket, envelope: &MiraEnvelopeV2) -> bool {
+    socket.send(Message::Text(serde_json::to_string(envelope).unwrap())).await.is_ok()
+}
+
+async fn handle_socket(mut socket: WebSocket, state: AppState) {
+    let AppState { registry, guardrail } = state;
+
     let first = match socket.recv().await {
         Some(Ok(Message::Text(text))) => text,
         _ => {
@@ -100,11 +126,7 @@ async fn handle_socket(mut socket: WebSocket, registry: Registry) {
         .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
         .unwrap_or_default();
 
-    // Subscribe before registering: registry.register() makes this node visible to other
-    // connections' registry.contains()/broadcasts immediately, and the ack send below is a
-    // real async I/O flush that yields the task. If we subscribed after that yield, any event
-    // published by another node during the window between registration and subscription would
-    // be silently lost. A broadcast::Receiver created early just buffers until we start reading.
+    // Subscribe before registering — see the note in Task 4's broker.rs.
     let mut rx = registry.subscribe();
 
     if let Err(RegisterError::DuplicateNodeId) = registry.register(node_id.clone(), topics.clone()).await {
@@ -140,6 +162,19 @@ async fn handle_socket(mut socket: WebSocket, registry: Registry) {
                 match incoming {
                     Some(Ok(Message::Text(text))) => {
                         match serde_json::from_str::<MiraEnvelopeV2>(&text) {
+                            Ok(envelope) if envelope.event_kind == EventKind::CapabilityRequest => {
+                                let request_event_id = envelope.event_id.clone();
+                                match serde_json::from_value::<CapabilityRequest>(envelope.payload.clone()) {
+                                    Ok(request) => {
+                                        let receipt = guardrail.dispatch(&request).await;
+                                        let reply = capability_receipt_envelope(&request_event_id, receipt);
+                                        if !send_envelope(&mut socket, &reply).await { break; }
+                                    }
+                                    Err(_) => {
+                                        let _ = send_envelope(&mut socket, &error_envelope(&node_id, "malformed CapabilityRequest payload")).await;
+                                    }
+                                }
+                            }
                             Ok(envelope) => registry.publish(envelope),
                             Err(_) => {
                                 let _ = send_envelope(&mut socket, &error_envelope(&node_id, "malformed JSON")).await;
