@@ -1,3 +1,4 @@
 fn main() {
-    println!("mira-guardrail: scaffolded in Task 3, implemented in Task 5");
+    tracing_subscriber::fmt::init();
+    tracing::info!("mira-guardrail: IPC server added in Task 6");
 }
