@@ -20,7 +20,11 @@ async fn spawn_daemon() -> (SocketAddr, Registry) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move {
-        axum::serve(listener, router).await.unwrap();
+        // Mirrors main.rs: wires ConnectInfo<SocketAddr> so the register-time loopback-bind
+        // check has a real peer address to inspect, exercising that path end-to-end.
+        axum::serve(listener, router.into_make_service_with_connect_info::<SocketAddr>())
+            .await
+            .unwrap();
     });
     (addr, registry)
 }
@@ -45,6 +49,26 @@ fn register_envelope(node_id: &str, topics: &[&str]) -> MiraEnvelopeV2 {
             cert_fingerprint: None,
         },
         payload: serde_json::json!({ "topics": topics }),
+        ack_ref: None,
+    }
+}
+
+fn mtls_register_envelope(node_id: &str) -> MiraEnvelopeV2 {
+    MiraEnvelopeV2 {
+        protocol_version: 2,
+        event_id: Uuid::new_v4().to_string(),
+        trace_id: Uuid::new_v4().to_string(),
+        topic: "system".into(),
+        event_kind: EventKind::Register,
+        sender_node: node_id.into(),
+        timestamp: now(),
+        auth_context: AuthContext {
+            node_id: node_id.into(),
+            auth_mode: AuthMode::Mtls,
+            token: None,
+            cert_fingerprint: Some("deadbeef".into()),
+        },
+        payload: serde_json::json!({ "topics": [] }),
         ack_ref: None,
     }
 }
@@ -114,6 +138,34 @@ async fn broadcast_excludes_sender_and_respects_topic_subscription() {
 
     let unrelated = tokio::time::timeout(std::time::Duration::from_millis(300), ws_c.next()).await;
     assert!(unrelated.is_err(), "node-c is not subscribed to topic-1");
+}
+
+#[tokio::test]
+async fn mtls_register_is_rejected_and_connection_closes() {
+    // MTLS is defined in the schema for forward compatibility but not implemented by this
+    // plan: a daemon that receives an MTLS REGISTER must return ERROR and close the connection.
+    let (addr, _registry) = spawn_daemon().await;
+    let (mut ws, _) = connect_async(format!("ws://{addr}/ws")).await.unwrap();
+    ws.send(WsMessage::Text(serde_json::to_string(&mtls_register_envelope("node-mtls")).unwrap()))
+        .await
+        .unwrap();
+
+    let msg = ws.next().await.unwrap().unwrap();
+    let err: MiraEnvelopeV2 = serde_json::from_str(msg.to_text().unwrap()).unwrap();
+    assert_eq!(err.event_kind, EventKind::Error);
+
+    // The server must close the connection after rejecting MTLS, not just refuse to ack it.
+    // handle_socket returns immediately after sending the ERROR envelope (no close handshake),
+    // so the client observes this as either a clean stream end, an explicit Close frame, or a
+    // transport-level reset — any of which prove the server dropped the connection rather than
+    // continuing to serve it.
+    let next = tokio::time::timeout(std::time::Duration::from_secs(2), ws.next())
+        .await
+        .expect("server should close the connection after rejecting MTLS");
+    assert!(
+        !matches!(next, Some(Ok(WsMessage::Text(_) | WsMessage::Binary(_)))),
+        "expected the connection to close after MTLS rejection, got: {next:?}"
+    );
 }
 
 #[tokio::test]

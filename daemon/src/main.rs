@@ -10,5 +10,10 @@ async fn main() {
     let router = mira_daemon::build_router(guardrail_sock);
     let listener = TcpListener::bind("127.0.0.1:8080").await.expect("failed to bind 127.0.0.1:8080");
     tracing::info!("mira-daemon listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, router).await.expect("server error");
+    // into_make_service_with_connect_info makes the peer SocketAddr available to extractors
+    // (ConnectInfo<SocketAddr>) inside the /ws handler, which the register-time loopback-bind
+    // check needs to verify LOOPBACK_TRUSTED registrations actually arrived over loopback.
+    axum::serve(listener, router.into_make_service_with_connect_info::<std::net::SocketAddr>())
+        .await
+        .expect("server error");
 }

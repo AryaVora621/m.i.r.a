@@ -529,9 +529,11 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "futures-util",
+ "mira-guardrail",
  "mira-protocol",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror",
  "tokio",
  "tokio-tungstenite",
@@ -551,6 +553,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "tokio",
  "tracing",
  "tracing-subscriber",
 ]

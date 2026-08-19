@@ -1,5 +1,6 @@
 use axum::{
     extract::{
+        connect_info::ConnectInfo,
         ws::{Message, WebSocket, WebSocketUpgrade},
         State,
     },
@@ -8,6 +9,7 @@ use axum::{
     Router,
 };
 use std::collections::HashSet;
+use std::net::{IpAddr, SocketAddr};
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
@@ -26,8 +28,33 @@ pub fn router(state: AppState) -> Router {
     Router::new().route("/ws", get(ws_handler)).with_state(state)
 }
 
-async fn ws_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_socket(socket, state))
+async fn ws_handler(
+    ws: WebSocketUpgrade,
+    connect_info: Option<ConnectInfo<SocketAddr>>,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    // `ConnectInfo` is only populated when the router is served via
+    // `into_make_service_with_connect_info` (main.rs does this; some test harnesses build a
+    // bare `Router` and call `axum::serve` directly). We accept its absence rather than require
+    // it, so the loopback-bind check below degrades to its pre-existing behavior instead of
+    // breaking those callers.
+    let peer_addr = connect_info.map(|ConnectInfo(addr)| addr);
+    ws.on_upgrade(move |socket| handle_socket(socket, state, peer_addr))
+}
+
+/// Pure decision logic for whether a REGISTER's `auth_mode` should be accepted given the
+/// connection's actual peer IP. Kept separate from `handle_socket` so the loopback-bind
+/// Global Constraint ("the gateway rejects LOOPBACK_TRUSTED on any non-loopback bind, checked
+/// at register time") can be unit tested directly with fake addresses — a real non-loopback
+/// network connection isn't practically reachable in an integration test that itself must
+/// connect over loopback.
+fn is_loopback_trusted_allowed(auth_mode: &AuthMode, peer_ip: IpAddr) -> bool {
+    match auth_mode {
+        AuthMode::LoopbackTrusted => peer_ip.is_loopback(),
+        // MTLS is defined in the schema for forward compatibility but not implemented by this
+        // plan: any MTLS registration is rejected regardless of peer address.
+        AuthMode::Mtls => false,
+    }
 }
 
 fn now_unix() -> f64 {
@@ -78,7 +105,7 @@ async fn send_envelope(socket: &mut WebSocket, envelope: &MiraEnvelopeV2) -> boo
     socket.send(Message::Text(serde_json::to_string(envelope).unwrap())).await.is_ok()
 }
 
-async fn handle_socket(mut socket: WebSocket, state: AppState) {
+async fn handle_socket(mut socket: WebSocket, state: AppState, peer_addr: Option<SocketAddr>) {
     let AppState { registry, guardrail } = state;
 
     let first = match socket.recv().await {
@@ -106,15 +133,23 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
         return;
     }
 
-    if register_envelope.auth_context.auth_mode != AuthMode::LoopbackTrusted {
-        let _ = send_envelope(
-            &mut socket,
-            &error_envelope(
-                &register_envelope.sender_node,
-                "only LOOPBACK_TRUSTED auth_mode is supported on this Phase 1 gateway",
-            ),
-        )
-        .await;
+    let auth_mode = register_envelope.auth_context.auth_mode;
+    // When peer_addr is unavailable (router served without connect-info wiring), we cannot
+    // verify loopback-ness, so we fall back to the pre-existing behavior: LOOPBACK_TRUSTED is
+    // accepted, MTLS is rejected. Every real deployment path (main.rs) wires connect-info, so
+    // this fallback only affects peer-info-less test harnesses, not the enforcement itself.
+    let auth_ok = match peer_addr {
+        Some(addr) => is_loopback_trusted_allowed(&auth_mode, addr.ip()),
+        None => auth_mode == AuthMode::LoopbackTrusted,
+    };
+    if !auth_ok {
+        let message = match auth_mode {
+            AuthMode::Mtls => "MTLS auth_mode is not implemented on this Phase 1 gateway".to_string(),
+            AuthMode::LoopbackTrusted => {
+                "LOOPBACK_TRUSTED auth_mode requires a loopback peer connection".to_string()
+            }
+        };
+        let _ = send_envelope(&mut socket, &error_envelope(&register_envelope.sender_node, &message)).await;
         return;
     }
 
@@ -223,4 +258,40 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
     }
 
     registry.deregister(&node_id).await;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::{Ipv4Addr, Ipv6Addr};
+
+    #[test]
+    fn loopback_ipv4_with_loopback_trusted_is_allowed() {
+        assert!(is_loopback_trusted_allowed(
+            &AuthMode::LoopbackTrusted,
+            IpAddr::V4(Ipv4Addr::LOCALHOST),
+        ));
+    }
+
+    #[test]
+    fn loopback_ipv6_with_loopback_trusted_is_allowed() {
+        assert!(is_loopback_trusted_allowed(
+            &AuthMode::LoopbackTrusted,
+            IpAddr::V6(Ipv6Addr::LOCALHOST),
+        ));
+    }
+
+    #[test]
+    fn non_loopback_ipv4_with_loopback_trusted_is_rejected() {
+        assert!(!is_loopback_trusted_allowed(
+            &AuthMode::LoopbackTrusted,
+            IpAddr::V4(Ipv4Addr::new(10, 0, 0, 5)),
+        ));
+    }
+
+    #[test]
+    fn mtls_is_rejected_regardless_of_peer_ip() {
+        assert!(!is_loopback_trusted_allowed(&AuthMode::Mtls, IpAddr::V4(Ipv4Addr::LOCALHOST)));
+        assert!(!is_loopback_trusted_allowed(&AuthMode::Mtls, IpAddr::V4(Ipv4Addr::new(10, 0, 0, 5))));
+    }
 }

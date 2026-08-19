@@ -35,7 +35,7 @@ fn denies_reversibility_mismatch() {
 }
 
 #[test]
-fn denies_irreversible_and_unknown_by_default() {
+fn denies_irreversible_by_default() {
     let mut table = PolicyTable::dev_default();
     table.register(mira_protocol::ActionManifest {
         capability: "mac.reformat_disk".to_string(),
@@ -45,5 +45,19 @@ fn denies_irreversible_and_unknown_by_default() {
         risk_notes: "Destroys data.".to_string(),
     });
     let decision = table.evaluate(&request("mac.reformat_disk", Reversibility::Irreversible));
+    assert!(matches!(decision, PolicyDecision::Deny { .. }));
+}
+
+#[test]
+fn denies_unknown_by_default() {
+    let mut table = PolicyTable::dev_default();
+    table.register(mira_protocol::ActionManifest {
+        capability: "mac.mystery_action".to_string(),
+        reversibility: Reversibility::Unknown,
+        rollback_plan: None,
+        credential_scope: vec!["mac.disk".to_string()],
+        risk_notes: "Reversibility not yet classified.".to_string(),
+    });
+    let decision = table.evaluate(&request("mac.mystery_action", Reversibility::Unknown));
     assert!(matches!(decision, PolicyDecision::Deny { .. }));
 }
