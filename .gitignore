@@ -9,6 +9,10 @@ node_modules/
 target/
 __pycache__/
 *.pyc
+voice/.venv/
+# ~6MB of ONNX/BPE model weights — reproducible via the recipe in voice/adapters/wake.py's
+# module docstring, not worth committing.
+voice/models/
 
 # Brainstorm skill's local preview-server runtime state (ephemeral, per-machine)
 .superpowers/brainstorm/.last-token
