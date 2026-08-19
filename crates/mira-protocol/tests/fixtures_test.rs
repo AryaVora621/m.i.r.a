@@ -1,4 +1,4 @@
-use mira_protocol::{ActionManifest, CapabilityReceipt, CapabilityRequest, MiraEnvelopeV2};
+use mira_protocol::{ActionManifest, CapabilityReceipt, CapabilityRequest, MiraEnvelopeV2, VoiceStateEvent};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
@@ -42,4 +42,10 @@ fn action_manifest_round_trips() {
 fn capability_receipt_round_trips() {
     let fixture = load_fixture("capability_receipt.json");
     assert_round_trip::<CapabilityReceipt>(&fixture);
+}
+
+#[test]
+fn voice_state_event_round_trips() {
+    let fixture = load_fixture("voice_state_event.json");
+    assert_round_trip::<VoiceStateEvent>(&fixture);
 }

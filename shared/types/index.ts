@@ -193,3 +193,22 @@ export interface CapabilityReceipt {
   executed_by: string;
   signature: string | null;
 }
+
+export type VoiceState =
+  | 'IDLE'
+  | 'WAKE_DETECTED'
+  | 'LISTENING'
+  | 'TRANSCRIBING'
+  | 'THINKING'
+  | 'SPEAKING'
+  | 'INTERRUPTED'
+  | 'MUTED'
+  | 'OFFLINE';
+
+export interface VoiceStateEvent {
+  node_id: string;
+  timestamp: number;
+  state: VoiceState;
+  transcript: string | null;
+  is_final: boolean | null;
+}

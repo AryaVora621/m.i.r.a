@@ -238,3 +238,24 @@ class CapabilityReceipt(BaseModel):
     executed_at: float
     executed_by: str
     signature: Optional[str] = None
+
+
+class VoiceState(str, Enum):
+    IDLE = "IDLE"
+    WAKE_DETECTED = "WAKE_DETECTED"
+    LISTENING = "LISTENING"
+    TRANSCRIBING = "TRANSCRIBING"
+    THINKING = "THINKING"
+    SPEAKING = "SPEAKING"
+    INTERRUPTED = "INTERRUPTED"
+    MUTED = "MUTED"
+    OFFLINE = "OFFLINE"
+
+
+class VoiceStateEvent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    node_id: str
+    timestamp: float
+    state: VoiceState
+    transcript: Optional[str] = None
+    is_final: Optional[bool] = None

@@ -91,3 +91,26 @@ pub struct CapabilityReceipt {
     pub executed_by: String,
     pub signature: Option<String>,
 }
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum VoiceState {
+    Idle,
+    WakeDetected,
+    Listening,
+    Transcribing,
+    Thinking,
+    Speaking,
+    Interrupted,
+    Muted,
+    Offline,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct VoiceStateEvent {
+    pub node_id: String,
+    pub timestamp: f64,
+    pub state: VoiceState,
+    pub transcript: Option<String>,
+    pub is_final: Option<bool>,
+}

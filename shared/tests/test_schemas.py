@@ -33,6 +33,8 @@ from shared.types.events import (
     TelemetryEvent,
     TelemetryMetrics,
     TelemetryStatus,
+    VoiceState,
+    VoiceStateEvent,
     WandButton,
     WandEvent,
     WandEventType,
@@ -76,6 +78,7 @@ class TestSchemasAndModels(unittest.TestCase):
             "capability_request.json",
             "action_manifest.json",
             "capability_receipt.json",
+            "voice_state_event.json",
         }
         self.assertTrue(expected_schemas.issubset(set(self.schemas.keys())))
 
@@ -327,6 +330,27 @@ class TestSchemasAndModels(unittest.TestCase):
         jsonschema.validate(instance=denied_payload, schema=schema)
         denied_model = CapabilityReceipt(**denied_payload)
         self.assertIsNone(denied_model.rollback_evidence)
+
+    def test_voice_state_event(self):
+        schema = self.schemas["voice_state_event.json"]
+        payload = self._load_fixture("voice_state_event.json")
+        jsonschema.validate(instance=payload, schema=schema)
+        model = VoiceStateEvent(**payload)
+        self.assertEqual(model.state, VoiceState.TRANSCRIBING)
+        self.assertEqual(model.model_dump(mode="json"), payload)
+
+        # a non-transcript state (e.g. IDLE) validates with null transcript/is_final
+        idle_payload = dict(payload, state="IDLE", transcript=None, is_final=None)
+        jsonschema.validate(instance=idle_payload, schema=schema)
+        idle_model = VoiceStateEvent(**idle_payload)
+        self.assertIsNone(idle_model.transcript)
+
+        # unknown state is rejected
+        invalid_payload = dict(payload, state="SLEEPING")
+        with self.assertRaises(Exception):
+            jsonschema.validate(instance=invalid_payload, schema=schema)
+        with self.assertRaises(Exception):
+            VoiceStateEvent(**invalid_payload)
 
 
 if __name__ == "__main__":
