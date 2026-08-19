@@ -70,10 +70,10 @@ fn dispatch(policy: &PolicyTable, signer: &DevSigner, request: CapabilityRequest
                 signature: None,
             })
         }
-        // Phase 1: no real device handler is wired up yet — an allowed
-        // capability is recorded as executed, with the manifest's static
-        // rollback plan as the rollback evidence. A real macOS handler is
-        // Implementation Sequence step 3 of the canonical plan.
+        PolicyDecision::Allow { manifest } if request.capability == "mac.volume.set" => {
+            crate::volume::execute_volume_set(&crate::volume::OsascriptVolumeController, &request, &manifest, signer)
+        }
+        // Any other allowed capability has no real device handler yet — unchanged from Phase 1.
         PolicyDecision::Allow { manifest } => signer.sign(CapabilityReceipt {
             request_id: request.request_id,
             capability: request.capability,
