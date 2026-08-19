@@ -138,6 +138,35 @@ async fn malformed_json_returns_error_envelope_without_closing() {
     let msg = ws.next().await.unwrap().unwrap();
     let err: MiraEnvelopeV2 = serde_json::from_str(msg.to_text().unwrap()).unwrap();
     assert_eq!(err.event_kind, EventKind::Error);
+
+    // Prove the connection is still alive and functional (not just that it didn't crash
+    // synchronously): a second peer publishes a valid event on a topic this connection is
+    // subscribed to, and we assert it still arrives. If the server had closed the socket
+    // after sending the ERROR, this would time out.
+    let (mut ws_other, _) = connect_async(format!("ws://{addr}/ws")).await.unwrap();
+    ws_other
+        .send(WsMessage::Text(serde_json::to_string(&register_envelope("node-other", &[])).unwrap()))
+        .await
+        .unwrap();
+    let _ack_other = ws_other.next().await.unwrap().unwrap();
+
+    let published = event_envelope("node-other", "topic-1");
+    ws_other.send(WsMessage::Text(serde_json::to_string(&published).unwrap())).await.unwrap();
+
+    let msg = tokio::time::timeout(std::time::Duration::from_secs(2), ws.next())
+        .await
+        .expect("connection should still be open and receiving broadcasts after the malformed-JSON error")
+        .unwrap()
+        .unwrap();
+    let received: MiraEnvelopeV2 = serde_json::from_str(msg.to_text().unwrap()).unwrap();
+    assert_eq!(received.event_id, published.event_id);
+
+    // And the connection can still send too: a second malformed frame still gets a second
+    // ERROR envelope rather than silence (which would indicate a dead/half-closed socket).
+    ws.send(WsMessage::Text("still not valid json".into())).await.unwrap();
+    let msg = ws.next().await.unwrap().unwrap();
+    let err2: MiraEnvelopeV2 = serde_json::from_str(msg.to_text().unwrap()).unwrap();
+    assert_eq!(err2.event_kind, EventKind::Error);
 }
 
 #[tokio::test]

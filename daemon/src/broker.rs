@@ -100,6 +100,13 @@ async fn handle_socket(mut socket: WebSocket, registry: Registry) {
         .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
         .unwrap_or_default();
 
+    // Subscribe before registering: registry.register() makes this node visible to other
+    // connections' registry.contains()/broadcasts immediately, and the ack send below is a
+    // real async I/O flush that yields the task. If we subscribed after that yield, any event
+    // published by another node during the window between registration and subscription would
+    // be silently lost. A broadcast::Receiver created early just buffers until we start reading.
+    let mut rx = registry.subscribe();
+
     if let Err(RegisterError::DuplicateNodeId) = registry.register(node_id.clone(), topics.clone()).await {
         let _ = send_envelope(&mut socket, &error_envelope(&node_id, "duplicate node_id")).await;
         return;
@@ -127,7 +134,6 @@ async fn handle_socket(mut socket: WebSocket, registry: Registry) {
         return;
     }
 
-    let mut rx = registry.subscribe();
     loop {
         tokio::select! {
             incoming = socket.recv() => {
