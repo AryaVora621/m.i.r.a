@@ -102,7 +102,15 @@ The whole-branch review of the protocol-v2/gateway/guardrail plan (Tasks 2-6) fo
 - **`trace_id` dropped on receipt/error envelopes**: `daemon/src/broker.rs`'s `capability_receipt_envelope` and `error_envelope` both mint a fresh `trace_id` instead of propagating the request's, breaking correlation at the one process boundary where it matters most.
 - **MSRV 1.75 claimed but never verified**: no `rust-toolchain.toml`, no CI, only rustc 1.96 available locally; the resolved lockfile likely includes dependencies with a higher MSRV than 1.75.
 
-~15 smaller Minor items (unused deps, dead `NodeHandle.topics` field, no connection heartbeat/liveness, swallowed `Lagged` broadcast errors, hardcoded test socket paths, etc.) are catalogued task-by-task in the plan's ledger at `.superpowers/sdd/2026-08-19-mira-protocol-v2-gateway-guardrail-plan/progress.md` if useful context when scoping that plan.
+**Smaller Minor items** (the plan's own SDD ledger was deleted per the finishing-a-development-branch cleanup step — this is the durable record of what it held):
+- Nullable-but-required JSON Schema fields vs `Optional` Pydantic fields (`rollback_plan`, `token`, `cert_fingerprint`, `rollback_evidence`, `signature`, `ack_ref`) — copied verbatim from the plan's own brief, no live bug.
+- `daemon/Cargo.toml`: `serde` and `futures-util` should be dev-only dependencies, not runtime ones.
+- `daemon/src/registry.rs`: `NodeHandle.topics` is dead/unused state — the connection-local `HashSet` in `broker.rs` is the real filter.
+- `daemon/src/broker.rs`: no liveness/heartbeat for half-open WebSocket connections; no deadline on the first `recv()` (a connection that never registers hangs forever); `RecvError::Lagged` broadcast errors are swallowed without a `tracing::warn!`; binary WS frames are silently ignored; no RAII guard around `registry.deregister` (a panic/abort permanently leaks that `node_id`, since duplicates are rejected); `handle_socket` has grown large enough to be worth splitting before more capability-dispatch logic lands on it.
+- `guardrail/src/ipc.rs`: a malformed request writes nothing back before the caller's timeout, so the caller gets the wrong diagnostic ("did not respond within 5s" instead of a parse error); unbounded `read_line` on both the daemon and guardrail sides of the UDS link (local-peer OOM risk, fails closed); the stale-socket-file `remove_file`-before-bind lets a second guardrail instance silently hijack a socket the first is still serving; the socket's parent directory is only created as an incidental side effect of the signing key's directory happening to be created first.
+- `daemon/tests/broker_test.rs`: hardcodes `/tmp/mira-dev-unused.sock`, coupling a test to global filesystem state.
+- `guardrail/Cargo.toml`: `tokio` pulls in `features = ["full"]`, broader than this trust-sensitive crate's actual usage needs.
+- `daemon/tests/capability_dispatch_test.rs`: a `tokio::time::sleep(50ms)` used to wait for a UDS listener to bind is a potential CI flake source.
 
 ---
 
