@@ -155,3 +155,86 @@ class MiraEventEnvelope(BaseModel):
     sender_node: str
     timestamp: float
     data: Any
+
+
+class EventKind(str, Enum):
+    EVENT = "EVENT"
+    COMMAND = "COMMAND"
+    CAPABILITY_REQUEST = "CAPABILITY_REQUEST"
+    CAPABILITY_RECEIPT = "CAPABILITY_RECEIPT"
+    ACK = "ACK"
+    ERROR = "ERROR"
+    REGISTER = "REGISTER"
+    REGISTER_ACK = "REGISTER_ACK"
+    DISCONNECT = "DISCONNECT"
+
+
+class AuthMode(str, Enum):
+    LOOPBACK_TRUSTED = "LOOPBACK_TRUSTED"
+    MTLS = "MTLS"
+
+
+class AuthContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    node_id: str
+    auth_mode: AuthMode
+    token: Optional[str] = None
+    cert_fingerprint: Optional[str] = None
+
+
+class MiraEnvelopeV2(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    protocol_version: Literal[2]
+    event_id: str
+    trace_id: str
+    topic: str
+    event_kind: EventKind
+    sender_node: str
+    timestamp: float
+    auth_context: AuthContext
+    payload: Any
+    ack_ref: Optional[str] = None
+
+
+class Reversibility(str, Enum):
+    REVERSIBLE = "REVERSIBLE"
+    IRREVERSIBLE = "IRREVERSIBLE"
+    UNKNOWN = "UNKNOWN"
+
+
+class CapabilityRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    request_id: str
+    trace_id: str
+    sender_node: str
+    capability: str
+    arguments: Dict[str, Any]
+    reversibility: Reversibility
+    requested_at: float
+
+
+class ActionManifest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    capability: str
+    reversibility: Reversibility
+    rollback_plan: Optional[str] = None
+    credential_scope: List[str]
+    risk_notes: str
+
+
+class CapabilityResultStatus(str, Enum):
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+    DENIED = "DENIED"
+    ROLLED_BACK = "ROLLED_BACK"
+
+
+class CapabilityReceipt(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    request_id: str
+    capability: str
+    result_status: CapabilityResultStatus
+    rollback_evidence: Optional[str] = None
+    executed_at: float
+    executed_by: str
+    signature: Optional[str] = None

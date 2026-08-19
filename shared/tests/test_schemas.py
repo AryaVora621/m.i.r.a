@@ -10,15 +10,24 @@ import jsonschema
 from jsonschema import Draft7Validator
 
 from shared.types.events import (
+    ActionManifest,
+    AuthContext,
+    AuthMode,
     CalibrationEvent,
     CalibrationStage,
+    CapabilityReceipt,
+    CapabilityRequest,
+    CapabilityResultStatus,
     Coordinates3D,
+    EventKind,
     GestureEvent,
     GestureType,
     LyricLine,
     MediaEvent,
+    MiraEnvelopeV2,
     NodeCommand,
     Point2D,
+    Reversibility,
     SpeechEvent,
     SpeechState,
     TelemetryEvent,
@@ -45,6 +54,14 @@ class TestSchemasAndModels(unittest.TestCase):
                     cls.schemas[filename] = schema_data
                     # Check draft-7 compliance
                     Draft7Validator.check_schema(schema_data)
+        cls.fixture_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "fixtures"
+        )
+
+    @classmethod
+    def _load_fixture(cls, filename):
+        with open(os.path.join(cls.fixture_dir, filename), "r", encoding="utf-8") as f:
+            return json.load(f)
 
     def test_schema_files_exist(self):
         expected_schemas = {
@@ -55,6 +72,10 @@ class TestSchemasAndModels(unittest.TestCase):
             "telemetry_event.json",
             "wand_event.json",
             "calibration_event.json",
+            "mira_envelope_v2.json",
+            "capability_request.json",
+            "action_manifest.json",
+            "capability_receipt.json",
         }
         self.assertTrue(expected_schemas.issubset(set(self.schemas.keys())))
 
@@ -242,6 +263,70 @@ class TestSchemasAndModels(unittest.TestCase):
             jsonschema.validate(instance=invalid_corners, schema=schema)
         with self.assertRaises(Exception):
             CalibrationEvent(**invalid_corners)
+
+    def test_mira_envelope_v2(self):
+        schema = self.schemas["mira_envelope_v2.json"]
+        payload = self._load_fixture("mira_envelope_v2.json")
+        jsonschema.validate(instance=payload, schema=schema)
+        model = MiraEnvelopeV2(**payload)
+        self.assertEqual(model.event_kind, EventKind.CAPABILITY_REQUEST)
+        self.assertEqual(model.auth_context.auth_mode, AuthMode.LOOPBACK_TRUSTED)
+        self.assertEqual(model.model_dump(mode="json"), payload)
+
+        # protocol_version must be exactly 2
+        invalid_version = dict(payload, protocol_version=1)
+        with self.assertRaises(Exception):
+            jsonschema.validate(instance=invalid_version, schema=schema)
+        with self.assertRaises(Exception):
+            MiraEnvelopeV2(**invalid_version)
+
+        # unknown event_kind is rejected
+        invalid_kind = dict(payload, event_kind="UNKNOWN_KIND")
+        with self.assertRaises(Exception):
+            jsonschema.validate(instance=invalid_kind, schema=schema)
+        with self.assertRaises(Exception):
+            MiraEnvelopeV2(**invalid_kind)
+
+    def test_capability_request(self):
+        schema = self.schemas["capability_request.json"]
+        payload = self._load_fixture("capability_request.json")
+        jsonschema.validate(instance=payload, schema=schema)
+        model = CapabilityRequest(**payload)
+        self.assertEqual(model.reversibility, Reversibility.REVERSIBLE)
+        self.assertEqual(model.model_dump(mode="json"), payload)
+
+        invalid_reversibility = dict(payload, reversibility="MAYBE")
+        with self.assertRaises(Exception):
+            jsonschema.validate(instance=invalid_reversibility, schema=schema)
+        with self.assertRaises(Exception):
+            CapabilityRequest(**invalid_reversibility)
+
+    def test_action_manifest(self):
+        schema = self.schemas["action_manifest.json"]
+        payload = self._load_fixture("action_manifest.json")
+        jsonschema.validate(instance=payload, schema=schema)
+        model = ActionManifest(**payload)
+        self.assertEqual(model.credential_scope, ["mac.audio"])
+        self.assertEqual(model.model_dump(mode="json"), payload)
+
+    def test_capability_receipt(self):
+        schema = self.schemas["capability_receipt.json"]
+        payload = self._load_fixture("capability_receipt.json")
+        jsonschema.validate(instance=payload, schema=schema)
+        model = CapabilityReceipt(**payload)
+        self.assertEqual(model.result_status, CapabilityResultStatus.SUCCESS)
+        self.assertEqual(model.model_dump(mode="json"), payload)
+
+        # a DENIED receipt must still validate with a null rollback_evidence
+        denied_payload = dict(
+            payload,
+            result_status="DENIED",
+            rollback_evidence=None,
+            signature=None,
+        )
+        jsonschema.validate(instance=denied_payload, schema=schema)
+        denied_model = CapabilityReceipt(**denied_payload)
+        self.assertIsNone(denied_model.rollback_evidence)
 
 
 if __name__ == "__main__":

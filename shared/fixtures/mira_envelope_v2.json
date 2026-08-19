@@ -1,0 +1,17 @@
+{
+  "protocol_version": 2,
+  "event_id": "evt-9f2b3c1a-0000-4000-8000-000000000001",
+  "trace_id": "trace-9f2b3c1a-0000-4000-8000-000000000001",
+  "topic": "capability",
+  "event_kind": "CAPABILITY_REQUEST",
+  "sender_node": "mac-host",
+  "timestamp": 1755600000.0,
+  "auth_context": {
+    "node_id": "mac-host",
+    "auth_mode": "LOOPBACK_TRUSTED",
+    "token": null,
+    "cert_fingerprint": null
+  },
+  "payload": { "request_id": "req-0000", "capability": "mac.volume.set" },
+  "ack_ref": null
+}

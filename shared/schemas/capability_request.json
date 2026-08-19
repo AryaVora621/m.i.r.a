@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CapabilityRequest",
+  "description": "A typed request asking the guardrail to authorize and dispatch a node capability.",
+  "type": "object",
+  "properties": {
+    "request_id": { "type": "string", "minLength": 1 },
+    "trace_id": { "type": "string", "minLength": 1 },
+    "sender_node": { "type": "string", "minLength": 1 },
+    "capability": { "type": "string", "minLength": 1 },
+    "arguments": { "type": "object" },
+    "reversibility": { "type": "string", "enum": ["REVERSIBLE", "IRREVERSIBLE", "UNKNOWN"] },
+    "requested_at": { "type": "number" }
+  },
+  "required": ["request_id", "trace_id", "sender_node", "capability", "arguments", "reversibility", "requested_at"],
+  "additionalProperties": false
+}

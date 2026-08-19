@@ -128,3 +128,68 @@ export interface MiraEventEnvelope<T = unknown> {
   timestamp: number;
   data: T;
 }
+
+export type EventKind =
+  | 'EVENT'
+  | 'COMMAND'
+  | 'CAPABILITY_REQUEST'
+  | 'CAPABILITY_RECEIPT'
+  | 'ACK'
+  | 'ERROR'
+  | 'REGISTER'
+  | 'REGISTER_ACK'
+  | 'DISCONNECT';
+
+export type AuthMode = 'LOOPBACK_TRUSTED' | 'MTLS';
+
+export interface AuthContext {
+  node_id: string;
+  auth_mode: AuthMode;
+  token: string | null;
+  cert_fingerprint: string | null;
+}
+
+export interface MiraEnvelopeV2<T = unknown> {
+  protocol_version: number;
+  event_id: string;
+  trace_id: string;
+  topic: string;
+  event_kind: EventKind;
+  sender_node: string;
+  timestamp: number;
+  auth_context: AuthContext;
+  payload: T;
+  ack_ref: string | null;
+}
+
+export type Reversibility = 'REVERSIBLE' | 'IRREVERSIBLE' | 'UNKNOWN';
+
+export interface CapabilityRequest {
+  request_id: string;
+  trace_id: string;
+  sender_node: string;
+  capability: string;
+  arguments: Record<string, unknown>;
+  reversibility: Reversibility;
+  requested_at: number;
+}
+
+export interface ActionManifest {
+  capability: string;
+  reversibility: Reversibility;
+  rollback_plan: string | null;
+  credential_scope: string[];
+  risk_notes: string;
+}
+
+export type CapabilityResultStatus = 'SUCCESS' | 'FAILURE' | 'DENIED' | 'ROLLED_BACK';
+
+export interface CapabilityReceipt {
+  request_id: string;
+  capability: string;
+  result_status: CapabilityResultStatus;
+  rollback_evidence: string | null;
+  executed_at: number;
+  executed_by: string;
+  signature: string | null;
+}

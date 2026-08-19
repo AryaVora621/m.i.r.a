@@ -1,0 +1,7 @@
+{
+  "capability": "mac.volume.set",
+  "reversibility": "REVERSIBLE",
+  "rollback_plan": "Restore the previous system output volume level captured before this action executed.",
+  "credential_scope": ["mac.audio"],
+  "risk_notes": "Adjusts system output volume only; no data loss or irreversible side effects."
+}

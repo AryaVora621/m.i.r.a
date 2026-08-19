@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ActionManifest",
+  "description": "Static policy declaration for a registered capability, evaluated by the guardrail before dispatch.",
+  "type": "object",
+  "properties": {
+    "capability": { "type": "string", "minLength": 1 },
+    "reversibility": { "type": "string", "enum": ["REVERSIBLE", "IRREVERSIBLE", "UNKNOWN"] },
+    "rollback_plan": { "type": ["string", "null"] },
+    "credential_scope": { "type": "array", "items": { "type": "string" } },
+    "risk_notes": { "type": "string" }
+  },
+  "required": ["capability", "reversibility", "rollback_plan", "credential_scope", "risk_notes"],
+  "additionalProperties": false
+}

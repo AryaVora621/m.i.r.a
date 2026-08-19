@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CapabilityReceipt",
+  "description": "Signed evidence of a capability's execution outcome, produced by the guardrail.",
+  "type": "object",
+  "properties": {
+    "request_id": { "type": "string", "minLength": 1 },
+    "capability": { "type": "string", "minLength": 1 },
+    "result_status": { "type": "string", "enum": ["SUCCESS", "FAILURE", "DENIED", "ROLLED_BACK"] },
+    "rollback_evidence": { "type": ["string", "null"] },
+    "executed_at": { "type": "number" },
+    "executed_by": { "type": "string", "minLength": 1 },
+    "signature": { "type": ["string", "null"] }
+  },
+  "required": ["request_id", "capability", "result_status", "rollback_evidence", "executed_at", "executed_by", "signature"],
+  "additionalProperties": false
+}
