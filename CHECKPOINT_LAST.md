@@ -2,32 +2,40 @@
 
 **Date:** 2026-08-19
 **Agent:** `/root`
-**Mode:** Builder (Subagent-Driven Development) — session complete, plan closed and merged
+**Mode:** Builder — executed the voice loop plan Tasks 7-14, task by task, each verified against a real component before committing
 
 ## Completed
 
-- Executed all 5 tasks of `docs/superpowers/plans/2026-08-19-mira-protocol-v2-gateway-guardrail-plan.md` via Subagent-Driven Development (fresh implementer per task, task-scoped spec+quality review, fix loops as needed):
-  - **Task 2**: protocol v2 contracts (`MiraEnvelopeV2`, `CapabilityRequest`, `ActionManifest`, `CapabilityReceipt`) across JSON Schema, Pydantic v2, and TypeScript, round-trip tested against shared fixtures. 1 fix round, 1 minor deferred.
-  - **Task 3**: Rust workspace + `mira-protocol` crate mirroring all 9 protocol types. Clean review, 1 minor deferred.
-  - **Task 4**: `daemon` crate — node registry + WebSocket broker. 1 fix round for 2 Important findings (a real lost-event race originating in the plan's own example code, fixed in both the implementation and the plan document; a test that didn't verify its own claim). 11 minors deferred.
-  - **Task 5**: `guardrail` crate — deny-by-default `PolicyTable` + Ed25519 `DevSigner`. Clean review. 2 minors deferred.
-  - **Task 6**: wired daemon <-> guardrail over a Unix Domain Socket, capability dispatch end-to-end. 1 fix round for 4 Important findings, two of which were genuine plan-text contradictions escalated to and resolved by the user: denied `CapabilityReceipt`s are signed (plan's Verification section corrected in place), and a head-of-line-blocking design gap was fixed via spawn+mpsc restructuring rather than deferred. 11 minors deferred.
-- **Final whole-branch review** (opus): strong verdict — trust boundary holds structurally (daemon has no compile-time path to the guardrail's policy table or signing key). 1 Critical (stale `Cargo.lock`) + 10 Important found; reviewer's own explicit merge-blocker scope was the lockfile plus 3 untested/unimplemented Global Constraints (loopback-bind enforcement, MTLS-rejection test, Unknown-reversibility test) — everything else ticketed for a future LAN/production-hardening plan rather than fixed here.
-- **Final review fix + re-review** (1 round): fixed the lockfile and implemented loopback-bind enforcement via `ConnectInfo<SocketAddr>`. Re-review caught one residual — a `Option<ConnectInfo>` fail-open fallback the implementer had added for a test file's convenience — adjudicated as fix-now (small, mechanical, mirrored an already-proven pattern in the same diff) rather than deferred. Closure fix made `ConnectInfo` required with no fallback path; verified directly (37-line diff, read in full).
-- **Follow-up tickets written up**: the ~9 Important findings intentionally not fixed in this plan (sender_node/identity spoofing on the broadcast path — confirmed live, not just theoretical; non-canonical Rust-only-verifiable signing; Rust protocol mirror laxity; CapabilityReceipt missing an authorized-vs-executed distinction; guardrail crash-on-transient-error; unbounded capability-dispatch backpressure; signing-key file permissions; dropped trace_id; unverified MSRV) are documented in `PROJECT_STATUS.md`'s "Deferred From the Gateway/Guardrail Plan" section.
-- **Branch finished** (`superpowers:finishing-a-development-branch`): full suite re-verified green on the merged result (25/25 Rust tests, 12/12 Python tests, `tsc --noEmit` clean, `cargo build --locked` succeeds). Committed this session's doc updates plus pre-existing uncommitted planning docs (user's explicit choice) after excluding ephemeral/local-only files (brainstorm server PID/port/token state, Serena's local config override) and adding a `.gitignore` rule for them. Merged `feat/macbook-offline-core-sim` into `main` (fast-forward, `89bcefd`), branch deleted. Re-verified the full suite again on `main` post-merge. Deleted the plan's git-ignored `.superpowers/sdd/2026-08-19-mira-protocol-v2-gateway-guardrail-plan/` workspace per the skill's cleanup step.
-- New standing rule adopted mid-session and saved (memory + `AGENTS.md` principle 5): before building something "somewhat large," search GitHub/existing OSS for a reference implementation to copy/adapt/pull in rather than building fully from scratch.
+On branch `feat/mira-voice-loop` (8 commits, all pushed to no remote yet — local only):
+
+- **Task 7**: Real `mac.volume.set` guardrail handler (`guardrail/src/volume.rs`) — shells out to `osascript`, records the real previous volume level as rollback evidence, wired into `dispatch()`. 5 unit tests + 1 integration test pass, zero warnings.
+- **Task 8**: `VoiceStateEvent` v2 protocol contract across JSON Schema/Pydantic/TS/Rust, fixture-tested both languages.
+- **Task 9**: `MIRA_IDENTITY.md` v1 (authored in full) + `voice/identity.py` loader.
+- **Task 10**: `voice/memory.py` `ConversationBuffer` — in-RAM rolling 20-turn buffer.
+- **Task 11**: `voice/codex_client.py` — shells out to the real `codex` CLI. Manually verified against the real, OAuth-authenticated CLI (got back exactly the requested reply).
+- **Task 12**: `voice/loop.py` `VoiceLoop` — the 9-state FSM (barge-in, mute, offline). All 7 tests pass; the barge-in interruption test was run 20x with zero flakes.
+- **Task 13**: `voice/daemon_client.py` — real WebSocket client. Verified against the real `mira-daemon`/`mira-guardrail` binaries: register, publish_state, and a real `mac.volume.set` round trip that actually changed system volume (restored to 25 afterward, both times it ran).
+- **Task 14**: Real hardware adapters (`voice/adapters/`) — Sherpa-ONNX wake word ("mira"), Silero VAD, faster-whisper STT, Kokoro TTS. Found and fixed 4 real defects the plan's code didn't anticipate:
+  - kokoro's PyPI releases pin `numpy==1.26.4` exactly, which has no Python 3.13 wheels, and only `kokoro==0.7.4` has a satisfiable `misaki[en]` dependency (misaki hasn't published past 0.7.4). Fixed by running `voice/` in a dedicated `voice/.venv` (Python 3.12, gitignored) instead of the repo's system Python 3.13.
+  - Silero VAD v5+ requires exactly 512-sample (32ms) chunks at 16kHz, not the planned 30ms/480-sample frames — raises `ValueError: Input audio chunk is too short` otherwise. Fixed in `audio_io.py`/`vad.py`.
+  - `sherpa_onnx.OnlineStream.accept_waveform` needs float32 samples normalized to [-1, 1], not raw PCM16 bytes — fixed in `wake.py`.
+  - Kokoro's `Result.audio` is a `torch.FloatTensor`, not a numpy array — `play_pcm` now converts via `.detach().cpu().numpy()`.
+  - Built the real "mira" keyword file (`sherpa-onnx-cli text2token`, uppercase required to match the model's BPE vocab) and replaced the model's shipped demo keywords entirely so they can't false-trigger a wake. `voice/models/` (~6MB) is gitignored; the exact reproduction recipe is in `wake.py`'s module docstring.
+  - Manually confirmed: the real `KeywordSpotter` constructs with the mira-only `keywords.txt`, produces no result on silence, and produces no result on the model's own non-mira demo test wavs (a true-negative check).
+- Updated `PROJECT_STATUS.md` (new Voice Loop readiness-grid row, updated status line) and `TASK_QUEUE.md` (Tasks 7-14 moved to Done, Task 15 manual verification moved to Open with an explicit checklist pointer).
+- Full `voice/` suite (18 tests) passes under `voice/.venv`; the non-ML subset (29 tests across `voice/` + `shared/tests/`, 2 correctly skipped) also passes under the repo's system Python.
 
 ## In Progress
 
-Nothing. This plan is fully closed — merged to `main`, branch deleted, working tree clean, `main` is 36 commits ahead of `origin/main` (not pushed; only "merge locally" was requested).
+`voice/main.py` entrypoint is written and imports cleanly, but **Task 15's manual end-to-end verification has not been run** — it needs a human physically at this Mac with a real mic and speaker. Checklist: `docs/superpowers/plans/2026-08-19-mira-voice-loop-plan.md` Task 15 Step 2 (say "Mira", confirm listening, say "set the volume to forty", confirm the real volume changes and Mira speaks a confirmation, confirm barge-in works, confirm killing the daemon produces OFFLINE not a crash).
 
 ## Next Action
 
-- Define the voice loop subplan (Implementation Sequence step 3 of the canonical plan): local "Mira" wake word, local STT/TTS, Codex OAuth answers. It depends on nothing the just-completed plan doesn't already produce — the daemon gateway and guardrail now exist for it to plug into. Use `superpowers:writing-plans` to author it, same as this plan.
-- Whenever the LAN/production-hardening plan gets scoped, pull the follow-up items from `PROJECT_STATUS.md`'s "Deferred From the Gateway/Guardrail Plan" section into it rather than starting a standalone cleanup pass — several depend on that plan's own trust-boundary decisions anyway.
-- If/when ready to share this work: `git push` (currently 36 local commits ahead of `origin/main`, not yet pushed).
+1. User runs the Task 15 manual verification: `cargo run --bin mira-guardrail` (terminal 1), `cargo run --bin mira-daemon` (terminal 2), `voice/.venv/bin/python -m voice.main` (terminal 3).
+2. After manual verification passes (or with any fixes it surfaces), commit Task 15's final state (`voice/main.py` + tracking doc updates, already staged conceptually — not yet committed pending the manual check) and this plan is closed out.
+3. Then: Implementation Sequence step 4 (Tauri menu-bar app / projector simulator) per the canonical plan.
+4. User confirmed architecture: the P40 homelab desktop (32GB DDR4, i7-6900K, GTX 1050) is where the real LLM inference eventually runs, replacing the Codex dev-route — already the documented plan, no code change needed now. The Pi is display/projector only, not compute. User also wants `voice/`'s design kept portable to an eventual Pi 4B/Ubuntu-server setup — current design already leans that way (cross-platform Python libs; the one OS-specific piece, `osascript` volume control, is isolated behind the guardrail's `VolumeController` Rust trait).
 
 ## Human Decisions Needed
 
-None currently open. This session's decisions (all resolved): sign denied receipts (yes), fix the head-of-line-blocking design gap now rather than defer (yes), adopt the "check GitHub before building large things" rule (yes), commit everything uncommitted including pre-existing docs (yes, done — excluding ephemeral local state), merge to `main` locally (yes, done).
+None blocking further automated work — the only remaining step in this plan needs the user's physical presence (mic/speaker), not a decision.
