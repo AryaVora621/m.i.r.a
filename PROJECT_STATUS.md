@@ -1,12 +1,11 @@
 # Jarvis Project Status & Roadmap
 
 > **Current Phase**: Phase 1 — Core Foundation (MacBook Offline Development Mode)  
-> **Active Branch**: `feat/macbook-offline-core-sim`  
+> **Active Branch**: `main` (feature branch `feat/macbook-offline-core-sim` was merged in, fast-forward, and deleted)  
 > **Canonical Plan**: [`docs/superpowers/plans/2026-08-19-mira-custom-voice-agent-os-plan.md`](./docs/superpowers/plans/2026-08-19-mira-custom-voice-agent-os-plan.md) (the 2026-08-17 plan referenced below is superseded)  
-> **Just-Completed Plan**: [`docs/superpowers/plans/2026-08-19-mira-protocol-v2-gateway-guardrail-plan.md`](./docs/superpowers/plans/2026-08-19-mira-protocol-v2-gateway-guardrail-plan.md) — Tasks 2-6, done  
-> **Progress Ledger**: [`.superpowers/sdd/2026-08-19-mira-protocol-v2-gateway-guardrail-plan/progress.md`](./.superpowers/sdd/2026-08-19-mira-protocol-v2-gateway-guardrail-plan/progress.md)  
+> **Just-Completed Plan**: [`docs/superpowers/plans/2026-08-19-mira-protocol-v2-gateway-guardrail-plan.md`](./docs/superpowers/plans/2026-08-19-mira-protocol-v2-gateway-guardrail-plan.md) — Tasks 2-6, done and merged (its `.superpowers/sdd/` workspace ledger was deleted per the finishing-a-development-branch cleanup step; this file and `CHECKPOINT_LAST.md` are the durable record now)  
 > **Last Updated**: August 19, 2026  
-> **Status**: Tasks 1-6 complete (commit `28d21e5`). Protocol v2 contracts, Rust daemon (WebSocket gateway + node registry), and guardrail (deny-by-default policy engine + Ed25519 dev signing) are built, wired together end-to-end over a Unix Domain Socket, and passed a whole-branch review (1 fix round + 1 closure fix, both re-reviewed clean). 25/25 Rust tests + 12/12 Python tests + `tsc --noEmit` clean. Several Important findings from the whole-branch review were deliberately deferred as follow-up-plan tickets rather than fixed here — see "Deferred From the Gateway/Guardrail Plan" below. Next up: the voice loop (local "Mira" wake word, local STT/TTS, Codex OAuth answers).
+> **Status**: Tasks 1-6 complete and merged to `main` (commit `89bcefd`). Protocol v2 contracts, Rust daemon (WebSocket gateway + node registry), and guardrail (deny-by-default policy engine + Ed25519 dev signing) are built, wired together end-to-end over a Unix Domain Socket, and passed a whole-branch review (1 fix round + 1 closure fix, both re-reviewed clean). 25/25 Rust tests + 12/12 Python tests + `tsc --noEmit` clean, all re-verified on the merged result. Several Important findings from the whole-branch review were deliberately deferred as follow-up-plan tickets rather than fixed here — see "Deferred From the Gateway/Guardrail Plan" below. Next up: the voice loop (local "Mira" wake word, local STT/TTS, Codex OAuth answers).
 
 ---
 
