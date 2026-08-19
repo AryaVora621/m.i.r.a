@@ -6,7 +6,7 @@
 
 ## Completed
 
-On branch `feat/mira-voice-loop` (8 commits, all pushed to no remote yet — local only):
+On branch `feat/mira-voice-loop` (10 commits, all pushed to no remote yet — local only):
 
 - **Task 7**: Real `mac.volume.set` guardrail handler (`guardrail/src/volume.rs`) — shells out to `osascript`, records the real previous volume level as rollback evidence, wired into `dispatch()`. 5 unit tests + 1 integration test pass, zero warnings.
 - **Task 8**: `VoiceStateEvent` v2 protocol contract across JSON Schema/Pydantic/TS/Rust, fixture-tested both languages.
@@ -24,6 +24,7 @@ On branch `feat/mira-voice-loop` (8 commits, all pushed to no remote yet — loc
   - Manually confirmed: the real `KeywordSpotter` constructs with the mira-only `keywords.txt`, produces no result on silence, and produces no result on the model's own non-mira demo test wavs (a true-negative check).
 - Updated `PROJECT_STATUS.md` (new Voice Loop readiness-grid row, updated status line) and `TASK_QUEUE.md` (Tasks 7-14 moved to Done, Task 15 manual verification moved to Open with an explicit checklist pointer).
 - Full `voice/` suite (18 tests) passes under `voice/.venv`; the non-ML subset (29 tests across `voice/` + `shared/tests/`, 2 correctly skipped) also passes under the repo's system Python.
+- **Task 15 entrypoint + a new browser tester** (`voice/main.py`, `voice/tester/index.html`): a self-contained local HTML page (no build step) that connects directly to `ws://127.0.0.1:8080/ws` as a `LOOPBACK_TRUSTED` node, live-highlights the 9-state FSM diagram from real `VoiceStateEvent` broadcasts, logs every envelope, and has a manual panel to fire a real `mac.volume.set` request without needing the mic/ML pipeline running. Verified live in a real browser against the real daemon+guardrail: a manual volume request round-tripped a correct signed receipt and actually changed system volume (restored after), and a simulated voice-loop client's published state sequence correctly drove the live highlight.
 
 ## In Progress
 
@@ -31,7 +32,7 @@ On branch `feat/mira-voice-loop` (8 commits, all pushed to no remote yet — loc
 
 ## Next Action
 
-1. User runs the Task 15 manual verification: `cargo run --bin mira-guardrail` (terminal 1), `cargo run --bin mira-daemon` (terminal 2), `voice/.venv/bin/python -m voice.main` (terminal 3).
+1. User runs the Task 15 manual verification: `cargo run --bin mira-guardrail` (terminal 1), `cargo run --bin mira-daemon` (terminal 2), `voice/.venv/bin/python -m voice.main` (terminal 3). Optionally also open `voice/tester/index.html` (via `python3 -m http.server` in that folder) alongside to watch state transitions live and sanity-check the guardrail independently of the mic pipeline.
 2. After manual verification passes (or with any fixes it surfaces), commit Task 15's final state (`voice/main.py` + tracking doc updates, already staged conceptually — not yet committed pending the manual check) and this plan is closed out.
 3. Then: Implementation Sequence step 4 (Tauri menu-bar app / projector simulator) per the canonical plan.
 4. User confirmed architecture: the P40 homelab desktop (32GB DDR4, i7-6900K, GTX 1050) is where the real LLM inference eventually runs, replacing the Codex dev-route — already the documented plan, no code change needed now. The Pi is display/projector only, not compute. User also wants `voice/`'s design kept portable to an eventual Pi 4B/Ubuntu-server setup — current design already leans that way (cross-platform Python libs; the one OS-specific piece, `osascript` volume control, is isolated behind the guardrail's `VolumeController` Rust trait).
