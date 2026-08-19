@@ -44,7 +44,11 @@ async fn spawn_stack() -> (SocketAddr, TempDir, Arc<DevSigner>) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move {
-        axum::serve(listener, router).await.unwrap();
+        // Mirrors main.rs: wires ConnectInfo<SocketAddr> so the register-time loopback-bind
+        // check has a real peer address to inspect, exercising that path end-to-end.
+        axum::serve(listener, router.into_make_service_with_connect_info::<SocketAddr>())
+            .await
+            .unwrap();
     });
     (addr, dir, verifier)
 }
@@ -65,7 +69,11 @@ async fn spawn_stack_with_unreachable_guardrail() -> (SocketAddr, TempDir) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move {
-        axum::serve(listener, router).await.unwrap();
+        // Mirrors main.rs: wires ConnectInfo<SocketAddr> so the register-time loopback-bind
+        // check has a real peer address to inspect, exercising that path end-to-end.
+        axum::serve(listener, router.into_make_service_with_connect_info::<SocketAddr>())
+            .await
+            .unwrap();
     });
     (addr, dir)
 }

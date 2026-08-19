@@ -30,15 +30,14 @@ pub fn router(state: AppState) -> Router {
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
-    connect_info: Option<ConnectInfo<SocketAddr>>,
+    ConnectInfo(peer_addr): ConnectInfo<SocketAddr>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    // `ConnectInfo` is only populated when the router is served via
-    // `into_make_service_with_connect_info` (main.rs does this; some test harnesses build a
-    // bare `Router` and call `axum::serve` directly). We accept its absence rather than require
-    // it, so the loopback-bind check below degrades to its pre-existing behavior instead of
-    // breaking those callers.
-    let peer_addr = connect_info.map(|ConnectInfo(addr)| addr);
+    // ConnectInfo is required, not optional: every router mount (production in main.rs, and
+    // every test harness) is served via `into_make_service_with_connect_info`, so a real peer
+    // address is always available here. Keeping this non-optional means the register-time
+    // loopback-bind check below always evaluates against a real address in every code path —
+    // there is no fail-open fallback for a future mount to accidentally inherit.
     ws.on_upgrade(move |socket| handle_socket(socket, state, peer_addr))
 }
 
@@ -105,7 +104,7 @@ async fn send_envelope(socket: &mut WebSocket, envelope: &MiraEnvelopeV2) -> boo
     socket.send(Message::Text(serde_json::to_string(envelope).unwrap())).await.is_ok()
 }
 
-async fn handle_socket(mut socket: WebSocket, state: AppState, peer_addr: Option<SocketAddr>) {
+async fn handle_socket(mut socket: WebSocket, state: AppState, peer_addr: SocketAddr) {
     let AppState { registry, guardrail } = state;
 
     let first = match socket.recv().await {
@@ -134,15 +133,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, peer_addr: Option
     }
 
     let auth_mode = register_envelope.auth_context.auth_mode;
-    // When peer_addr is unavailable (router served without connect-info wiring), we cannot
-    // verify loopback-ness, so we fall back to the pre-existing behavior: LOOPBACK_TRUSTED is
-    // accepted, MTLS is rejected. Every real deployment path (main.rs) wires connect-info, so
-    // this fallback only affects peer-info-less test harnesses, not the enforcement itself.
-    let auth_ok = match peer_addr {
-        Some(addr) => is_loopback_trusted_allowed(&auth_mode, addr.ip()),
-        None => auth_mode == AuthMode::LoopbackTrusted,
-    };
-    if !auth_ok {
+    if !is_loopback_trusted_allowed(&auth_mode, peer_addr.ip()) {
         let message = match auth_mode {
             AuthMode::Mtls => "MTLS auth_mode is not implemented on this Phase 1 gateway".to_string(),
             AuthMode::LoopbackTrusted => {
