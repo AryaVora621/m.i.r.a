@@ -9,3 +9,8 @@ node_modules/
 target/
 __pycache__/
 *.pyc
+
+# Brainstorm skill's local preview-server runtime state (ephemeral, per-machine)
+.superpowers/brainstorm/.last-token
+.superpowers/brainstorm/.last-port
+.superpowers/brainstorm/*/state/

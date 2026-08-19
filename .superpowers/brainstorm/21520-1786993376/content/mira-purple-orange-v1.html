@@ -1,0 +1,64 @@
+<h2>M.I.R.A. Official UI Identity: Electric Purple & Neon Orange</h2>
+<p class="subtitle">Distinctive visual identity for <strong>M.I.R.A.</strong> (My Interactive Room Assistant) replacing cyan with high-contrast <strong>Electric Purple (#a855f7)</strong> and <strong>Vivid Neon Orange (#f97316)</strong> on a pitch-black wall canvas.</p>
+
+<div class="mockup" style="background: #000000; border: 2px solid #a855f7; height: 420px; position: relative; border-radius: 14px; padding: 20px; font-family: system-ui, -apple-system, sans-serif; box-shadow: 0 0 35px rgba(168, 85, 247, 0.2); overflow: hidden;">
+  
+  <!-- Subtle grid scale helper -->
+  <div style="position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 24px 24px; pointer-events: none;"></div>
+
+  <!-- TOP-LEFT: Clock & Weather Widget (Electric Purple) -->
+  <div style="position: absolute; top: 20px; left: 20px; border: 1px solid rgba(168, 85, 247, 0.4); background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); padding: 12px 18px; border-radius: 12px; font-family: monospace; display: flex; gap: 16px; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.9);">
+    <div>
+      <div style="font-size: 24px; font-weight: bold; color: #c084fc; letter-spacing: -0.5px;">21:07</div>
+      <div style="font-size: 10px; color: #a855f7; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Mon, Aug 17</div>
+    </div>
+    <div style="width: 1px; height: 28px; background: #3b0764;"></div>
+    <div>
+      <div style="font-size: 14px; font-weight: 600; color: #f3e8ff;">72°F</div>
+      <div style="font-size: 10px; color: #fb923c;">Clear • Room Node 1</div>
+    </div>
+  </div>
+
+  <!-- TOP-RIGHT: Node Status Pill (Neon Orange Accent) -->
+  <div style="position: absolute; top: 20px; right: 20px; border: 1px solid #7c2d12; background: rgba(0,0,0,0.9); padding: 8px 14px; border-radius: 20px; font-family: monospace; font-size: 11px; color: #fb923c; display: flex; align-items: center; gap: 8px;">
+    <span style="width: 8px; height: 8px; border-radius: 50%; background: #f97316; display: inline-block; box-shadow: 0 0 10px #f97316;"></span>
+    M.I.R.A. ONLINE • 60 FPS
+  </div>
+
+  <!-- CENTER: Glowing Purple/Orange Ambient Voice Orb -->
+  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+    <div style="width: 140px; height: 140px; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle, #c084fc 0%, #f97316 40%, rgba(168,85,247,0.2) 70%, transparent 100%); border: 2px solid #c084fc; box-shadow: 0 0 50px #a855f7, 0 0 20px #f97316; display: flex; align-items: center; justify-content: center; position: relative;">
+      <div style="width: 76px; height: 76px; border-radius: 50%; background: #000000; border: 1.5px solid #fb923c; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 13px; font-weight: bold; font-family: monospace; letter-spacing: 1px; box-shadow: inset 0 0 15px rgba(249,115,22,0.4);">
+        M.I.R.A.
+      </div>
+    </div>
+    <div style="margin-top: 16px; font-size: 12px; color: #e9d5ff; font-family: monospace; letter-spacing: 0.5px;">
+      Listening for <span style="color: #fb923c; font-weight: bold;">"Mira..."</span>
+    </div>
+  </div>
+
+  <!-- SPATIAL GESTURE CURSOR: Neon Orange Glowing Ring (Option 1) -->
+  <div style="position: absolute; top: 38%; left: 62%; display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none;">
+    <div style="width: 32px; height: 32px; border-radius: 50%; border: 2.5px solid #f97316; box-shadow: 0 0 15px #f97316, inset 0 0 8px rgba(249,115,22,0.5); background: rgba(249, 115, 22, 0.15); display: flex; align-items: center; justify-content: center;">
+      <div style="width: 6px; height: 6px; border-radius: 50%; background: #fb923c;"></div>
+    </div>
+    <span style="color: #fb923c; font-size: 9px; font-family: monospace; font-weight: bold; background: #000; padding: 2px 6px; border-radius: 4px; border: 1px solid #7c2d12;">Pinch Cursor (60 FPS)</span>
+  </div>
+
+  <!-- BOTTOM-RIGHT: Spotify / Music Player Widget (Neon Orange Accent) -->
+  <div style="position: absolute; bottom: 20px; right: 20px; border: 1px solid rgba(249, 115, 22, 0.4); background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); padding: 12px 16px; border-radius: 14px; display: flex; align-items: center; gap: 14px; width: 260px; box-shadow: 0 4px 20px rgba(0,0,0,0.9);">
+    <!-- Album Art -->
+    <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #7e22ce, #ea580c); border-radius: 8px; border: 1px solid #c084fc; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; flex-shrink: 0;">
+      🎵
+    </div>
+    <div style="flex-grow: 1; min-width: 0;">
+      <div style="font-size: 12px; font-weight: 600; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Starboy</div>
+      <div style="font-size: 10px; color: #c084fc; margin-top: 2px;">The Weeknd • Starboy</div>
+      <!-- Progress Bar -->
+      <div style="height: 3px; background: #3b0764; border-radius: 2px; margin-top: 6px; overflow: hidden;">
+        <div style="width: 60%; height: 100%; background: #f97316;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>M.I.R.A. Dynamic Wall Aspect Ratio Showcase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geo:ital@0;1&family=Zen+Dots&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-black: #000000;
+      --purple-primary: #9333ea;
+      --purple-glow: #c084fc;
+      --orange-primary: #ff6b00;
+      --orange-glow: #ff9e00;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-display: 'Zen Dots', cursive, sans-serif;
+      --font-geo: 'Geo', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-black);
+      color: var(--text-main);
+      font-family: var(--font-geo);
+      padding: 20px;
+    }
+
+    .header {
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 12px;
+    }
+
+    .header h2 {
+      font-family: var(--font-display);
+      font-size: 18px;
+      color: #c084fc;
+    }
+
+    .header p { color: #94a3b8; font-size: 14px; margin-top: 4px; }
+
+    .comparison-container {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    .wall-box {
+      background: #000000;
+      border: 1.5px solid rgba(168, 85, 247, 0.4);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 30px rgba(147, 51, 234, 0.2);
+    }
+
+    .wall-label {
+      font-family: var(--font-display);
+      font-size: 11px;
+      color: var(--orange-glow);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    /* 16:9 Widescreen Canvas */
+    .canvas-16-9 {
+      width: 580px;
+      height: 326px; /* 16:9 ratio */
+    }
+
+    /* 3:4 Vertical Wall Canvas */
+    .canvas-3-4 {
+      width: 320px;
+      height: 426px; /* 3:4 vertical ratio */
+    }
+
+    /* Shared Elements */
+    .canvas-grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(192, 132, 252, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .glass-card {
+      background: rgba(8, 6, 16, 0.85);
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      border-radius: 10px;
+    }
+
+    /* Globe SVG */
+    .globe-svg {
+      filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.8));
+      animation: spin-slow 30s linear infinite;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h2>M.I.R.A. Dynamic Wall Aspect Ratio Adaptation</h2>
+    <p>Demonstrating how the UI layout dynamically re-orients between Widescreen (16:9) and Vertical Wall (3:4 / 2:3) projection surfaces.</p>
+  </div>
+
+  <div class="comparison-container">
+    
+    <!-- 16:9 WIDESCREEN WALL -->
+    <div>
+      <div class="wall-label">Widescreen Projection (16:9 Wall)</div>
+      <div class="wall-box canvas-16-9">
+        <div class="canvas-grid"></div>
+
+        <!-- Top Left -->
+        <div class="glass-card" style="position: absolute; top: 14px; left: 14px; padding: 8px 14px; font-family: var(--font-display); font-size: 16px; color: #fff;">
+          21:18 <span style="font-family: var(--font-geo); font-size: 13px; color: #ff9e00;">72°F</span>
+        </div>
+
+        <!-- Top Right -->
+        <div class="glass-card" style="position: absolute; top: 14px; right: 14px; padding: 6px 10px; font-family: var(--font-geo); font-size: 12px; color: #ff9e00;">
+          ● M.I.R.A. ONLINE
+        </div>
+
+        <!-- Center Globe -->
+        <div style="position: absolute; top: 48%; left: 50%; transform: translate(-50%,-50%); text-align: center;">
+          <svg class="globe-svg" width="90" height="90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="46" stroke="#c084fc" stroke-width="1.8" />
+            <ellipse cx="50" cy="50" rx="46" ry="14" stroke="#a855f7" stroke-width="1.2" stroke-dasharray="4 2" />
+            <ellipse cx="50" cy="50" rx="46" ry="28" stroke="#c084fc" stroke-width="1.2" />
+            <line x1="50" y1="4" x2="50" y2="96" stroke="#ff9e00" stroke-width="1.5" />
+            <line x1="4" y1="50" x2="96" y2="50" stroke="#ff9e00" stroke-width="1.5" />
+          </svg>
+        </div>
+
+        <!-- Bottom Left -->
+        <div class="glass-card" style="position: absolute; bottom: 14px; left: 14px; padding: 8px 12px; font-size: 12px; max-width: 220px; color: #cbd5e1;">
+          🎙️ "Mira, set room lights warm..."
+        </div>
+
+        <!-- Bottom Right -->
+        <div class="glass-card" style="position: absolute; bottom: 14px; right: 14px; padding: 8px 12px; font-size: 12px; color: #fff;">
+          ⚡ STARBOY - The Weeknd
+        </div>
+      </div>
+    </div>
+
+    <!-- 3:4 VERTICAL WALL -->
+    <div>
+      <div class="wall-label">Vertical Projection (3:4 Wall)</div>
+      <div class="wall-box canvas-3-4">
+        <div class="canvas-grid"></div>
+
+        <!-- Top Center Stacked Clock -->
+        <div class="glass-card" style="position: absolute; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 18px; text-align: center; width: 85%;">
+          <div style="font-family: var(--font-display); font-size: 22px; color: #fff;">21:18</div>
+          <div style="font-family: var(--font-geo); font-size: 14px; color: #ff9e00; margin-top: 2px;">Mon, Aug 17 • 72°F</div>
+        </div>
+
+        <!-- Center Globe (Shifted proportionally) -->
+        <div style="position: absolute; top: 44%; left: 50%; transform: translate(-50%,-50%); text-align: center;">
+          <svg class="globe-svg" width="105" height="105" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="46" stroke="#c084fc" stroke-width="1.8" />
+            <ellipse cx="50" cy="50" rx="46" ry="14" stroke="#a855f7" stroke-width="1.2" stroke-dasharray="4 2" />
+            <ellipse cx="50" cy="50" rx="46" ry="28" stroke="#c084fc" stroke-width="1.2" />
+            <line x1="50" y1="4" x2="50" y2="96" stroke="#ff9e00" stroke-width="1.5" />
+            <line x1="4" y1="50" x2="96" y2="50" stroke="#ff9e00" stroke-width="1.5" />
+          </svg>
+          <div style="font-family: var(--font-geo); font-size: 13px; color: #94a3b8; margin-top: 8px;">LISTENING FOR "MIRA"</div>
+        </div>
+
+        <!-- Bottom Stacked Cards -->
+        <div style="position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); width: 90%; display: flex; flex-direction: column; gap: 8px;">
+          <div class="glass-card" style="padding: 8px 12px; font-size: 12px; color: #cbd5e1;">
+            🎙️ "Mira, set room lights warm..."
+          </div>
+          <div class="glass-card" style="padding: 8px 12px; font-size: 12px; color: #fff; display: flex; justify-content: space-between; align-items: center;">
+            <span>⚡ STARBOY</span>
+            <span style="font-size: 10px; color: #ff9e00;">PLAYING</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

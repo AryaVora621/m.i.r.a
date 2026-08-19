@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>M.I.R.A. Uniform Micro-Pill Wall Projection UI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geo:ital@0;1&family=Zen+Dots&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-black: #000000;
+      --purple-primary: #9333ea;
+      --purple-glow: #c084fc;
+      --orange-primary: #ff6b00;
+      --orange-glow: #ff9e00;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-display: 'Zen Dots', cursive, sans-serif;
+      --font-geo: 'Geo', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-black);
+      color: var(--text-main);
+      font-family: var(--font-geo);
+      padding: 20px;
+    }
+
+    .pro-header {
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 12px;
+      text-align: center;
+    }
+
+    .pro-header h2 {
+      font-family: var(--font-display);
+      font-size: 16px;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, var(--purple-glow), var(--orange-glow));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .pro-header p {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: var(--font-geo);
+      margin-top: 4px;
+    }
+
+    /* Wall Canvas Container (Compact 30" x 40" Wall Scale) */
+    .wall-canvas {
+      width: 340px;
+      height: 460px; /* 3:4 Aspect Ratio */
+      margin: 0 auto;
+      background-color: #000000;
+      border-radius: 16px;
+      position: relative;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      box-shadow: 0 0 40px rgba(147, 51, 234, 0.2), inset 0 0 100px rgba(0, 0, 0, 0.98);
+      overflow: hidden;
+    }
+
+    .canvas-grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(192, 132, 252, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+    }
+
+    /* UNIFORM MICRO-PILL CARD STYLE (ALL WIDGETS MATCH THE TOP-RIGHT INDICATOR) */
+    .micro-pill {
+      background: rgba(8, 6, 16, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      border-radius: 20px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-geo);
+      font-size: 13px;
+      color: var(--orange-glow);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+    }
+
+    /* TOP-LEFT: Micro Clock Pill */
+    .widget-clock {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+    }
+
+    /* TOP-RIGHT: Micro Node Status Pill */
+    .widget-node-status {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+    }
+
+    .status-pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--orange-primary);
+      box-shadow: 0 0 8px var(--orange-primary);
+    }
+
+    /* CENTER: PURPLE 3D WIREFRAME GLOBE */
+    .orb-container {
+      position: absolute;
+      top: 48%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .wireframe-globe-wrapper {
+      width: 130px;
+      height: 130px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .globe-outer-ring {
+      position: absolute;
+      inset: -10px;
+      border-radius: 50%;
+      border: 1px dashed rgba(192, 132, 252, 0.35);
+      animation: spin-clockwise 30s linear infinite;
+    }
+
+    @keyframes spin-clockwise { 100% { transform: rotate(360deg); } }
+
+    .wireframe-globe-svg {
+      width: 120px;
+      height: 120px;
+      filter: drop-shadow(0 0 14px rgba(168, 85, 247, 0.8)) drop-shadow(0 0 8px rgba(255, 107, 0, 0.4));
+      animation: globe-float 5s ease-in-out infinite alternate;
+    }
+
+    @keyframes globe-float {
+      0% { transform: translateY(0px) rotate(0deg); }
+      100% { transform: translateY(-5px) rotate(4deg); }
+    }
+
+    /* SPATIAL GESTURE CURSOR */
+    .spatial-cursor {
+      position: absolute;
+      top: 36%;
+      left: 60%;
+      pointer-events: none;
+    }
+
+    .cursor-ring {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--orange-glow);
+      background: rgba(255, 107, 0, 0.12);
+      box-shadow: 0 0 15px var(--orange-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cursor-dot { width: 5px; height: 5px; border-radius: 50%; background: #ffffff; }
+
+    /* BOTTOM-RIGHT: Micro Music Player Pill (MATCHES TOP-RIGHT SIZE) */
+    .widget-music {
+      position: absolute;
+      bottom: 18px;
+      right: 18px;
+      border-color: rgba(255, 107, 0, 0.35);
+    }
+
+    /* BOTTOM-LEFT: Micro Weather Pill (MATCHES TOP-RIGHT SIZE) */
+    .widget-weather {
+      position: absolute;
+      bottom: 18px;
+      left: 18px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="pro-header">
+    <h2>M.I.R.A. Uniform Micro-Pill Ambient UI</h2>
+    <p>All Widgets Standardized to Compact Micro-Pills (30" x 40" Wall Canvas)</p>
+  </div>
+
+  <div class="wall-canvas">
+    <div class="canvas-grid"></div>
+
+    <!-- TOP-LEFT: Micro Clock Pill -->
+    <div class="micro-pill widget-clock">
+      <span style="font-family: var(--font-display); font-size: 13px; color: #fff;">21:21</span>
+      <span style="color: var(--purple-glow); font-size: 11px;">MON</span>
+    </div>
+
+    <!-- TOP-RIGHT: Micro Node Status Pill -->
+    <div class="micro-pill widget-node-status">
+      <div class="status-pulse-dot"></div>
+      <span>M.I.R.A.</span>
+    </div>
+
+    <!-- CENTER: SIMPLE PURPLE 3D WIREFRAME GLOBE (NO TEXT) -->
+    <div class="orb-container">
+      <div class="wireframe-globe-wrapper">
+        <div class="globe-outer-ring"></div>
+        <svg class="wireframe-globe-svg" viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="50" r="46" stroke="#c084fc" stroke-width="1.8" />
+          <ellipse cx="50" cy="50" rx="46" ry="14" stroke="#a855f7" stroke-width="1.2" stroke-dasharray="4 2" />
+          <ellipse cx="50" cy="50" rx="46" ry="28" stroke="#c084fc" stroke-width="1.2" />
+          <line x1="50" y1="4" x2="50" y2="96" stroke="#ff9e00" stroke-width="1.5" />
+          <line x1="4" y1="50" x2="96" y2="50" stroke="#ff9e00" stroke-width="1.5" />
+          <circle cx="50" cy="4" r="2.5" fill="#ff6b00" />
+          <circle cx="50" cy="96" r="2.5" fill="#ff6b00" />
+          <circle cx="4" cy="50" r="2.5" fill="#ff6b00" />
+          <circle cx="96" cy="50" r="2.5" fill="#ff6b00" />
+          <circle cx="50" cy="50" r="3" fill="#ffffff" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- SPATIAL GESTURE CURSOR -->
+    <div class="spatial-cursor">
+      <div class="cursor-ring">
+        <div class="cursor-dot"></div>
+      </div>
+    </div>
+
+    <!-- BOTTOM-LEFT: Micro Weather Pill -->
+    <div class="micro-pill widget-weather">
+      <span>☀️ 72°F</span>
+    </div>
+
+    <!-- BOTTOM-RIGHT: Micro Music Player Pill -->
+    <div class="micro-pill widget-music">
+      <span>🎵 STARBOY</span>
+    </div>
+
+  </div>
+
+</body>
+</html>

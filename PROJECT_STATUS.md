@@ -2,10 +2,11 @@
 
 > **Current Phase**: Phase 1 — Core Foundation (MacBook Offline Development Mode)  
 > **Active Branch**: `feat/macbook-offline-core-sim`  
-> **Active Plan**: [`docs/superpowers/plans/2026-08-17-mira-macbook-offline-development-plan.md`](./docs/superpowers/plans/2026-08-17-mira-macbook-offline-development-plan.md)  
-> **Progress Ledger**: [`.superpowers/sdd/progress.md`](./.superpowers/sdd/progress.md)  
+> **Canonical Plan**: [`docs/superpowers/plans/2026-08-19-mira-custom-voice-agent-os-plan.md`](./docs/superpowers/plans/2026-08-19-mira-custom-voice-agent-os-plan.md) (the 2026-08-17 plan referenced below is superseded)  
+> **Just-Completed Plan**: [`docs/superpowers/plans/2026-08-19-mira-protocol-v2-gateway-guardrail-plan.md`](./docs/superpowers/plans/2026-08-19-mira-protocol-v2-gateway-guardrail-plan.md) — Tasks 2-6, done  
+> **Progress Ledger**: [`.superpowers/sdd/2026-08-19-mira-protocol-v2-gateway-guardrail-plan/progress.md`](./.superpowers/sdd/2026-08-19-mira-protocol-v2-gateway-guardrail-plan/progress.md)  
 > **Last Updated**: August 19, 2026  
-> **Status**: Task 1 Complete (`shared/schemas/` & types in `aa8bc51`). Ready to resume at Task 2 (Rust Core Daemon).
+> **Status**: Tasks 1-6 complete (commit `28d21e5`). Protocol v2 contracts, Rust daemon (WebSocket gateway + node registry), and guardrail (deny-by-default policy engine + Ed25519 dev signing) are built, wired together end-to-end over a Unix Domain Socket, and passed a whole-branch review (1 fix round + 1 closure fix, both re-reviewed clean). 25/25 Rust tests + 12/12 Python tests + `tsc --noEmit` clean. Several Important findings from the whole-branch review were deliberately deferred as follow-up-plan tickets rather than fixed here — see "Deferred From the Gateway/Guardrail Plan" below. Next up: the voice loop (local "Mira" wake word, local STT/TTS, Codex OAuth answers).
 
 ---
 
@@ -79,11 +80,30 @@ gantt
 | **Ambient Presence Spec** | [`specs/2026-08-17-ambient-presence-and-proactive-night-mode.md`](./docs/superpowers/specs/2026-08-17-ambient-presence-and-proactive-night-mode.md) | ✅ Ready | 24/7 webcam wall UI tracking & ESP32 MQTT relays |
 | **Multimodal Wand Spec** | [`specs/2026-08-17-handheld-multimodal-controller-wand.md`](./docs/superpowers/specs/2026-08-17-handheld-multimodal-controller-wand.md) | ✅ Ready | Seeed XIAO ESP32-S3 macro wand & tactile desk controller |
 | **Web Dashboard Spec** | [`specs/2026-08-17-web-ui-projection-design.md`](./docs/superpowers/specs/2026-08-17-web-ui-projection-design.md) | ✅ Ready | Pi Projector `#000000` canvas, Purple/Orange palette, 3D Wireframe Globe, `Zen Dots`+`Geo` fonts |
-| **Shared IPC Schemas** | JSON Schema / Protobuf | ✅ Complete | Schemas in `shared/schemas/`, TS types in `shared/types/index.ts`, Python models in `shared/types/events.py` (commit `aa8bc51`) |
-| **Core Daemon** | Rust | ⏳ Next Up (Task 2) | Daemon skeleton & WebSocket broker in `daemon/` |
-| **Web Dashboard** | TypeScript (Vite/React) | ⏳ Pending (Task 6-10) | UI skeleton in `web/` |
-| **Vision Service** | Python (MediaPipe/OpenCV) | ⏳ Pending (Task 11-13) | Vision service in `vision/` |
-| **Hardware Simulators** | Python / Node.js / HTML | ⏳ Pending (Task 14-15) | Virtual GPU, Wand, & Printer nodes in `nodes/simulator/` |
+| **Shared IPC Schemas** | JSON Schema / Protobuf | ✅ Complete | v1 schemas (`aa8bc51`) + protocol v2 (`MiraEnvelopeV2`, `CapabilityRequest`, `ActionManifest`, `CapabilityReceipt`) across JSON Schema/Pydantic/TypeScript/Rust, fixture-tested |
+| **Core Daemon** | Rust | ✅ Complete (Phase 1 scope) | `daemon/` — Axum WebSocket gateway, node registry (`registry.rs`), connection broker (`broker.rs`), loopback-only trust boundary enforced in code |
+| **Guardrail** | Rust | ✅ Complete (Phase 1/dev scope) | `guardrail/` — deny-by-default `PolicyTable`, Ed25519 `DevSigner`, UDS IPC server wired to the daemon (dev-dependency only — no compile-time path from the daemon binary) |
+| **Web Dashboard** | TypeScript (Vite/React) | ⏳ Pending | UI skeleton in `web/` |
+| **Vision Service** | Python (MediaPipe/OpenCV) | ⏳ Pending | Vision service in `vision/` |
+| **Hardware Simulators** | Python / Node.js / HTML | ⏳ Pending | Virtual GPU, Wand, & Printer nodes in `nodes/simulator/` |
+
+---
+
+## 🎫 Deferred From the Gateway/Guardrail Plan (follow-up-plan tickets)
+
+The whole-branch review of the protocol-v2/gateway/guardrail plan (Tasks 2-6) found these Important findings and explicitly recommended ticketing them for the next (LAN/production-hardening) plan rather than fixing them in Phase 1's dev-scoped build. Not yet actioned — pick these up when that plan is written:
+
+- **`sender_node` / identity spoofing on the broadcast path**: `daemon/src/broker.rs`'s `handle_socket` republishes a client's envelope with whatever `sender_node`/`auth_context` it supplied, unvalidated against the connection's registered identity. Confirmed live today (not just theoretical) — any registered node can currently impersonate `"gateway"` or another node to broadcast subscribers. Needs identity-stamping at publish time and a reserved `"gateway"` node_id that registration refuses.
+- **Non-canonical, Rust-only-verifiable receipt signing**: `guardrail/src/signing.rs` signs `serde_json::to_vec` in Rust struct-declaration order, but clients receive the JSON re-serialized in key-sorted order. Only a Rust consumer that deserializes back into the struct first can currently verify a signature. Needs a canonical encoding (e.g. JCS/RFC 8785) before the audit trail or a Python/TypeScript consumer is built on top of this.
+- **Rust protocol mirror is looser than its JSON Schema/Pydantic counterparts**: `crates/mira-protocol` has no `#[serde(deny_unknown_fields)]` and never validates `protocol_version` against the schema's `const: 2`, while Python/TS both enforce strictly. Rust is the side that gates capability execution.
+- **`CapabilityReceipt` can't distinguish "policy authorized this" from "this actually executed"**: the guardrail currently signs `SUCCESS` with populated `rollback_evidence` for capabilities that have no real device handler yet (correctly scoped for now — no macOS handler exists — but the receipt shape doesn't record the difference). Worth an `AUTHORIZED`/`SUCCESS`/`FAILURE`/`ROLLED_BACK` split plus a requester field before receipts are persisted to an audit trail — cheaper as a protocol v2 change now than a migration later.
+- **`guardrail/src/ipc.rs`'s `accept()` errors panic the whole guardrail process** on a transient error (e.g. EMFILE), with no supervision — the daemon keeps running and silently converts every subsequent capability request into an unsigned `FAILURE` receipt.
+- **Capability-dispatch `mpsc` channel is unbounded** (`daemon/src/broker.rs`) — no backpressure/rate-limiting on a single connection's capability requests; this regressed from the original Task 6 fix that removed a synchronous await.
+- **Signing-key file permissions and path**: `guardrail/src/signing.rs` writes the Ed25519 key with default (world-readable) permissions to a predictable `/tmp/mira-dev/` path. Low risk under the current single-developer-machine scope, but should move to `~/.mira/` with `0600` before the trust model changes.
+- **`trace_id` dropped on receipt/error envelopes**: `daemon/src/broker.rs`'s `capability_receipt_envelope` and `error_envelope` both mint a fresh `trace_id` instead of propagating the request's, breaking correlation at the one process boundary where it matters most.
+- **MSRV 1.75 claimed but never verified**: no `rust-toolchain.toml`, no CI, only rustc 1.96 available locally; the resolved lockfile likely includes dependencies with a higher MSRV than 1.75.
+
+~15 smaller Minor items (unused deps, dead `NodeHandle.topics` field, no connection heartbeat/liveness, swallowed `Lagged` broadcast errors, hardcoded test socket paths, etc.) are catalogued task-by-task in the plan's ledger at `.superpowers/sdd/2026-08-19-mira-protocol-v2-gateway-guardrail-plan/progress.md` if useful context when scoping that plan.
 
 ---
 

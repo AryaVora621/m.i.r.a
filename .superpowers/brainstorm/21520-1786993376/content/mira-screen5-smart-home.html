@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>M.I.R.A. Screen 5: Smart Home, ESP32 LED Strips & Klipper 3D Printer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geo:ital@0;1&family=Zen+Dots&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-black: #000000;
+      --purple-primary: #9333ea;
+      --purple-glow: #c084fc;
+      --orange-primary: #ff6b00;
+      --orange-glow: #ff9e00;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-display: 'Zen Dots', cursive, sans-serif;
+      --font-geo: 'Geo', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-black);
+      color: var(--text-main);
+      font-family: var(--font-geo);
+      padding: 20px;
+    }
+
+    .pro-header {
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 12px;
+      text-align: center;
+    }
+
+    .pro-header h2 {
+      font-family: var(--font-display);
+      font-size: 16px;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, var(--purple-glow), var(--orange-glow));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .pro-header p {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: var(--font-geo);
+      margin-top: 4px;
+    }
+
+    /* Wall Canvas Container (Compact 30" x 40" Wall Scale) */
+    .wall-canvas {
+      width: 340px;
+      height: 460px; /* 3:4 Aspect Ratio */
+      margin: 0 auto;
+      background-color: #000000;
+      border-radius: 16px;
+      position: relative;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      box-shadow: 0 0 40px rgba(147, 51, 234, 0.2), inset 0 0 100px rgba(0, 0, 0, 0.98);
+      overflow: hidden;
+    }
+
+    .canvas-grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(192, 132, 252, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+    }
+
+    /* UNIFORM MICRO-PILL STYLE */
+    .micro-pill {
+      background: rgba(8, 6, 16, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      border-radius: 20px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-geo);
+      font-size: 12px;
+      color: var(--orange-glow);
+      cursor: pointer;
+    }
+
+    /* TOP-LEFT: Micro Clock Pill */
+    .widget-clock { position: absolute; top: 18px; left: 18px; }
+
+    /* TOP-RIGHT MANDATORY HOME BUTTON */
+    .widget-home {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      border-color: rgba(255, 107, 0, 0.5);
+      background: rgba(255, 107, 0, 0.15);
+      color: #fff;
+    }
+
+    /* ROOM CONTROL STAGE CONTAINER */
+    .room-stage-container {
+      position: absolute;
+      top: 60px;
+      bottom: 14px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-label {
+      font-family: var(--font-display);
+      font-size: 10px;
+      color: var(--orange-glow);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    /* ESP32 LED LIGHTING PRESETS */
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .preset-btn {
+      background: rgba(8, 6, 16, 0.9);
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      border-radius: 10px;
+      padding: 8px 4px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .preset-btn.active {
+      border-color: var(--orange-glow);
+      background: rgba(255, 107, 0, 0.2);
+      box-shadow: 0 0 12px rgba(255, 107, 0, 0.3);
+    }
+
+    .preset-icon { font-size: 16px; margin-bottom: 2px; }
+    .preset-name { font-family: var(--font-geo); font-size: 10px; color: #fff; }
+
+    /* KLIPPER 3D PRINTER WIDGET */
+    .klipper-card {
+      background: rgba(8, 6, 16, 0.9);
+      border: 1px solid rgba(255, 107, 0, 0.4);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .klipper-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .klipper-title { font-family: var(--font-display); font-size: 10px; color: #ffffff; }
+    .klipper-status { font-family: var(--font-geo); font-size: 10px; color: #34d399; }
+
+    .klipper-progress-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .klipper-progress-fill {
+      width: 68%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--purple-primary), var(--orange-glow));
+    }
+
+    .klipper-meta {
+      font-family: var(--font-geo);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* ALEXA & CLUSTER NODE LIST */
+    .node-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .node-item {
+      background: rgba(8, 6, 16, 0.85);
+      border: 1px solid rgba(192, 132, 252, 0.25);
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-geo);
+      font-size: 11px;
+    }
+
+    .node-name { color: #ffffff; display: flex; align-items: center; gap: 6px; }
+    .node-dot { width: 5px; height: 5px; border-radius: 50%; background: #34d399; }
+    .node-detail { color: var(--purple-glow); font-size: 10px; }
+
+    /* SPATIAL GESTURE CURSOR */
+    .spatial-cursor {
+      position: absolute;
+      top: 52%;
+      left: 70%;
+      pointer-events: none;
+    }
+
+    .cursor-ring {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid var(--orange-glow);
+      background: rgba(255, 107, 0, 0.2);
+      box-shadow: 0 0 15px var(--orange-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cursor-dot { width: 5px; height: 5px; border-radius: 50%; background: #ffffff; }
+  </style>
+</head>
+<body>
+
+  <div class="pro-header">
+    <h2>M.I.R.A. Screen 5: Smart Home, ESP32 IR &amp; Klipper 3D Printer Controls</h2>
+    <p>ESP32 LED IR Strips + Alexa Smart Bridge + Klipper 3D Printer Network (Moonraker) + Tesla P40 GPU</p>
+  </div>
+
+  <div class="wall-canvas">
+    <div class="canvas-grid"></div>
+
+    <!-- TOP-LEFT: Micro Clock Pill -->
+    <div class="micro-pill widget-clock">
+      <span style="font-family: var(--font-display); font-size: 12px; color: #fff;">21:32</span>
+    </div>
+
+    <!-- TOP-RIGHT MANDATORY HOME BUTTON -->
+    <div class="micro-pill widget-home">
+      <span>🏠 HOME</span>
+    </div>
+
+    <!-- ROOM CONTROL STAGE -->
+    <div class="room-stage-container">
+      
+      <!-- ESP32 IR LED LIGHTING PRESETS -->
+      <div>
+        <div class="section-label">💡 ESP32 LED Strips (IR Control)</div>
+        <div class="preset-grid">
+          <div class="preset-btn active">
+            <div class="preset-icon">🔮</div>
+            <div class="preset-name">PURPLE</div>
+          </div>
+          <div class="preset-btn">
+            <div class="preset-icon">🔥</div>
+            <div class="preset-name">WARM</div>
+          </div>
+          <div class="preset-btn">
+            <div class="preset-icon">🌙</div>
+            <div class="preset-name">OFF</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KLIPPER 3D PRINTER NODE (MOONRAKER) -->
+      <div>
+        <div class="section-label">🖨️ Klipper 3D Printer (Voron / Ender)</div>
+        <div class="klipper-card">
+          <div class="klipper-header">
+            <div class="klipper-title">VORON 2.4 PRINTING</div>
+            <div class="klipper-status">● 68% Complete</div>
+          </div>
+          <div class="klipper-progress-bar">
+            <div class="klipper-progress-fill"></div>
+          </div>
+          <div class="klipper-meta">
+            <span>Nozzle: 215°C | Bed: 60°C</span>
+            <span style="color: var(--orange-glow);">ETA: 42m</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALEXA SMART PLUGS & CLUSTER NODE LIST -->
+      <div>
+        <div class="section-label">🌐 Smart Nodes &amp; Alexa Bridge</div>
+        <div class="node-list">
+          <div class="node-item">
+            <div class="node-name"><div class="node-dot"></div> Alexa Smart Plug (Desk)</div>
+            <div class="node-detail">ON • 45W</div>
+          </div>
+          <div class="node-item">
+            <div class="node-name"><div class="node-dot"></div> Tesla P40 GPU Server</div>
+            <div class="node-detail">24GB VRAM • IDLE</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SPATIAL GESTURE CURSOR HOVERING KLIPPER CARD -->
+    <div class="spatial-cursor">
+      <div class="cursor-ring">
+        <div class="cursor-dot"></div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

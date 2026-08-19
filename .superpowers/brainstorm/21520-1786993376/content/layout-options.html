@@ -1,0 +1,87 @@
+<h2>M.I.R.A. Wall Projector UI Layout Options</h2>
+<p class="subtitle">Select the visual layout that best fits your room wall projection setup. All designs enforce <strong>#000000 pitch-black backgrounds</strong> to eliminate projection glare.</p>
+
+<div class="cards">
+  <!-- Option A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)" style="background: #000000; border: 2px solid #1e293b; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <span style="background: #06b6d4; color: #000; font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 12px;">OPTION A</span>
+      <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">Ambient HUD Corner Overlay</h3>
+    </div>
+    <div class="mockup" style="background: #000000; border: 1px dashed #334155; height: 220px; position: relative; border-radius: 8px; padding: 12px; font-family: monospace;">
+      <!-- Top Left -->
+      <div style="position: absolute; top: 12px; left: 12px; border: 1px solid #06b6d4; background: #000; color: #38bdf8; padding: 6px 10px; border-radius: 6px; font-size: 11px;">
+        <div style="font-weight: bold; font-size: 14px;">21:03</div>
+        <div style="color: #94a3b8;">72°F • Sunny</div>
+      </div>
+      <!-- Top Right -->
+      <div style="position: absolute; top: 12px; right: 12px; border: 1px solid #10b981; background: #000; color: #34d399; padding: 6px 10px; border-radius: 6px; font-size: 10px;">
+        ● Core Daemon: OK<br>● Pi Projector: 60FPS
+      </div>
+      <!-- Center empty -->
+      <div style="position: absolute; top: 45%; left: 35%; color: #475569; font-size: 11px; text-align: center;">
+        [ + Spatial Hand Cursor Zone + ]<br><span style="font-size: 9px; color: #334155;">#000000 Pitch Black Center Wall</span>
+      </div>
+      <!-- Bottom Left -->
+      <div style="position: absolute; bottom: 12px; left: 12px; border: 1px solid #f59e0b; background: #000; color: #fbbf24; padding: 6px 10px; border-radius: 6px; font-size: 11px; max-width: 220px;">
+        🎙️ "Mira, set room lights to warm"
+      </div>
+    </div>
+    <div style="margin-top: 10px; color: #94a3b8; font-size: 12px;">
+      <strong>Best for:</strong> Maximum unobtrusive wall blending. Leaves 80% of the center wall empty while keeping essential telemetry at the corners.
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)" style="background: #000000; border: 2px solid #1e293b; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <span style="background: #10b981; color: #000; font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 12px;">OPTION B</span>
+      <h3 style="margin: 0; color: #34d399; font-size: 16px;">Ambient Orb & Floating Cards</h3>
+    </div>
+    <div class="mockup" style="background: #000000; border: 1px dashed #334155; height: 220px; position: relative; border-radius: 8px; padding: 12px; font-family: monospace;">
+      <!-- Center Orb -->
+      <div style="position: absolute; top: 25%; left: 40%; width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle, #38bdf8 0%, rgba(6,182,212,0.2) 70%, transparent 100%); border: 2px solid #38bdf8; box-shadow: 0 0 15px #06b6d4; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px;">
+        PULSE
+      </div>
+      <!-- Floating Card Slide-in -->
+      <div style="position: absolute; bottom: 16px; right: 16px; border: 1px solid #38bdf8; background: #000; color: #e2e8f0; padding: 10px 14px; border-radius: 8px; font-size: 11px; width: 180px;">
+        <div style="color: #38bdf8; font-weight: bold; margin-bottom: 4px;">🎵 Playing Track</div>
+        <div style="font-size: 10px; color: #cbd5e1;">Midnight City - M83</div>
+      </div>
+    </div>
+    <div style="margin-top: 10px; color: #94a3b8; font-size: 12px;">
+      <strong>Best for:</strong> Cinematic voice assistant vibe. Centered ambient orb pulses during speech, with high-contrast cards sliding out on demand.
+    </div>
+  </div>
+
+  <!-- Option C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)" style="background: #000000; border: 2px solid #1e293b; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <span style="background: #f59e0b; color: #000; font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 12px;">OPTION C</span>
+      <h3 style="margin: 0; color: #fbbf24; font-size: 16px;">Spatial Command Wall (Multi-Zone)</h3>
+    </div>
+    <div class="mockup" style="background: #000000; border: 1px dashed #334155; height: 220px; position: relative; border-radius: 8px; padding: 12px; font-family: monospace; display: flex; gap: 8px;">
+      <!-- Zone 1: Sidebar -->
+      <div style="width: 28%; border: 1px solid #334155; background: #000; padding: 6px; border-radius: 6px; color: #94a3b8; font-size: 9px;">
+        <div style="color: #38bdf8; font-weight: bold;">NAV & NODES</div>
+        <div style="margin-top: 6px;">[✓] macOS PC</div>
+        <div>[✓] Pi Wall</div>
+        <div>[✓] Homelab</div>
+      </div>
+      <!-- Zone 2: Main Stage -->
+      <div style="width: 44%; border: 1px solid #06b6d4; background: #000; padding: 6px; border-radius: 6px; color: #e2e8f0; font-size: 9px;">
+        <div style="color: #06b6d4; font-weight: bold;">STAGE / LLM STREAM</div>
+        <div style="margin-top: 4px; color: #cbd5e1;">> Ollama: Executing local home task...</div>
+      </div>
+      <!-- Zone 3: Gesture Dock -->
+      <div style="width: 28%; border: 1px solid #f59e0b; background: #000; padding: 6px; border-radius: 6px; color: #fbbf24; font-size: 9px;">
+        <div style="font-weight: bold;">GESTURES</div>
+        <div style="margin-top: 6px;">👌 Pinch: Select</div>
+        <div>👋 Swipe: Nav</div>
+      </div>
+    </div>
+    <div style="margin-top: 10px; color: #94a3b8; font-size: 12px;">
+      <strong>Best for:</strong> Feature-rich room control panel. Clear 3-zone layout for navigation, dynamic LLM output, and spatial gesture hints.
+    </div>
+  </div>
+</div>

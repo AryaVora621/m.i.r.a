@@ -1,0 +1,72 @@
+<h2>M.I.R.A. Wall Projection: Hybrid Ambient UI (Options A + B)</h2>
+<p class="subtitle">Combining the <strong>Center Ambient Voice Orb</strong> with minimalist corner widgets (Clock & Weather + Music Player) on a <strong>#000000 pitch-black wall canvas</strong>.</p>
+
+<div class="mockup" style="background: #000000; border: 2px solid #06b6d4; height: 420px; position: relative; border-radius: 12px; padding: 20px; font-family: system-ui, -apple-system, sans-serif; box-shadow: 0 0 30px rgba(6,182,212,0.15); overflow: hidden;">
+  
+  <!-- Grid background indicator (faded strictly for scale visualization) -->
+  <div style="position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 24px 24px; pointer-events: none;"></div>
+
+  <!-- TOP-LEFT: Clock & Weather Widget -->
+  <div style="position: absolute; top: 20px; left: 20px; border: 1px solid #1e293b; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); padding: 12px 18px; border-radius: 12px; font-family: monospace; display: flex; gap: 16px; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.8);">
+    <div>
+      <div style="font-size: 24px; font-weight: bold; color: #38bdf8; letter-spacing: -0.5px;">21:04</div>
+      <div style="font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Mon, Aug 17</div>
+    </div>
+    <div style="width: 1px; height: 28px; background: #334155;"></div>
+    <div>
+      <div style="font-size: 14px; font-weight: 600; color: #e2e8f0;">72°F</div>
+      <div style="font-size: 10px; color: #06b6d4;">Clear Sky • 42% humidity</div>
+    </div>
+  </div>
+
+  <!-- TOP-RIGHT: Micro Node Status Pill -->
+  <div style="position: absolute; top: 20px; right: 20px; border: 1px solid #064e3b; background: rgba(0,0,0,0.85); padding: 8px 14px; border-radius: 20px; font-family: monospace; font-size: 11px; color: #34d399; display: flex; align-items: center; gap: 8px;">
+    <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block; box-shadow: 0 0 8px #10b981;"></span>
+    M.I.R.A. ACTIVE • 60 FPS
+  </div>
+
+  <!-- CENTER: Glowing Ambient Voice Orb -->
+  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+    <div style="width: 130px; height: 130px; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle, #38bdf8 0%, rgba(6,182,212,0.3) 50%, rgba(0,0,0,0.9) 100%); border: 2px solid #38bdf8; box-shadow: 0 0 45px #06b6d4, inset 0 0 20px #0284c7; display: flex; align-items: center; justify-content: center; position: relative; animation: pulse 3s infinite ease-in-out;">
+      <div style="width: 70px; height: 70px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 12px; font-weight: bold; font-family: monospace;">
+        M.I.R.A.
+      </div>
+    </div>
+    <div style="margin-top: 16px; font-size: 12px; color: #94a3b8; font-family: monospace; letter-spacing: 0.5px;">
+      Listening for <span style="color: #38bdf8; font-weight: bold;">"Mira..."</span> or Hand Pinch Gesture
+    </div>
+  </div>
+
+  <!-- BOTTOM-LEFT: Voice Activity Transcript Bubble (Dynamic) -->
+  <div style="position: absolute; bottom: 20px; left: 20px; border: 1px solid #f59e0b; background: rgba(0,0,0,0.9); padding: 10px 16px; border-radius: 10px; font-family: monospace; font-size: 11px; color: #fbbf24; max-width: 280px; box-shadow: 0 4px 15px rgba(0,0,0,0.8);">
+    <div style="color: #d97706; font-size: 9px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px;">Voice Input</div>
+    "Play my ambient night mix on Spotify"
+  </div>
+
+  <!-- BOTTOM-RIGHT: Spotify / Music Player Widget -->
+  <div style="position: absolute; bottom: 20px; right: 20px; border: 1px solid #1e293b; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); padding: 12px 16px; border-radius: 14px; display: flex; align-items: center; gap: 14px; width: 260px; box-shadow: 0 4px 20px rgba(0,0,0,0.8);">
+    <!-- Album Art Placeholder -->
+    <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #0284c7, #0f172a); border-radius: 8px; border: 1px solid #0369a1; display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 18px; flex-shrink: 0;">
+      🎵
+    </div>
+    <div style="flex-grow: 1; min-width: 0;">
+      <div style="font-size: 12px; font-weight: 600; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Midnight City</div>
+      <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">M83 • Hurry Up, We're Dreaming</div>
+      <!-- Mini Waveform / Progress -->
+      <div style="height: 3px; background: #334155; border-radius: 2px; margin-top: 6px; overflow: hidden;">
+        <div style="width: 45%; height: 100%; background: #38bdf8;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top: 20px;">
+  <h3>Layout Highlights:</h3>
+  <ul style="color: #cbd5e1; font-size: 14px; line-height: 1.6;">
+    <li><strong>Zero-Luminance #000000 Canvas</strong>: True black everywhere except active text/widget borders. No bright projection rectangle on your wall.</li>
+    <li><strong>Responsive Ambient Orb</strong>: Center focus that glows/pulses when M.I.R.A. is speaking or listening.</li>
+    <li><strong>Top-Left & Bottom-Right Anchor Widgets</strong>: Clock/Weather and Music Player stay out of the center interaction zone.</li>
+    <li><strong>Expandable Corner Slot</strong>: Open space for upcoming widgets (e.g. smart home light controls, calendar events, spatial hand tracking cursor).</li>
+  </ul>
+</div>

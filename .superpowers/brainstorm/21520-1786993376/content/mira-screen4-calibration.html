@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>M.I.R.A. Screen 4: Projector & Camera Homography Calibration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geo:ital@0;1&family=Zen+Dots&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-black: #000000;
+      --purple-primary: #9333ea;
+      --purple-glow: #c084fc;
+      --orange-primary: #ff6b00;
+      --orange-glow: #ff9e00;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-display: 'Zen Dots', cursive, sans-serif;
+      --font-geo: 'Geo', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-black);
+      color: var(--text-main);
+      font-family: var(--font-geo);
+      padding: 20px;
+    }
+
+    .pro-header {
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 12px;
+      text-align: center;
+    }
+
+    .pro-header h2 {
+      font-family: var(--font-display);
+      font-size: 16px;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, var(--purple-glow), var(--orange-glow));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .pro-header p {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: var(--font-geo);
+      margin-top: 4px;
+    }
+
+    /* Wall Canvas Container (Compact 30" x 40" Wall Scale) */
+    .wall-canvas {
+      width: 340px;
+      height: 460px; /* 3:4 Aspect Ratio */
+      margin: 0 auto;
+      background-color: #000000;
+      border-radius: 16px;
+      position: relative;
+      border: 2px solid var(--orange-glow);
+      box-shadow: 0 0 50px rgba(255, 107, 0, 0.25), inset 0 0 100px rgba(0, 0, 0, 0.98);
+      overflow: hidden;
+    }
+
+    /* UNIFORM MICRO-PILL STYLE */
+    .micro-pill {
+      background: rgba(8, 6, 16, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      border-radius: 20px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-geo);
+      font-size: 12px;
+      color: var(--orange-glow);
+      cursor: pointer;
+    }
+
+    /* TOP-RIGHT MANDATORY HOME BUTTON */
+    .widget-home {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      border-color: rgba(255, 107, 0, 0.5);
+      background: rgba(255, 107, 0, 0.15);
+      color: #fff;
+      z-index: 100;
+    }
+
+    /* 4-CORNER ARUCO / HOMOGRAPHY CALIBRATION TARGETS */
+    .calib-target {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .target-crosshair {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--orange-glow);
+      box-shadow: 0 0 15px var(--orange-primary);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: target-pulse 1.5s infinite ease-in-out alternate;
+    }
+
+    @keyframes target-pulse {
+      0% { transform: scale(0.9); }
+      100% { transform: scale(1.1); box-shadow: 0 0 25px var(--purple-glow); }
+    }
+
+    .target-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ffffff;
+    }
+
+    .target-label {
+      position: absolute;
+      font-family: var(--font-geo);
+      font-size: 10px;
+      color: var(--purple-glow);
+      white-space: nowrap;
+    }
+
+    /* Position 4 Targets */
+    .target-tl { top: 12px; left: 12px; }
+    .target-tl .target-label { top: 30px; left: 0; }
+
+    .target-tr { top: 12px; right: 80px; } /* Shifted left of Home pill */
+    .target-tr .target-label { top: 30px; right: 0; }
+
+    .target-bl { bottom: 12px; left: 12px; }
+    .target-bl .target-label { bottom: 30px; left: 0; }
+
+    .target-br { bottom: 12px; right: 12px; }
+    .target-br .target-label { bottom: 30px; right: 0; }
+
+    /* CENTER CALIBRATION HUD CARD */
+    .calib-hud-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 82%;
+      background: rgba(8, 6, 16, 0.92);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 107, 0, 0.4);
+      border-radius: 14px;
+      padding: 18px 16px;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.9);
+    }
+
+    .calib-title {
+      font-family: var(--font-display);
+      font-size: 12px;
+      color: var(--orange-glow);
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .calib-status {
+      font-family: var(--font-geo);
+      font-size: 14px;
+      color: #e2e8f0;
+      margin-bottom: 12px;
+    }
+
+    .calib-metrics {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 10px;
+      display: flex;
+      justify-content: space-around;
+      font-family: var(--font-geo);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .metric-val {
+      color: var(--purple-glow);
+      font-weight: bold;
+    }
+
+    /* SPATIAL GESTURE CURSOR VERIFICATION RETICLE */
+    .spatial-cursor {
+      position: absolute;
+      top: 40%;
+      left: 35%;
+      pointer-events: none;
+    }
+
+    .cursor-ring {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid var(--purple-glow);
+      background: rgba(168, 85, 247, 0.2);
+      box-shadow: 0 0 15px var(--purple-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cursor-dot { width: 5px; height: 5px; border-radius: 50%; background: #ffffff; }
+  </style>
+</head>
+<body>
+
+  <div class="pro-header">
+    <h2>M.I.R.A. Screen 4: Optical Camera &amp; Projector Calibration</h2>
+    <p>4-Point Homography Perspective Matrix Alignment ($H$) + Mandatory Home Return Button</p>
+  </div>
+
+  <div class="wall-canvas">
+    <!-- MANDATORY TOP-RIGHT HOME BUTTON -->
+    <div class="micro-pill widget-home">
+      <span>🏠 HOME</span>
+    </div>
+
+    <!-- 4 CORNER ALIGNMENT TARGETS -->
+    <div class="calib-target target-tl">
+      <div class="target-crosshair"><div class="target-dot"></div></div>
+      <div class="target-label">P1 (0,0)</div>
+    </div>
+
+    <div class="calib-target target-tr">
+      <div class="target-crosshair"><div class="target-dot"></div></div>
+      <div class="target-label">P2 (1,0)</div>
+    </div>
+
+    <div class="calib-target target-bl">
+      <div class="target-crosshair"><div class="target-dot"></div></div>
+      <div class="target-label">P3 (0,1)</div>
+    </div>
+
+    <div class="calib-target target-br">
+      <div class="target-crosshair"><div class="target-dot"></div></div>
+      <div class="target-label">P4 (1,1)</div>
+    </div>
+
+    <!-- CENTER HOMOGRAPHY HUD -->
+    <div class="calib-hud-card">
+      <div class="calib-title">HOMOGRAPHY CALIBRATION</div>
+      <div class="calib-status">Align camera view with wall corners...</div>
+
+      <div class="calib-metrics">
+        <div>Error: <span class="metric-val">0.32 px</span></div>
+        <div>FPS: <span class="metric-val">60</span></div>
+        <div>Matrix: <span class="metric-val">LOCKED</span></div>
+      </div>
+    </div>
+
+    <!-- SPATIAL GESTURE CURSOR VERIFICATION RETICLE -->
+    <div class="spatial-cursor">
+      <div class="cursor-ring">
+        <div class="cursor-dot"></div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

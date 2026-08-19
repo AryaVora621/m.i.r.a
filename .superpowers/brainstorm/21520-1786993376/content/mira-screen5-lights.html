@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>M.I.R.A. Screen 5: Lighting & Alexa Bridge Control Tab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geo:ital@0;1&family=Zen+Dots&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-black: #000000;
+      --purple-primary: #9333ea;
+      --purple-glow: #c084fc;
+      --orange-primary: #ff6b00;
+      --orange-glow: #ff9e00;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-display: 'Zen Dots', cursive, sans-serif;
+      --font-geo: 'Geo', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-black);
+      color: var(--text-main);
+      font-family: var(--font-geo);
+      padding: 20px;
+    }
+
+    .pro-header {
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 12px;
+      text-align: center;
+    }
+
+    .pro-header h2 {
+      font-family: var(--font-display);
+      font-size: 16px;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, var(--purple-glow), var(--orange-glow));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .pro-header p {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: var(--font-geo);
+      margin-top: 4px;
+    }
+
+    /* Wall Canvas Container (Compact 30" x 40" Wall Scale) */
+    .wall-canvas {
+      width: 340px;
+      height: 460px; /* 3:4 Aspect Ratio */
+      margin: 0 auto;
+      background-color: #000000;
+      border-radius: 16px;
+      position: relative;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      box-shadow: 0 0 40px rgba(147, 51, 234, 0.2), inset 0 0 100px rgba(0, 0, 0, 0.98);
+      overflow: hidden;
+    }
+
+    .canvas-grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(192, 132, 252, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+    }
+
+    /* UNIFORM MICRO-PILL STYLE */
+    .micro-pill {
+      background: rgba(8, 6, 16, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      border-radius: 20px;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-geo);
+      font-size: 11px;
+      color: var(--orange-glow);
+      cursor: pointer;
+    }
+
+    .micro-pill.active {
+      border-color: var(--orange-glow);
+      background: rgba(255, 107, 0, 0.2);
+      color: #fff;
+    }
+
+    /* TOP-LEFT: Micro Clock Pill */
+    .widget-clock { position: absolute; top: 16px; left: 16px; }
+
+    /* TOP-RIGHT MANDATORY HOME BUTTON */
+    .widget-home {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      border-color: rgba(255, 107, 0, 0.5);
+      background: rgba(255, 107, 0, 0.15);
+      color: #fff;
+    }
+
+    /* TAB NAVIGATION MICRO-BAR */
+    .nav-tabs-bar {
+      position: absolute;
+      top: 55px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    /* STAGE CONTENT AREA */
+    .tab-content-stage {
+      position: absolute;
+      top: 92px;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-label {
+      font-family: var(--font-display);
+      font-size: 9px;
+      color: var(--orange-glow);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    /* COLOR PRESET GRID */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .color-btn {
+      background: rgba(8, 6, 16, 0.9);
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      border-radius: 10px;
+      padding: 8px 4px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .color-btn.active {
+      border-color: var(--orange-glow);
+      background: rgba(255, 107, 0, 0.2);
+      box-shadow: 0 0 12px rgba(255, 107, 0, 0.3);
+    }
+
+    .color-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      margin: 0 auto 4px;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .color-name { font-family: var(--font-geo); font-size: 10px; color: #fff; }
+
+    /* BRIGHTNESS SLIDER CARD */
+    .slider-card {
+      background: rgba(8, 6, 16, 0.9);
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-display);
+      font-size: 9px;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .slider-bar-track {
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slider-bar-fill {
+      width: 85%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--purple-primary), var(--orange-glow));
+    }
+
+    /* ALEXA SMART PLUG LIST */
+    .alexa-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .alexa-item {
+      background: rgba(8, 6, 16, 0.85);
+      border: 1px solid rgba(192, 132, 252, 0.25);
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-geo);
+      font-size: 11px;
+    }
+
+    .alexa-name { color: #ffffff; display: flex; align-items: center; gap: 6px; }
+    .alexa-dot { width: 5px; height: 5px; border-radius: 50%; background: #34d399; }
+    .alexa-toggle {
+      background: rgba(255, 107, 0, 0.2);
+      border: 1px solid var(--orange-glow);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 9px;
+      font-family: var(--font-display);
+    }
+
+    /* SPATIAL GESTURE CURSOR */
+    .spatial-cursor {
+      position: absolute;
+      top: 60px;
+      left: 80%;
+      pointer-events: none;
+    }
+
+    .cursor-ring {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid var(--orange-glow);
+      background: rgba(255, 107, 0, 0.2);
+      box-shadow: 0 0 15px var(--orange-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cursor-dot { width: 5px; height: 5px; border-radius: 50%; background: #ffffff; }
+  </style>
+</head>
+<body>
+
+  <div class="pro-header">
+    <h2>M.I.R.A. Screen 5: ESP32 IR Lighting &amp; Alexa Bridge Tab</h2>
+    <p>ESP32 IR LED Strip Presets + Brightness Slider + Alexa Smart Plugs &amp; Lamps</p>
+  </div>
+
+  <div class="wall-canvas">
+    <div class="canvas-grid"></div>
+
+    <!-- TOP-LEFT: Micro Clock Pill -->
+    <div class="micro-pill widget-clock">
+      <span style="font-family: var(--font-display); font-size: 11px; color: #fff;">21:35</span>
+    </div>
+
+    <!-- TOP-RIGHT MANDATORY HOME BUTTON -->
+    <div class="micro-pill widget-home">
+      <span>🏠 HOME</span>
+    </div>
+
+    <!-- SUB-TAB NAVIGATION MICRO-BAR -->
+    <div class="nav-tabs-bar">
+      <div class="micro-pill">
+        <span>🖨️ PRINTERS (4)</span>
+      </div>
+      <div class="micro-pill">
+        <span>🖥️ HOMELAB</span>
+      </div>
+      <div class="micro-pill active">
+        <span>💡 LIGHTS</span>
+      </div>
+    </div>
+
+    <!-- TAB 3 CONTENT: ESP32 IR LED STRIP LIGHTING & ALEXA BRIDGE -->
+    <div class="tab-content-stage">
+      
+      <!-- COLOR PRESETS GRID -->
+      <div>
+        <div class="section-label">💡 ESP32 Room LED Strip Color Presets</div>
+        <div class="color-grid">
+          <div class="color-btn active">
+            <div class="color-dot" style="background: #c084fc; color: #c084fc;"></div>
+            <div class="color-name">PURPLE</div>
+          </div>
+          <div class="color-btn">
+            <div class="color-dot" style="background: #ff9e00; color: #ff9e00;"></div>
+            <div class="color-name">WARM</div>
+          </div>
+          <div class="color-btn">
+            <div class="color-dot" style="background: #38bdf8; color: #38bdf8;"></div>
+            <div class="color-name">CYAN</div>
+          </div>
+          <div class="color-btn">
+            <div class="color-dot" style="background: #475569; color: #475569;"></div>
+            <div class="color-name">OFF</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BRIGHTNESS SLIDER CARD -->
+      <div class="slider-card">
+        <div class="slider-header">
+          <span>LED STRIP BRIGHTNESS</span>
+          <span style="color: var(--orange-glow);">85%</span>
+        </div>
+        <div class="slider-bar-track">
+          <div class="slider-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- ALEXA SMART HOME BRIDGE PLUGS -->
+      <div>
+        <div class="section-label">🌐 Alexa Smart Plugs &amp; Lamps</div>
+        <div class="alexa-list">
+          <div class="alexa-item">
+            <div class="alexa-name"><div class="alexa-dot"></div> Desk Lamp (Smart Plug)</div>
+            <div class="alexa-toggle">ON</div>
+          </div>
+          <div class="alexa-item">
+            <div class="alexa-name"><div class="alexa-dot"></div> Wall Backdrop Strip</div>
+            <div class="alexa-toggle">ON</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SPATIAL GESTURE CURSOR HOVERING LIGHTS TAB -->
+    <div class="spatial-cursor">
+      <div class="cursor-ring">
+        <div class="cursor-dot"></div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

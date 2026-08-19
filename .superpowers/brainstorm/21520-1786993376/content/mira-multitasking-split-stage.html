@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>M.I.R.A. Ambient Multitasking: Picture-in-Picture & Task Micro-Dock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geo:ital@0;1&family=Zen+Dots&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-black: #000000;
+      --purple-primary: #9333ea;
+      --purple-glow: #c084fc;
+      --orange-primary: #ff6b00;
+      --orange-glow: #ff9e00;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-display: 'Zen Dots', cursive, sans-serif;
+      --font-geo: 'Geo', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-black);
+      color: var(--text-main);
+      font-family: var(--font-geo);
+      padding: 20px;
+    }
+
+    .pro-header {
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 12px;
+      text-align: center;
+    }
+
+    .pro-header h2 {
+      font-family: var(--font-display);
+      font-size: 16px;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, var(--purple-glow), var(--orange-glow));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .pro-header p {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: var(--font-geo);
+      margin-top: 4px;
+    }
+
+    /* Wall Canvas Container (Compact 30" x 40" Wall Scale) */
+    .wall-canvas {
+      width: 340px;
+      height: 460px; /* 3:4 Aspect Ratio */
+      margin: 0 auto;
+      background-color: #000000;
+      border-radius: 16px;
+      position: relative;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      box-shadow: 0 0 40px rgba(147, 51, 234, 0.2), inset 0 0 100px rgba(0, 0, 0, 0.98);
+      overflow: hidden;
+    }
+
+    .canvas-grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(192, 132, 252, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+    }
+
+    /* UNIFORM MICRO-PILL STYLE */
+    .micro-pill {
+      background: rgba(8, 6, 16, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      border-radius: 20px;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-geo);
+      font-size: 11px;
+      color: var(--orange-glow);
+      cursor: pointer;
+    }
+
+    .micro-pill.active {
+      border-color: var(--orange-glow);
+      background: rgba(255, 107, 0, 0.2);
+      color: #fff;
+    }
+
+    /* TOP-LEFT: Micro Clock Pill */
+    .widget-clock { position: absolute; top: 16px; left: 16px; }
+
+    /* TOP-RIGHT MANDATORY HOME BUTTON */
+    .widget-home {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      border-color: rgba(255, 107, 0, 0.5);
+      background: rgba(255, 107, 0, 0.15);
+      color: #fff;
+    }
+
+    /* ACTIVE TASK DOCK BAR */
+    .task-dock-bar {
+      position: absolute;
+      top: 50px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      gap: 6px;
+    }
+
+    /* MULTITASKING MAIN STAGE: VISUAL SEARCH (TOP STAGE) */
+    .visual-search-stage {
+      position: absolute;
+      top: 85px;
+      left: 16px;
+      right: 16px;
+      height: 210px;
+      background: rgba(8, 6, 16, 0.92);
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .search-title {
+      font-family: var(--font-display);
+      font-size: 10px;
+      color: var(--orange-glow);
+    }
+
+    .search-img-card {
+      width: 100%;
+      height: 140px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(88, 28, 135, 0.6), rgba(194, 65, 12, 0.6)), url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80') center/cover;
+      border: 1px solid rgba(255, 107, 0, 0.4);
+      display: flex;
+      align-items: flex-end;
+      padding: 8px;
+    }
+
+    .search-caption {
+      background: rgba(0,0,0,0.85);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-family: var(--font-geo);
+      font-size: 11px;
+      color: #fff;
+    }
+
+    /* FLOATING PIP MEDIA PLAYER CARD (BOTTOM ANCHOR) */
+    .pip-media-card {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      background: rgba(8, 6, 16, 0.92);
+      border: 1px solid var(--purple-glow);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 0 20px rgba(147, 51, 234, 0.25);
+    }
+
+    .pip-cover {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--purple-primary), var(--orange-primary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .pip-meta { flex-grow: 1; overflow: hidden; }
+    .pip-track { font-family: var(--font-display); font-size: 10px; color: #fff; white-space: nowrap; }
+    .pip-artist { font-family: var(--font-geo); font-size: 11px; color: var(--text-muted); }
+
+    /* EQUALIZER SPECTRUM */
+    .eq-bar { display: flex; gap: 2px; align-items: flex-end; height: 14px; }
+    .eq-b { width: 3px; background: var(--orange-glow); border-radius: 1px; }
+
+    /* SPATIAL GESTURE CURSOR HOVERING TASK DOCK */
+    .spatial-cursor {
+      position: absolute;
+      top: 55px;
+      left: 30%;
+      pointer-events: none;
+    }
+
+    .cursor-ring {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid var(--orange-glow);
+      background: rgba(255, 107, 0, 0.2);
+      box-shadow: 0 0 15px var(--orange-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cursor-dot { width: 5px; height: 5px; border-radius: 50%; background: #ffffff; }
+  </style>
+</head>
+<body>
+
+  <div class="pro-header">
+    <h2>M.I.R.A. Ambient Multitasking System</h2>
+    <p>Split-Stage Search Result + Floating Picture-in-Picture Music Player Dock</p>
+  </div>
+
+  <div class="wall-canvas">
+    <div class="canvas-grid"></div>
+
+    <!-- TOP-LEFT: Micro Clock Pill -->
+    <div class="micro-pill widget-clock">
+      <span style="font-family: var(--font-display); font-size: 11px; color: #fff;">21:41</span>
+    </div>
+
+    <!-- TOP-RIGHT MANDATORY HOME BUTTON -->
+    <div class="micro-pill widget-home">
+      <span>🏠 HOME</span>
+    </div>
+
+    <!-- ACTIVE TASK MICRO-DOCK BAR -->
+    <div class="task-dock-bar">
+      <div class="micro-pill active">
+        <span>🧠 SEARCH</span>
+      </div>
+      <div class="micro-pill">
+        <span>🎵 MUSIC</span>
+      </div>
+      <div class="micro-pill">
+        <span>🖨️ PRINT (68%)</span>
+      </div>
+    </div>
+
+    <!-- MAIN TASK STAGE: GOOGLE-STYLE VISUAL SEARCH -->
+    <div class="visual-search-stage">
+      <div class="search-title">🎙️ "Show James Webb Nebula"</div>
+      <div class="search-img-card">
+        <div class="search-caption">Carina Nebula • Deep Space IR</div>
+      </div>
+    </div>
+
+    <!-- FLOATING PIP MUSIC PLAYER CARD (MULTITASKING DOCK) -->
+    <div class="pip-media-card">
+      <div class="pip-cover">🎵</div>
+      <div class="pip-meta">
+        <div class="pip-track">STARBOY</div>
+        <div class="pip-artist">The Weeknd • 02:14</div>
+      </div>
+      <div class="eq-bar">
+        <div class="eq-b" style="height: 12px;"></div>
+        <div class="eq-b" style="height: 8px;"></div>
+        <div class="eq-b" style="height: 14px;"></div>
+        <div class="eq-b" style="height: 6px;"></div>
+      </div>
+    </div>
+
+    <!-- SPATIAL GESTURE CURSOR HOVERING TASK DOCK -->
+    <div class="spatial-cursor">
+      <div class="cursor-ring">
+        <div class="cursor-dot"></div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
