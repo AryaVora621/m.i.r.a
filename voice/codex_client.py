@@ -3,6 +3,19 @@
 This is the development route named in the canonical plan (the Mac Ollama registry is empty),
 not a replacement for the exact P40 models. Response latency is a few seconds — the caller must
 be in the THINKING voice-loop state while this runs.
+
+Runs with --ignore-user-config and cwd set to a throwaway temp dir. Without both: `codex exec`
+picks up ~/.codex/config.toml's `model_reasoning_effort = "high"` plus its full MCP server list
+(several of which fail auth and retry), and running from this repo's own directory makes it read
+AGENTS.md and treat a one-line voice reply as a "resume coding work" task — together these turned
+"set volume to 32" into a 90+ second autonomous agent session that blew through a 30s timeout
+instead of a quick spoken acknowledgment. With both flags, measured latency is ~10-25s, still
+well above true chat-completion speed: every call re-reads a machine-wide "i-have-adhd" skill
+file (a real subprocess+model round trip each time) that isn't gated by --ignore-user-config and
+has no CLI flag to suppress — `--disable plugins` looked promising but broke codex's network
+transport entirely (see this plan's Task 15 verification notes), so it's not a usable workaround.
+The timeout below has margin for this variance; it will shrink to true API latency once the P40
+route replaces this dev-route CLI shim.
 """
 
 import subprocess
@@ -15,7 +28,7 @@ class CodexError(Exception):
 
 
 class CodexClient:
-    def __init__(self, binary: str = "codex", timeout_s: float = 30.0) -> None:
+    def __init__(self, binary: str = "codex", timeout_s: float = 45.0) -> None:
         self._binary = binary
         self._timeout_s = timeout_s
 
@@ -28,6 +41,7 @@ class CodexClient:
                     [
                         self._binary,
                         "exec",
+                        "--ignore-user-config",
                         "--skip-git-repo-check",
                         "--sandbox",
                         "read-only",
@@ -39,6 +53,7 @@ class CodexClient:
                     capture_output=True,
                     text=True,
                     timeout=self._timeout_s,
+                    cwd=tmp_dir,
                 )
             except subprocess.TimeoutExpired as exc:
                 raise CodexError(f"codex exec timed out after {self._timeout_s}s") from exc

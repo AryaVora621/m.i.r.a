@@ -13,12 +13,38 @@ SAMPLE_RATE = 16000
 _FRAME_SAMPLES = 512
 
 
+class _RingQueue:
+    """Bounded queue that discards the oldest item to make room for a new one instead of
+    raising when full, so a producer (the audio callback, on sounddevice's own thread) never
+    blocks or throws — it just keeps the most recent items. A plain queue.Queue's put_nowait()
+    raises queue.Full whenever the consumer falls behind for longer than the buffer holds
+    (e.g. blocked on input() during enrollment, or on an LLM/STT call mid-conversation), and
+    that exception surfaces from inside sounddevice's cffi callback."""
+
+    def __init__(self, maxsize: int):
+        self._queue: "queue.Queue[bytes]" = queue.Queue(maxsize=maxsize)
+
+    def put(self, item: bytes) -> None:
+        while True:
+            try:
+                self._queue.put_nowait(item)
+                return
+            except queue.Full:
+                try:
+                    self._queue.get_nowait()
+                except queue.Empty:
+                    pass
+
+    def get(self) -> bytes:
+        return self._queue.get()
+
+
 class MicStream:
     """Blocking, frame-at-a-time mic reader. One InputStream is opened for the process lifetime;
     read_frame() blocks on an internal queue fed by the audio callback."""
 
     def __init__(self, sample_rate: int = SAMPLE_RATE, frame_samples: int = _FRAME_SAMPLES):
-        self._queue: "queue.Queue[bytes]" = queue.Queue(maxsize=50)
+        self._queue = _RingQueue(maxsize=50)
         self._stream = sd.InputStream(
             samplerate=sample_rate,
             channels=1,
@@ -29,7 +55,7 @@ class MicStream:
         self._stream.start()
 
     def _callback(self, indata, frames, time_info, status):
-        self._queue.put_nowait(bytes(indata))
+        self._queue.put(bytes(indata))
 
     def read_frame(self) -> bytes:
         return self._queue.get()

@@ -7,6 +7,7 @@ checklist)."""
 import sys
 
 from voice.adapters.audio_io import MicStream
+from voice.adapters.speaker_verify import SpeakerVerifier
 from voice.adapters.stt import FasterWhisperStt
 from voice.adapters.tts import KokoroTts
 from voice.adapters.vad import SileroVad
@@ -25,7 +26,7 @@ def main() -> None:
     daemon.connect()
 
     loop = VoiceLoop(
-        wake=SherpaWakeEngine(mic),
+        wake=SherpaWakeEngine(mic, speaker_verifier=SpeakerVerifier()),
         vad=SileroVad(mic),
         stt=FasterWhisperStt(),
         tts=KokoroTts(),

@@ -19,6 +19,7 @@ this one-time codegen step). keywords.txt is overwritten with only the "mira" en
 the model's shipped demo keywords (HEY SIRI, ALEXA, etc.) so they can't false-trigger a wake.
 """
 
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -27,11 +28,16 @@ import sherpa_onnx
 from voice.adapters.audio_io import SAMPLE_RATE, MicStream
 
 _MODEL_DIR = Path(__file__).resolve().parent.parent / "models" / "kws"
+# Window of raw audio kept for speaker verification once the keyword triggers — long enough
+# to cover "mira" plus a little lead-in, short enough to stay cheap to buffer every frame.
+_VERIFY_WINDOW_SECONDS = 2.5
+_VERIFY_WINDOW_SAMPLES = int(SAMPLE_RATE * _VERIFY_WINDOW_SECONDS)
 
 
 class SherpaWakeEngine:
-    def __init__(self, mic: MicStream, model_dir: Path = _MODEL_DIR):
+    def __init__(self, mic: MicStream, model_dir: Path = _MODEL_DIR, keywords_threshold: float = 0.25, speaker_verifier=None):
         self._mic = mic
+        self._speaker_verifier = speaker_verifier
         self._kws = sherpa_onnx.KeywordSpotter(
             tokens=str(model_dir / "tokens.txt"),
             encoder=str(model_dir / "encoder.onnx"),
@@ -40,17 +46,23 @@ class SherpaWakeEngine:
             keywords_file=str(model_dir / "keywords.txt"),
             num_threads=2,
             provider="cpu",
+            keywords_threshold=keywords_threshold,
         )
 
     def listen_for_wake(self) -> None:
         stream = self._kws.create_stream()
+        audio_buffer = np.zeros(0, dtype=np.float32)
         while True:
             frame = self._mic.read_frame()
             # accept_waveform requires float32 samples normalized to [-1, 1], not raw PCM16 bytes.
             samples = np.frombuffer(frame, dtype=np.int16).astype(np.float32) / 32768.0
             stream.accept_waveform(SAMPLE_RATE, samples)
+            audio_buffer = np.concatenate([audio_buffer, samples])[-_VERIFY_WINDOW_SAMPLES:]
             while self._kws.is_ready(stream):
                 self._kws.decode_stream(stream)
             if self._kws.get_result(stream) != "":
                 self._kws.reset_stream(stream)
-                return
+                if self._speaker_verifier is None or self._speaker_verifier.verify(audio_buffer):
+                    return
+                print("wake word heard but voice didn't match the enrolled profile -- ignoring", file=sys.stderr)
+                audio_buffer = np.zeros(0, dtype=np.float32)

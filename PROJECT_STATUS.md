@@ -4,8 +4,10 @@
 > **Active Branch**: `main` (feature branch `feat/macbook-offline-core-sim` was merged in, fast-forward, and deleted)  
 > **Canonical Plan**: [`docs/superpowers/plans/2026-08-19-mira-custom-voice-agent-os-plan.md`](./docs/superpowers/plans/2026-08-19-mira-custom-voice-agent-os-plan.md) (the 2026-08-17 plan referenced below is superseded)  
 > **Just-Completed Plan**: [`docs/superpowers/plans/2026-08-19-mira-protocol-v2-gateway-guardrail-plan.md`](./docs/superpowers/plans/2026-08-19-mira-protocol-v2-gateway-guardrail-plan.md) — Tasks 2-6, done and merged (its `.superpowers/sdd/` workspace ledger was deleted per the finishing-a-development-branch cleanup step; this file and `CHECKPOINT_LAST.md` are the durable record now)  
-> **Last Updated**: August 19, 2026  
+> **Last Updated**: August 23, 2026
 > **Status**: Tasks 1-6 complete and merged to `main` (commit `89bcefd`). Protocol v2 contracts, Rust daemon (WebSocket gateway + node registry), and guardrail (deny-by-default policy engine + Ed25519 dev signing) are built, wired together end-to-end over a Unix Domain Socket, and passed a whole-branch review (1 fix round + 1 closure fix, both re-reviewed clean). 25/25 Rust tests + 12/12 Python tests + `tsc --noEmit` clean, all re-verified on the merged result. Several Important findings from the whole-branch review were deliberately deferred as follow-up-plan tickets rather than fixed here — see "Deferred From the Gateway/Guardrail Plan" below. Tasks 7-14 (the voice loop: real macOS volume handler, `VoiceStateEvent` protocol contract, identity/memory, Codex dev-route client, the 9-state `VoiceLoop` FSM, real `DaemonClient`, and real Sherpa-ONNX/Silero/faster-whisper/Kokoro hardware adapters) are implemented on `feat/mira-voice-loop`, individually test-verified against real components (real `codex` CLI, a real daemon+guardrail round trip that changed system volume, a real KeywordSpotter construction against the built "mira" model) — full end-to-end mic-to-speaker manual verification (Task 15) is still pending, since it requires a human physically present with the real mic/speaker. Next up: run that manual verification, then Implementation Sequence step 4 (Tauri menu-bar app / projector simulator).
+>
+> **Pi Projector Milestone**: Raspberry Pi kiosk and calibration services are live. Automatic ArUco detection works under the user's standing purple LED lighting, the first 3x3 wall homography was persisted, and the user confirmed wall alignment on August 23, 2026.
 
 ---
 
@@ -32,6 +34,7 @@ All subsystem architecture specifications are approved and saved under [`docs/su
 4. 🖐️ **[`2026-08-17-gesture-vocabulary-and-spatial-projection.md`](./docs/superpowers/specs/2026-08-17-gesture-vocabulary-and-spatial-projection.md)** — MediaPipe 3D tracking, 4-point Homography matrix calibration ($H$), gesture map, visual overlays.
 5. 🧠 **[`2026-08-17-hybrid-intelligence-router-and-memory.md`](./docs/superpowers/specs/2026-08-17-hybrid-intelligence-router-and-memory.md)** — Intent classification matrix, 3-tier memory engine (RAM, SQLite, Vector RAG), cloud failover.
 6. 🚀 **[`2026-08-17-innovative-features-and-future-expansions.md`](./docs/superpowers/specs/2026-08-17-innovative-features-and-future-expansions.md)** — Proactive engine, context modes, spatial audio chimes, Homelab MQTT, MCP server integration.
+7. 🪞 **[`2026-08-25-smart-mirror-thin-client-node.md`](./docs/superpowers/specs/2026-08-25-smart-mirror-thin-client-node.md)** — Raspberry Pi Zero 2 W Smart Mirror Thin Client (CSI Camera, I2S Mic, Bluetooth audio, Homelab offload).
 
 ---
 
@@ -84,7 +87,7 @@ gantt
 | **Guardrail** | Rust | ✅ Complete (Phase 1/dev scope) | `guardrail/` — deny-by-default `PolicyTable`, Ed25519 `DevSigner`, UDS IPC server wired to the daemon (dev-dependency only — no compile-time path from the daemon binary); real `mac.volume.set` handler via `osascript` with real rollback evidence |
 | **Voice Loop** | [`plans/2026-08-19-mira-voice-loop-plan.md`](./docs/superpowers/plans/2026-08-19-mira-voice-loop-plan.md) | 🔶 Implemented, manual E2E pending | `voice/` — Sherpa-ONNX wake ("mira"), Silero VAD, faster-whisper STT, Kokoro TTS (runs in a dedicated `voice/.venv`, Python 3.12 — kokoro's PyPI releases don't support 3.13), Codex dev-route turn, real macOS volume capability with rollback evidence. 18/18 tests pass; live mic/speaker conversation not yet manually verified |
 | **Web Dashboard** | TypeScript (Vite/React) | ⏳ Pending | UI skeleton in `web/` |
-| **Vision Service** | Python (MediaPipe/OpenCV) | ⏳ Pending | Vision service in `vision/` |
+| **Vision Service** | Python (MediaPipe/OpenCV) | 🔶 Calibration live | Pi camera stream, drag controls, purple-light 4/4 ArUco detection, and persisted wall homography are live. MediaPipe gesture tracking remains pending |
 | **Hardware Simulators** | Python / Node.js / HTML | ⏳ Pending | Virtual GPU, Wand, & Printer nodes in `nodes/simulator/` |
 
 ---

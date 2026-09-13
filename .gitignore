@@ -13,6 +13,10 @@ voice/.venv/
 # ~6MB of ONNX/BPE model weights — reproducible via the recipe in voice/adapters/wake.py's
 # module docstring, not worth committing.
 voice/models/
+# Recorded diagnostic clips from voice/tools/diagnose_wake.py — your voice, not for git.
+voice/tools/wake_samples/
+# voice/models/speaker/ is already covered by voice/models/ above, but called out here since
+# it holds your enrolled voiceprint (biometric data) specifically, not just a downloadable model.
 
 # Brainstorm skill's local preview-server runtime state (ephemeral, per-machine)
 .superpowers/brainstorm/.last-token

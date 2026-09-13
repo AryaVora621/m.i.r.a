@@ -1,0 +1,13 @@
+Resume the M.I.R.A. projector wall-calibration work. Read CHECKPOINT_LAST.md in this repo first — it has the full state.
+
+Short version: we're debugging why cv2.aruco marker detection fails to get 4/4 markers on the Raspberry Pi wall projector, specifically under purple LED ambient lighting, which the user wants to keep as a standing "night mode" condition (not swap to dim lighting as a workaround — solve for purple directly).
+
+Three real bugs already found and fixed in vision/calibration_server.py this session (wrong ArUco bit patterns, markers clipped off-canvas, no lighting robustness) — all deployed to the Pi via scp (no git repo there). The pipeline is proven to work end-to-end (got a real 1/4 marker decode once under darker conditions). Current blocker: under purple LEDs, the marker's rendered green "on" cells are clipping to neutral white in-camera before any color separation survives, even after dimming from #00ff00 to #00b400 — confirmed via percentile-based pixel sampling (not naive crop guessing, which is unreliable due to fisheye distortion).
+
+Next concrete steps, in order (also in CHECKPOINT_LAST.md under "Not yet tried"):
+1. Dim the marker green further (try #005000 or lower)
+2. SSH in and check `v4l2-ctl -d /dev/video0 --list-ctrls` for a saturation/contrast control that might be crushing colors before JPEG encode
+3. Verify whether the clipping is real sensor saturation or an artifact of how we've been diagnosing it via downloaded MJPEG JPEG frames (the real server-side detection runs on the raw pre-JPEG frame, which may look better)
+4. Fallback if purple-mode auto-detect doesn't pan out: manual corner-drag calibration on http://mira.local:5000/control works under any lighting and needs no marker decoding — offer this plainly rather than continuing to burn cycles if auto-detect stalls.
+
+SSH: ssh mira@mira.local. Deploy via scp vision/calibration_server.py mira@mira.local:/home/mira/calibration_server.py, then restart both mira-calib.service and mira-kiosk.service (passwordless sudo is intermittent — ask the user to run it if it demands a password, never enter one yourself).

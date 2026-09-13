@@ -54,13 +54,19 @@ class VoiceLoop:
         self.memory.add("user", transcript)
 
         self._set_state("THINKING")
+        # Dispatched before generate() so the reply can honestly report what actually happened —
+        # generating the reply first meant the model was asked to describe a capability result
+        # that hadn't been attempted yet, and (correctly, per its "never claim success without a
+        # receipt" instruction) it would deny doing something that was about to succeed anyway.
+        capability_note = self._maybe_dispatch_capability(transcript)
+        history = self.memory.to_history()
+        if capability_note is not None:
+            history = history + [{"role": "system", "content": capability_note}]
         try:
-            reply = self.turns.generate(self.identity_prompt, self.memory.to_history(), transcript)
+            reply = self.turns.generate(self.identity_prompt, history, transcript)
         except Exception:
             reply = "Sorry, I ran into trouble thinking that through."
         self.memory.add("assistant", reply)
-
-        self._maybe_dispatch_capability(transcript)
 
         interrupted = self._speak(reply)
         if interrupted:
@@ -93,12 +99,17 @@ class VoiceLoop:
             return True
         return False
 
-    def _maybe_dispatch_capability(self, transcript: str) -> None:
+    def _maybe_dispatch_capability(self, transcript: str) -> str | None:
         match = _VOLUME_PATTERN.search(transcript)
         if match is None:
-            return
+            return None
         level = min(int(match.group(1)), 100)
-        self.capabilities.request_capability("mac.volume.set", {"level": level})
+        try:
+            receipt = self.capabilities.request_capability("mac.volume.set", {"level": level})
+            status = receipt.get("result_status", "UNKNOWN")
+        except Exception as exc:
+            status = f"FAILED ({exc})"
+        return f"[system note: mac.volume.set to {level} -> {status}. Report this outcome honestly, don't guess.]"
 
     def _set_state(self, state: str) -> None:
         self.state = state
