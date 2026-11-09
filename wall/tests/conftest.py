@@ -5,7 +5,9 @@ MIRA_SPEECH_TOKEN_FILE (default ~/.config/mira/speech.token). Tests that need it
 """
 import json
 import os
+import re
 import stat
+import tempfile
 import sys
 import threading
 import urllib.request
@@ -181,39 +183,53 @@ def say_wav(speech, tmp_path_factory):
     return make
 
 
-def kws_fires(x, threshold=0.15):
-    """Whether the wake-word spotter alone fires on x (same model and settings as the listener)."""
-    import sherpa_onnx
-    k = sherpa_onnx.KeywordSpotter(tokens=str(KWS_DIR / "tokens.txt"), encoder=str(KWS_DIR / "encoder.onnx"),
-                                   decoder=str(KWS_DIR / "decoder.onnx"), joiner=str(KWS_DIR / "joiner.onnx"),
-                                   keywords_file=str(KWS_DIR / "keywords.txt"), num_threads=1,
-                                   keywords_threshold=threshold)
+def kws_fires(x):
+    """Whether the listener's own wake-word path fires on x. Same spotter (build_kws, default args), same
+    16-bit WAV round trip, same WavSource chunking and the same lead-in as the test wavs, so a rendering
+    that passes here fires in the real run."""
+    args = ml.build_parser().parse_args(["--kws-dir", str(KWS_DIR)])
+    k = ml.build_kws(args)
     s = k.create_stream()
-    x = compose(2.0, x, 1.0)  # the same lead-in the test wavs use: the spotter is causal
-    for i in range(0, len(x), 1600):
-        s.accept_waveform(RATE, x[i:i + 1600])
+    with tempfile.NamedTemporaryFile(suffix=".wav") as f:
+        f.write(ml.pcm16_wav_bytes(compose(2.0, x, 3.0)))
+        f.flush()
+        src = ml.WavSource(f.name)
+    while True:
+        c = src.read()
+        if c is None:
+            return False
+        s.accept_waveform(RATE, c)
         while k.is_ready(s):
             k.decode_stream(s)
         if k.get_result(s):
             return True
-    return False
+
+
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
 @pytest.fixture(scope="session")
-def say_wake(say_wav, speech, tmp_path_factory):
-    """Like say_wav, for utterances that start with "Mira". Piper adds random variation to every
-    synthesis and the 3 MB spotter misses a share of them (see wall/README.md for the measured rate),
-    so draw up to 8 renderings and take the first one the spotter hears. Tests then check the
-    pipeline, not the spotter's hit rate."""
+def say_wake(speech):
+    """Spoken "Mira, ..." clips for the pipeline tests, kept as fixtures so runs are deterministic.
+
+    Piper varies every synthesis and the 3 MB spotter misses a share of renderings (rates in
+    wall/README.md). The first run draws renderings from the mini's TTS until the listener's own
+    wake path (kws_fires) hears one, and stores it in tests/fixtures/. Later runs reuse the file;
+    delete it to draw a new one. The tests therefore check the pipeline, not the spotter's hit rate."""
+    FIXTURES.mkdir(exist_ok=True)
+
     def make(text):
-        for _ in range(8):
+        path = FIXTURES / (re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_") + ".wav")
+        if path.exists():
+            return ml.read_wav_float(path)
+        for _ in range(40):
             wav = speech.tts(text)
-            p = tmp_path_factory.mktemp("wake") / "x.wav"
-            p.write_bytes(wav)
-            x = ml.read_wav_float(p)
+            path.write_bytes(wav)
+            x = ml.read_wav_float(path)
             if kws_fires(x):
                 return x
-        pytest.fail(f"spotter never fired on 8 renderings of {text!r}")
+        path.unlink(missing_ok=True)
+        pytest.fail(f"spotter never fired on 40 renderings of {text!r}")
     return make
 
 

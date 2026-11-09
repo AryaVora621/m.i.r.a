@@ -74,7 +74,12 @@ def resample(x: np.ndarray, r_in: int, r_out: int) -> np.ndarray:
 
 
 def read_wav_float(path) -> np.ndarray:
-    with wave.open(str(path), "rb") as w:
+    return read_wav_float_bytes(path)
+
+
+def read_wav_float_bytes(src) -> np.ndarray:
+    """Path or WAV bytes -> float32 mono at 16 kHz."""
+    with wave.open(io.BytesIO(src) if isinstance(src, bytes) else str(src), "rb") as w:
         n, ch, sw, rate = w.getnframes(), w.getnchannels(), w.getsampwidth(), w.getframerate()
         raw = w.readframes(n)
     if sw != 2:
@@ -464,16 +469,22 @@ def speech_chunks(text, limit=280, max_chunks=3):
 
 # --------------------------------------------------------------------------------------- the loop
 
+def build_kws(args):
+    """The keyword spotter exactly as the listener runs it (tests build theirs through this too)."""
+    import sherpa_onnx
+    kd = Path(args.kws_dir)
+    return sherpa_onnx.KeywordSpotter(
+        tokens=str(kd / "tokens.txt"), encoder=str(kd / "encoder.onnx"), decoder=str(kd / "decoder.onnx"),
+        joiner=str(kd / "joiner.onnx"), keywords_file=str(kd / args.keywords),
+        num_threads=args.kws_threads, provider="cpu",
+        keywords_threshold=args.kws_threshold, keywords_score=args.kws_score)
+
+
 class Listener:
     def __init__(self, args, source):
         import sherpa_onnx
         self.a, self.src = args, source
-        kd = Path(args.kws_dir)
-        self.kws = sherpa_onnx.KeywordSpotter(
-            tokens=str(kd / "tokens.txt"), encoder=str(kd / "encoder.onnx"), decoder=str(kd / "decoder.onnx"),
-            joiner=str(kd / "joiner.onnx"), keywords_file=str(kd / args.keywords),
-            num_threads=args.kws_threads, provider="cpu",
-            keywords_threshold=args.kws_threshold, keywords_score=args.kws_score)
+        self.kws = build_kws(args)
         vc = sherpa_onnx.VadModelConfig()
         vc.silero_vad.model = args.vad_model
         vc.silero_vad.threshold = args.vad_threshold
