@@ -36,7 +36,9 @@ CHUNK = 1600  # 100 ms; small enough for snappy VAD, large enough that Python ov
 DEFAULTS = {
     "kws_dir": os.environ.get("MIRA_KWS_DIR", str(HERE.parent / "voice" / "models" / "kws")),
     "vad_model": os.environ.get("MIRA_VAD_MODEL", str(HERE / "models" / "silero_vad.onnx")),
-    "speech_url": os.environ.get("MIRA_SPEECH_URL", "http://macmini.local:8765"),
+    # The mini's Tailscale address, not macmini.local: the bearer token goes over plain HTTP, and an mDNS name
+    # can be spoofed by any LAN device, while Tailscale encrypts and authenticates both ends.
+    "speech_url": os.environ.get("MIRA_SPEECH_URL", "http://100.77.98.89:8765"),
     "speech_token_file": os.environ.get("MIRA_SPEECH_TOKEN_FILE", ""),
     "hermes_url": os.environ.get("MIRA_HERMES_URL", "http://127.0.0.1:8642"),
     "hermes_key_file": os.environ.get("MIRA_HERMES_KEY_FILE", ""),

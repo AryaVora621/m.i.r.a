@@ -2,7 +2,7 @@
 
 Prerequisites: workstream C reports PipeWire, the USB mic and the speaker working, and `/usr/local/bin/mira-audio`
 (`duck`, `unduck`, `say FILE.wav`, `status`) exists. The Mac mini speech server must answer
-`curl http://macmini.local:8765/health` from the Pi. Run as root or with sudo unless a line says `as mira`.
+`curl http://100.77.98.89:8765/health` from the Pi (the mini's Tailscale address: the server binds only loopback and that address, so the Pi must be on the tailnet; the bearer token is never sent over the LAN). Run as root or with sudo unless a line says `as mira`.
 Backends (Hermes, Agent OS, music-api) are plain URLs in `listen.env`; none is assumed to live on the Pi.
 
 1. Files and venv (as mira; the Pi is aarch64, Python 3):
@@ -24,7 +24,7 @@ Backends (Hermes, Agent OS, music-api) are plain URLs in `listen.env`; none is a
        sudo install -o mira -g mira -m 0400 /opt/agent-os/data/hermes_api_key   ~mira/.config/mira/hermes_api_key
        sudo install -o mira -g mira -m 0400 <music_auth.json>                   ~mira/.config/mira/music_auth.json
        # speech token: from the Mac, over ssh, straight into the file
-       ssh aryavora@macmini.local 'cat ~/.config/mira/speech.token' | sudo install -o mira -g mira -m 0400 /dev/stdin ~mira/.config/mira/speech.token
+       ssh aryavora@100.77.98.89 'cat ~/.config/mira/speech.token' | sudo install -o mira -g mira -m 0400 /dev/stdin ~mira/.config/mira/speech.token
 
    `music_auth.json` is `{"u": "<navidrome user>", "t": "<subsonic token>", "s": "<salt>"}` (an admin Navidrome user,
    see music CONTRACT.md).

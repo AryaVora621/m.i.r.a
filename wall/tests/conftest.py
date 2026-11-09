@@ -1,6 +1,6 @@
 """Fakes (Hermes, the Agent OS voice hook, music-api, mira-audio) and the real mini speech server.
 
-The speech server is the real one: set MIRA_SPEECH_URL (default http://macmini.local:8765) and
+The speech server is the real one: set MIRA_SPEECH_URL (default http://100.77.98.89:8765) and
 MIRA_SPEECH_TOKEN_FILE (default ~/.config/mira/speech.token). Tests that need it skip when it is down.
 """
 import json
@@ -20,7 +20,7 @@ sys.path.insert(0, str(WALL))
 import mira_listen as ml  # noqa: E402
 
 RATE = ml.RATE
-SPEECH_URL = os.environ.get("MIRA_SPEECH_URL", "http://macmini.local:8765")
+SPEECH_URL = os.environ.get("MIRA_SPEECH_URL", "http://100.77.98.89:8765")
 TOKEN_FILE = os.environ.get("MIRA_SPEECH_TOKEN_FILE", str(Path.home() / ".config/mira/speech.token"))
 KWS_DIR = Path(os.environ.get("MIRA_KWS_DIR", WALL.parent / "voice" / "models" / "kws"))
 

@@ -26,7 +26,9 @@ HOME = Path.home()
 BASE = Path(os.environ.get("MIRA_SPEECH_DIR", HOME / "Library/Application Support/mira-speech"))
 MODELS = BASE / "models"
 TOKEN_FILE = Path(os.environ.get("MIRA_SPEECH_TOKEN_FILE", HOME / ".config/mira/speech.token"))
-HOST = os.environ.get("MIRA_SPEECH_HOST", "0.0.0.0")
+# Never 0.0.0.0: the bearer token travels over plain HTTP, so the server answers only on loopback and on
+# the mini's Tailscale address (encrypted and authenticated by WireGuard). Comma-separated.
+BIND = [a.strip() for a in os.environ.get("MIRA_SPEECH_BIND", "127.0.0.1,100.77.98.89").split(",") if a.strip()]
 PORT = int(os.environ.get("MIRA_SPEECH_PORT", "8765"))
 STT_KIND = os.environ.get("MIRA_STT", "sherpa-moonshine:sherpa-onnx-moonshine-base-en-int8")
 TTS_DIR = os.environ.get("MIRA_TTS_DIR", "vits-piper-en_US-amy-medium")
@@ -211,6 +213,15 @@ def load_token() -> bytes:
         return b""
 
 
+class Server(ThreadingHTTPServer):
+    def server_bind(self):
+        # The stock HTTPServer.server_bind reverse-resolves the address (getfqdn), which stalls for
+        # tens of seconds on a Tailscale address. Nothing here needs the name.
+        import socketserver
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[0], self.server_address[1]
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "mira-speech"
     protocol_version = "HTTP/1.1"
@@ -304,10 +315,31 @@ def main():
     # Warm both models so the first real request is not the slow one.
     State.stt.transcribe(np.zeros(STT_RATE, dtype=np.float32))
     State.tts.speak("Ready.", None)
-    srv = ThreadingHTTPServer((HOST, PORT), Handler)
-    srv.daemon_threads = True
-    log(f"listening on {HOST}:{PORT}")
-    srv.serve_forever()
+    if "0.0.0.0" in BIND or "::" in BIND:
+        raise SystemExit("refusing to bind a wildcard address; set MIRA_SPEECH_BIND to specific addresses")
+
+    def serve(addr):
+        # tailscaled can come up after this LaunchAgent, so the Tailscale address may not exist yet:
+        # keep retrying until the interface appears.
+        warned = False
+        while True:
+            try:
+                srv = Server((addr, PORT), Handler)
+            except OSError as e:
+                if not warned:
+                    log(f"cannot bind {addr}:{PORT} yet ({e.strerror}); retrying")
+                    warned = True
+                time.sleep(5)
+                continue
+            srv.daemon_threads = True
+            log(f"listening on {addr}:{PORT}")
+            srv.serve_forever()
+
+    threads = [threading.Thread(target=serve, args=(a,), daemon=True) for a in BIND]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
 
 
 if __name__ == "__main__":
