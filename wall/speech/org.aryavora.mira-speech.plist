@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>org.aryavora.mira-speech</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/aryavora/Library/Application Support/mira-speech/venv/bin/python</string>
+    <string>/Users/aryavora/Library/Application Support/mira-speech/server.py</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/aryavora/Library/Application Support/mira-speech</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>MIRA_THREADS</key><string>4</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>15</integer>
+  <key>Nice</key><integer>5</integer>
+  <key>StandardOutPath</key><string>/Users/aryavora/Library/Logs/mira-speech/server.log</string>
+  <key>StandardErrorPath</key><string>/Users/aryavora/Library/Logs/mira-speech/server.err.log</string>
+</dict>
+</plist>

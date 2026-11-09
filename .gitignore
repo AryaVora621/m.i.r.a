@@ -22,3 +22,4 @@ voice/tools/wake_samples/
 .superpowers/brainstorm/.last-token
 .superpowers/brainstorm/.last-port
 .superpowers/brainstorm/*/state/
+.pytest_cache/

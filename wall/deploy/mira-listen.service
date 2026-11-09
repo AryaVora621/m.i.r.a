@@ -1,0 +1,24 @@
+# User service for the `mira` account on the wall Pi. Install to ~mira/.config/systemd/user/.
+[Unit]
+Description=Mira wall listener (wake word, then speech via the Mac mini)
+After=pipewire.service wireplumber.service network-online.target
+Wants=pipewire.service
+
+[Service]
+Type=simple
+EnvironmentFile=-%h/.config/mira/listen.env
+ExecStart=%h/mira-listen/venv/bin/python %h/mira-listen/mira_listen.py \
+  --kws-dir %h/mira-listen/kws \
+  --vad-model %h/mira-listen/models/silero_vad.onnx \
+  --speech-token-file %h/.config/mira/speech.token \
+  --hermes-key-file %h/.config/mira/hermes_api_key \
+  --voice-token-file %h/.config/mira/voice_token \
+  --music-auth-file %h/.config/mira/music_auth.json
+Restart=always
+RestartSec=3
+MemoryMax=200M
+CPUQuota=40%
+Nice=5
+
+[Install]
+WantedBy=default.target

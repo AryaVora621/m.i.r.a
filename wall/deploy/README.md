@@ -1,0 +1,48 @@
+# Pi install for mira-listen (not done yet)
+
+Prerequisites: workstream C reports PipeWire, the USB mic and the speaker working, and `/usr/local/bin/mira-audio`
+(`duck`, `unduck`, `say FILE.wav`, `status`) exists. The Mac mini speech server must answer
+`curl http://macmini.local:8765/health` from the Pi. Run as root or with sudo unless a line says `as mira`.
+Backends (Hermes, Agent OS, music-api) are plain URLs in `listen.env`; none is assumed to live on the Pi.
+
+1. Files and venv (as mira; the Pi is aarch64, Python 3):
+
+       mkdir -p ~/mira-listen/models ~/mira-listen/kws ~/mira-listen/assets ~/.config/mira ~/.config/systemd/user
+       python3 -m venv ~/mira-listen/venv
+       ~/mira-listen/venv/bin/pip install "sherpa-onnx==1.12.40" numpy
+
+   Pin 1.12.40: sherpa-onnx 2.0.x lost the espeak frontend (Piper TTS breaks) and the listener is tested on 1.12.40.
+
+2. Copy from the Mac (repo `mira`): `wall/mira_listen.py`, `wall/MIRA_WALL_IDENTITY.md` to `~/mira-listen/`,
+   `wall/assets/offline.wav` to `~/mira-listen/assets/`, `wall/models/silero_vad.onnx` to `~/mira-listen/models/`
+   (or fetch it, see `wall/models/README.md`), and the keyword model `voice/models/kws/{tokens.txt,encoder.onnx,decoder.onnx,joiner.onnx,keywords.txt}`
+   to `~/mira-listen/kws/` (that folder is gitignored in the repo; recipe in `voice/adapters/wake.py`).
+
+3. Secrets, owned by mira, mode 0400, copied by the orchestrator (never printed, never in git):
+
+       sudo install -o mira -g mira -m 0400 /opt/agent-os/data/voice_token.txt  ~mira/.config/mira/voice_token
+       sudo install -o mira -g mira -m 0400 /opt/agent-os/data/hermes_api_key   ~mira/.config/mira/hermes_api_key
+       sudo install -o mira -g mira -m 0400 <music_auth.json>                   ~mira/.config/mira/music_auth.json
+       # speech token: from the Mac, over ssh, straight into the file
+       ssh aryavora@macmini.local 'cat ~/.config/mira/speech.token' | sudo install -o mira -g mira -m 0400 /dev/stdin ~mira/.config/mira/speech.token
+
+   `music_auth.json` is `{"u": "<navidrome user>", "t": "<subsonic token>", "s": "<salt>"}` (an admin Navidrome user,
+   see music CONTRACT.md).
+
+4. Config and service (as mira):
+
+       cp deploy/listen.env.example ~/.config/mira/listen.env
+       cp deploy/mira-listen.service ~/.config/systemd/user/
+       systemctl --user daemon-reload && systemctl --user enable --now mira-listen
+       journalctl --user -u mira-listen -f
+
+   The mira user needs lingering (`loginctl enable-linger mira`, already on for the kiosk) and the service reaches
+   PipeWire through the user session.
+
+5. Checks: say "Mira, what time is it" near the mic. Expect, in the journal, `wake`, `heard`, `reply`; on the wall,
+   states listening, thinking, speaking, idle. Idle CPU: `top -p $(pgrep -f mira_listen.py)` should sit under 20 percent
+   of one core; if not, keep `--kws-threads 1` and check that nothing else is feeding the stream.
+   Offline test: stop the speech server on the mini; the wall shows "Speech is offline" and a chime plays.
+
+Tuning knobs (env or args): `MIRA_KWS_THRESHOLD` (0.25; higher is stricter), `MIRA_KWS_SCORE` (1.0),
+`--end-silence` (0.7 s), `--followup-s` (8), `--session-ttl` (180 s).
