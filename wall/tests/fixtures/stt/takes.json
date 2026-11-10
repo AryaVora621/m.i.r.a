@@ -1,0 +1,35 @@
+{
+ "_note": "Expected text per VAD segment (listener Silero settings: 0.5, 0.7 s end silence, 0.15 s min speech), in order. null = not scored. The five spoken 'Mira' land in the first segments, grouped by how closely they were said; the last take-4 segment is a short noise tail.",
+ "1-close.wav": [
+  "Mira Mira Mira",
+  "Mira",
+  "Mira",
+  "Mira, what time is it",
+  "Mira, what's the weather",
+  "Mira, play some music"
+ ],
+ "2-desk.wav": [
+  "Mira",
+  "Mira",
+  "Mira Mira Mira Mira, what's on my calendar",
+  "Mira, pause the music",
+  "Mira, what time is it"
+ ],
+ "3-far.wav": [
+  "Mira",
+  "Mira Mira Mira Mira",
+  "Mira, what time is it",
+  "Mira, turn it up",
+  "Mira, what's the weather tomorrow"
+ ],
+ "4-far-soft.wav": [
+  "Mira",
+  "Mira",
+  "Mira",
+  "Mira",
+  "Mira, set a timer for ten minutes",
+  "Mira, set a timer for ten minutes",
+  null
+ ],
+ "5-negatives.wav": "negative"
+}

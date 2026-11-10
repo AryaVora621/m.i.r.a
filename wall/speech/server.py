@@ -36,6 +36,17 @@ TTS_VOICE = os.environ.get("MIRA_TTS_VOICE", "amy")
 THREADS = int(os.environ.get("MIRA_THREADS", "4"))
 TTS_THREADS = int(os.environ.get("MIRA_TTS_THREADS", str(THREADS)))
 TARGET_PEAK = float(os.environ.get("MIRA_TTS_PEAK", "0.89"))
+# faster-whisper only. Moonshine and the sherpa backends cannot be biased, so they ignore these.
+# The default vocabulary is what the owner says to the wall that a small model otherwise mishears
+# ("3D printers" came back as "pen"); override or empty it from the LaunchAgent env.
+DEFAULT_VOCAB = ("Mira, Hermes, 3D printers, Sovol SV08, Onshape, OrcaSlicer, slicer, vault, timer, "
+                 "calendar, YouTube Music")
+# Measured on the owner's room takes (tests/stt_eval.py): a vocabulary prompt cut tiny.en's word error from 0.51 to
+# 0.07 and also fixed "Mira"; hotwords alone helped less. Set MIRA_STT_PROMPT="" to switch it off.
+STT_PROMPT = os.environ.get("MIRA_STT_PROMPT", f"Vocabulary: {DEFAULT_VOCAB}.")
+STT_HOTWORDS = os.environ.get("MIRA_STT_HOTWORDS", "")
+STT_COMPUTE = os.environ.get("MIRA_STT_COMPUTE", "int8")
+STT_BEAM = int(os.environ.get("MIRA_STT_BEAM", "1"))
 
 MAX_STT_BYTES = 30 * 16000 * 2 + 4096
 MAX_TTS_CHARS = 600
@@ -80,9 +91,18 @@ def normalise(samples: np.ndarray) -> np.ndarray:
     return samples * (TARGET_PEAK / peak)
 
 
+def _opt(value, env):
+    """An explicit argument wins; None falls back to the env value. "" is a real value (turns it off)."""
+    return env if value is None else value
+
+
 class Stt:
-    def __init__(self, kind: str):
+    def __init__(self, kind: str, prompt: str | None = None, hotwords: str | None = None,
+                 compute_type: str | None = None, beam_size: int | None = None):
         self.kind = kind
+        self.prompt = _opt(prompt, STT_PROMPT)
+        self.hotwords = _opt(hotwords, STT_HOTWORDS)
+        self.beam_size = _opt(beam_size, STT_BEAM)
         self.lock = threading.Lock()
         backend, _, name = kind.partition(":")
         # "-fp32" variants skip the int8 files: an AVX-only CPU has no int8 dot-product units.
@@ -91,7 +111,8 @@ class Stt:
         self.name = name
         if backend == "faster-whisper":
             from faster_whisper import WhisperModel
-            self._fw = WhisperModel(name, device="cpu", compute_type="int8", cpu_threads=THREADS,
+            self._fw = WhisperModel(name, device="cpu", compute_type=_opt(compute_type, STT_COMPUTE),
+                                    cpu_threads=THREADS,
                                     download_root=str(MODELS / "fw"))
             self._rec = None
         else:
@@ -119,6 +140,25 @@ class Stt:
                     preprocessor=f("preprocess"), encoder=f("encode"),
                     uncached_decoder=f("uncached_decode"), cached_decoder=f("cached_decode"),
                     tokens=str(d / "tokens.txt"), num_threads=THREADS, provider="cpu")
+            elif backend == "sherpa-moonshine-v2":
+                # The 2026 Moonshine packages: one encoder and one merged decoder in ORT format.
+                self._rec = sherpa_onnx.OfflineRecognizer.from_moonshine_v2(
+                    encoder=str(next(d.glob("encoder_model*"))), decoder=str(next(d.glob("decoder_model*"))),
+                    tokens=str(d / "tokens.txt"), num_threads=THREADS, provider="cpu")
+            elif backend in ("sherpa-nemo-transducer", "sherpa-transducer"):
+                # NeMo (Parakeet) or k2 zipformer transducers: encoder/decoder/joiner(.int8).onnx + tokens.txt.
+                files = sorted(p.name for p in d.iterdir())
+
+                def pick(part):
+                    order = (f"{part}.onnx", f"{part}.int8.onnx") if fp32 else (f"{part}.int8.onnx", f"{part}.onnx")
+                    for suffix in order:
+                        if suffix in files:
+                            return str(d / suffix)
+                    raise FileNotFoundError(part)
+                self._rec = sherpa_onnx.OfflineRecognizer.from_transducer(
+                    encoder=pick("encoder"), decoder=pick("decoder"), joiner=pick("joiner"),
+                    tokens=str(d / "tokens.txt"), num_threads=THREADS, provider="cpu",
+                    model_type="nemo_transducer" if backend == "sherpa-nemo-transducer" else "transducer")
             else:
                 raise SystemExit(f"unknown STT backend {backend}")
             self._fw = None
@@ -126,8 +166,11 @@ class Stt:
     def transcribe(self, samples: np.ndarray) -> str:
         with self.lock:
             if self._fw is not None:
-                segs, _ = self._fw.transcribe(samples, beam_size=1, language="en",
-                                              condition_on_previous_text=False)
+                # An empty string must reach faster-whisper as None: "" would still be tokenised as a prompt.
+                segs, _ = self._fw.transcribe(samples, beam_size=self.beam_size, language="en",
+                                              condition_on_previous_text=False,
+                                              initial_prompt=self.prompt or None,
+                                              hotwords=self.hotwords or None)
                 return " ".join(s.text.strip() for s in segs).strip()
             text = self._decode(samples)
             if not text and len(samples) > STT_RATE and float(np.sqrt(np.mean(samples ** 2))) > 0.01:

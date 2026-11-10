@@ -1,0 +1,14 @@
+# Domain phrases for stt_eval.py: `reference text | spelling given to the TTS voice` (the second part is optional).
+# These cover the words a small recognizer got wrong in the room ("bring up my 3D printers" came back as a pen).
+Mira, bring up my 3D printers | Mira, bring up my three D printers
+Mira, how's the print going
+Mira, open Onshape | Mira, open On Shape
+Mira, open the slicer
+Mira, show the vault
+Mira, play my music
+Mira, show my week
+Mira, guest mode on
+Mira, set a timer for ten minutes
+Mira, what's on my calendar tomorrow
+Mira, pause the printer
+Mira, what's the SV08 doing | Mira, what's the S V zero eight doing
