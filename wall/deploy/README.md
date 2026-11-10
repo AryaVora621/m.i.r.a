@@ -44,5 +44,18 @@ Backends (Hermes, Agent OS, music-api) are plain URLs in `listen.env`; none is a
    of one core; if not, keep `--kws-threads 1` and check that nothing else is feeding the stream.
    Offline test: stop the speech server on the mini; the wall shows "Speech is offline" and a chime plays.
 
-Tuning knobs (env or args): `MIRA_KWS_THRESHOLD` (0.25; higher is stricter), `MIRA_KWS_SCORE` (1.0),
-`--end-silence` (0.7 s), `--followup-s` (8), `--session-ttl` (180 s).
+Tuning knobs (env or args): `MIRA_KWS_THRESHOLD` (0.05 on the wall; the code default is 0.15; higher is stricter),
+`MIRA_KWS_SCORE` (1.0; raising it made recall worse on the room recordings), `--end-silence` (0.7 s), `--followup-s` (8),
+`--session-ttl` (180 s), and the mic AGC: `MIRA_AGC` (1), `MIRA_AGC_TARGET` (0.05 rms), `MIRA_AGC_MAX_GAIN` (10x),
+`MIRA_AGC_REST` (3x, the gain in a quiet room), `MIRA_AGC_GATE` (1.8, speech must beat the noise floor by this factor to
+raise the gain), `MIRA_AGC_CEILING` (0.9 peak), `MIRA_AGC_RELEASE` (0.25 per 100 ms) and `MIRA_AGC_DECAY` (0.03).
+`MIRA_LEVEL_LAG` (0.15 s) is how long `mira-audio say` takes to start sound, for the wall's reply level.
+
+Journal: every spotter hit logs `wake spotter hit 'MIRA', agc 4.6x` and then its verdict, `wake_accepted opens 'Mira what time'`
+(first three words only) or `wake_rejected heard 'Mirror, play some music'` (first 60 characters), so near-misses show up in
+`journalctl --user -u mira-listen`. Wall levels: `listening` and `speaking` also post level-only updates (same state, new
+`level`) up to 5 per second; while she speaks the level follows the reply audio's loudness.
+
+Offline replay of a room recording through the live wake path (Pi, in the venv, niced; needs the speech token file):
+`nice -n 19 ~/mira-listen/venv/bin/python -I wall/tests/room_eval.py TAKE.wav ... --kws-dir ~/mira-listen/kws --vad-model ~/mira-listen/models/silero_vad.onnx --speech-token-file ~/.config/mira/speech.token`.
+Keep the recordings out of the repo.

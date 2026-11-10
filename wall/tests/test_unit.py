@@ -59,7 +59,7 @@ def test_reporter_rate_order_and_coalescing(tmp_path):
 
 @pytest.mark.parametrize("text,ok", [
     ("Mira, what's on my calendar?", True), ("Hey Mira pause the music", True), ("Beerah paused the music.", True),
-    ("Meera what time is it", True), ("Myra, play", True), ("Viera paused the music", True), ("Vera paused the music.", True),
+    ("Meera what time is it", True), ("Miura, what's on my calendar today?", True), ("Myra, play", True), ("Viera paused the music", True), ("Vera paused the music.", True),
     ("Mirror, what's on my calendar?", False), ("Maria, what's on my calendar", False), ("Mara, hi", False),
     ("Miranda is coming at six", False), ("The miracle store", False), ("what's on my calendar", False),
     ("Hey Siri", False), ("Mia", False),

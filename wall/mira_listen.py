@@ -178,6 +178,70 @@ class PwSource:
         self.proc.terminate()
 
 
+# ------------------------------------------------------------------------------------------- mic AGC
+
+def _envf(name, default):
+    return float(os.environ.get(name, default))
+
+
+class MicAGC:
+    """Gentle software AGC on the mic chunks, ahead of the spotter, the VAD and the clip sent to speech.
+
+    The JV603 delivers speech at rms 0.003 to 0.02 and a far or quiet voice barely clears its hiss (about
+    0.0027), so the keyword spotter sees almost nothing from across the room. This lifts speech toward
+    `target` rms with these properties:
+      * the gain is capped at `max_gain`, and a chunk is never pushed past `ceiling` peak (no clipping);
+      * attack is instant (a loud chunk drops the gain at once), release is slow (`release` per 100 ms chunk);
+      * a noise floor is tracked (falls fast, rises slowly) and chunks under `gate` x floor are treated as
+        silence: they never raise the gain, which relaxes slowly toward `rest`, so room hiss is not pumped;
+      * the gain is ramped across each chunk so a change never steps the waveform.
+    Digital zero stays zero. `speech` and `level` describe the last chunk for the wall's rings.
+    """
+
+    def __init__(self, target=None, max_gain=None, rest=None, release=None, decay=None, gate=None,
+                 min_rms=None, ceiling=None):
+        self.target = _envf("MIRA_AGC_TARGET", 0.05) if target is None else target
+        self.max_gain = _envf("MIRA_AGC_MAX_GAIN", 10.0) if max_gain is None else max_gain
+        self.rest = _envf("MIRA_AGC_REST", 3.0) if rest is None else rest
+        self.release = _envf("MIRA_AGC_RELEASE", 0.25) if release is None else release
+        self.decay = _envf("MIRA_AGC_DECAY", 0.03) if decay is None else decay
+        self.gate = _envf("MIRA_AGC_GATE", 1.8) if gate is None else gate
+        self.min_rms = _envf("MIRA_AGC_MIN_RMS", 0.001) if min_rms is None else min_rms
+        self.ceiling = _envf("MIRA_AGC_CEILING", 0.9) if ceiling is None else ceiling
+        self.rest = min(max(self.rest, 1.0), self.max_gain)
+        self.gain = self.rest
+        self.floor = _envf("MIRA_AGC_FLOOR", 0.003)  # the JV603's hiss; a start in the middle of speech must not set the floor
+        self.speech = False
+        self.level = 0.0
+
+    def process(self, c):
+        rms = float(np.sqrt(np.mean(c * c))) if len(c) else 0.0
+        if rms <= 0.0:
+            self.speech, self.level = False, 0.0
+            return c
+        speechlike = rms > max(self.floor * self.gate, self.min_rms)
+        # Hiss-like chunks pull the floor in quickly; speech-like chunks only nudge it up, so a long
+        # utterance does not teach the gate that speech is noise, yet a louder room is learned in minutes.
+        rate = 0.0005 if speechlike else (0.2 if rms < self.floor else 0.05)
+        self.floor += (rms - self.floor) * rate
+        prev = self.gain
+        if speechlike:
+            want = min(self.max_gain, max(1.0, self.target / rms))
+            self.gain = want if want < prev else prev + (want - prev) * self.release
+        else:
+            self.gain += (self.rest - self.gain) * self.decay
+        peak = float(np.max(np.abs(c)))
+        if peak * self.gain > self.ceiling:
+            self.gain = max(1.0, self.ceiling / peak)  # loud input passes through untouched, as before the AGC existed
+        # Attack is a step at the chunk start (a ramp from the old, higher gain could clip the first samples);
+        # release ramps.
+        g = np.linspace(prev, self.gain, len(c), dtype=np.float32) if self.gain > prev else self.gain
+        out = np.clip(c * g, -1.0, 1.0).astype(np.float32, copy=False)
+        self.speech = speechlike
+        self.level = min(1.0, float(np.sqrt(np.mean(out * out))) * 8) if speechlike else 0.0
+        return out
+
+
 # -------------------------------------------------------------------------------- small HTTP kit
 
 def http(method, url, body=None, headers=None, timeout=10.0):
@@ -198,14 +262,20 @@ def read_secret(path):
 # ------------------------------------------------------------------------- voice state to Agent OS
 
 class VoiceReporter:
-    """Posts {state, level, heard, reply, at} on transitions and text changes, at most 2 per second.
+    """Posts {state, level, heard, reply, at} on transitions and text changes (state posts at most 2 per
+    second), plus level-only posts (same state, new `level`) at up to 5 per second while the last posted state
+    is `listening` or `speaking`, so the wall's rings can follow the voice.
 
     Every state change is kept in order (a quick listening -> thinking must not collapse); a text-only
     change replaces a still-queued item with the same state. A hold keeps `error` on the wall for a while
-    before the follow-up idle goes out.
+    before the follow-up idle goes out. A level-only post is only ever made when no state item is queued and
+    does not count toward the state gap, so it can neither delay nor reorder a state change.
     """
 
     MIN_GAP = 0.5
+    LEVEL_GAP = 0.2  # 5 level posts per second
+    LEVEL_STATES = ("listening", "speaking")
+    LEVEL_STEP = 0.03  # smaller moves than this are not worth a post
 
     def __init__(self, url, token_file, error_hold=4.0):
         self.url, self.token_file, self.error_hold = url, token_file, error_hold
@@ -233,23 +303,44 @@ class VoiceReporter:
             self.last = key
             self.cv.notify()
 
-    def _run(self):
-        last_sent = 0.0
-        hold_until = 0.0
-        while True:
-            with self.cv:
-                while not self.q and not self.closed:
+    def _next(self, posted, last_level_at):
+        """Block until there is something to post: a queued state item first, else a due level-only item."""
+        with self.cv:
+            while True:
+                if self.q:
+                    return self.q.pop(0), False
+                if self.closed:
+                    return None, False
+                if posted is None or posted["state"] not in self.LEVEL_STATES:
                     self.cv.wait()
-                if not self.q and self.closed:
-                    return
-                item = self.q.pop(0)
-            wait = max(last_sent + self.MIN_GAP, hold_until) - time.monotonic()
-            if wait > 0:
-                time.sleep(wait)
+                    continue
+                due = last_level_at + self.LEVEL_GAP - time.monotonic()
+                lvl = round(self.level, 3)
+                if due <= 0 and abs(lvl - posted["level"]) >= self.LEVEL_STEP:
+                    return dict(posted, level=lvl), True
+                self.cv.wait(timeout=max(due, 0.05))
+
+    def _run(self):
+        last_sent = 0.0  # last STATE post: the 2 per second limit and the error hold are about states
+        last_level_at = 0.0
+        hold_until = 0.0
+        posted = None
+        while True:
+            item, level_only = self._next(posted, last_level_at)
+            if item is None:
+                return
+            if not level_only:
+                wait = max(last_sent + self.MIN_GAP, hold_until) - time.monotonic()
+                if wait > 0:
+                    time.sleep(wait)
             item["at"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
             self._post(item)
-            last_sent = time.monotonic()
-            hold_until = last_sent + self.error_hold if item["state"] == "error" else 0.0
+            now = time.monotonic()
+            last_level_at = now
+            posted = item
+            if not level_only:
+                last_sent = now
+                hold_until = last_sent + self.error_hold if item["state"] == "error" else 0.0
 
     def _post(self, item):
         token = read_secret(self.token_file)
@@ -423,9 +514,9 @@ def music_intent(text):
     return None
 
 
-# The recognizer spells "Mira" many ways (Mira, Meera, Beerah...). This accepts up to two letters, an i/ee/y vowel, one or
+# The recognizer spells "Mira" many ways (Mira, Meera, Beerah, Miura...). This accepts up to two letters, an i/ee/y vowel, one or
 # more r, then a/ah (Moonshine says Beera, Viera, Vera on short clips), and so rejects mirror, Maria, Mara, miracle, Miranda.
-WAKE_WORD = r"[a-z]{0,2}(?:i|ee|ea|e|y|ie)r+(?:a|ah|ar|uh)h?"
+WAKE_WORD = r"[a-z]{0,2}(?:i|ee|ea|e|y|ie|iu)r+(?:a|ah|ar|uh)h?"
 WAKE_OK = re.compile(rf"^(?:(?:hey|hi|ok|okay)\W+)?(?:{WAKE_WORD})\b", re.I)
 WAKE_PREFIX = re.compile(rf"^\s*(?:(?:hey|hi|ok|okay)\W+)?(?:{WAKE_WORD})\b[\s,.!?:;-]*", re.I)
 
@@ -480,6 +571,17 @@ def build_kws(args):
         keywords_threshold=args.kws_threshold, keywords_score=args.kws_score)
 
 
+def wav_envelope(wav_bytes, step=0.1):
+    """[(start_s, level)] of a WAV's loudness every `step` seconds, scaled like the mic level (rms * 8, capped at 1)
+    so the wall's rings read a spoken reply the same way they read a voice. Empty when the WAV is unreadable."""
+    try:
+        x = read_wav_float_bytes(wav_bytes)
+    except (wave.Error, ValueError, EOFError):
+        return []
+    n = int(step * RATE)
+    return [(i / RATE, min(1.0, float(np.sqrt(np.mean(x[i:i + n] ** 2))) * 8)) for i in range(0, len(x), n)]
+
+
 class Listener:
     def __init__(self, args, source):
         import sherpa_onnx
@@ -501,6 +603,9 @@ class Listener:
         self.hermes = Hermes(args.hermes_url, args.hermes_key_file, persona)
         self.music = Music(args.music_url, args.music_auth_file)
         self.rep = VoiceReporter(args.voice_url, args.voice_token_file, error_hold=args.error_hold)
+        self.agc = MicAGC(**{k: v for k, v in (("target", args.agc_target), ("max_gain", args.agc_max_gain),
+                                               ("rest", args.agc_rest), ("gate", args.agc_gate)) if v is not None}) \
+            if args.agc else None
         self.followup_until = 0.0
         self.wakes = 0
         self.events = []  # (kind, detail) trail for tests and --verbose
@@ -522,6 +627,18 @@ class Listener:
             log(f"mira-audio {cmd[0]} failed: {type(e).__name__}")
             return 1
 
+    def _read(self):
+        """One mic chunk through the AGC, with the wall's level taken from it (silence reads as 0)."""
+        c = self.src.read()
+        if c is None:
+            return None
+        if self.agc is not None:
+            c = self.agc.process(c)
+            self.rep.set_level(self.agc.level)
+        else:
+            self.rep.set_level(min(1.0, float(np.sqrt(np.mean(c ** 2))) * 8))
+        return c
+
     def _reset_vad(self):
         self.vad = self._sherpa.VoiceActivityDetector(self._vc, buffer_size_in_seconds=30)
 
@@ -534,11 +651,10 @@ class Listener:
         start = self.src.clock()
         heard = False
         while True:
-            c = self.src.read()
+            c = self._read()
             if c is None:
                 break
             clip.append(c)
-            self.rep.set_level(min(1.0, float(np.sqrt(np.mean(c ** 2))) * 8))
             self.vad.accept_waveform(c)
             speaking = self.vad.is_speech_detected()
             if speaking:
@@ -580,12 +696,35 @@ class Listener:
                 with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
                     f.write(wav)
                 try:
-                    self._audio("say", f.name)
+                    self._say_file(f.name, wav)
                 finally:
                     os.unlink(f.name)
                 wav = q.get()
         finally:
             self._audio("unduck")
+
+    def _say_file(self, path, wav):
+        """mira-audio say FILE (blocking) while a thread feeds the reporter the reply's loudness in step with playback."""
+        env = wav_envelope(wav)
+        done = threading.Event()
+
+        def follow():
+            t0 = time.monotonic() + self.a.level_lag  # pw-play needs a moment to start
+            for at, lvl in env:
+                wait = t0 + at - time.monotonic()
+                if wait > 0 and done.wait(wait):
+                    return
+                self.rep.set_level(lvl)
+            self.rep.set_level(0.0)
+
+        th = threading.Thread(target=follow, daemon=True)
+        th.start()
+        try:
+            self._audio("say", path)
+        finally:
+            done.set()
+            th.join(timeout=1)
+            self.rep.set_level(0.0)
 
     def fail_offline(self, why):
         self._mark("offline", why)
@@ -602,11 +741,16 @@ class Listener:
             text = self.speech.stt(pcm16_wav_bytes(clip))
         except SpeechOffline as e:
             return self.fail_offline(f"stt: {e}")
-        if verify and text.strip() and not has_wake(text):
-            # The tiny spotter fires on look-alikes (mirror, miracle, Miranda); the transcript decides.
-            self._mark("wake_rejected", text)
+        if verify and not (text.strip() and has_wake(text)):
+            # The tiny spotter fires on look-alikes (mirror, miracle, Miranda); the transcript decides. An empty
+            # transcript is a reject too: the low threshold lets room noise through, and accepting nothing would
+            # open the 8 s follow-up window, where anything said in the room goes to Hermes.
+            self._mark("wake_rejected", f"heard {text.strip()[:60]!r}" if text.strip() else "heard nothing")
             self.rep.update("idle")
             return
+        if verify:
+            # Only the first words of the transcript: the journal needs the verdict, not the whole request.
+            self._mark("wake_accepted", f"opens {' '.join(text.split()[:3])!r}")
         text = strip_wake(text)
         norm = " ".join(re.sub(r"[^a-z0-9' ]", "", text.lower()).split())
         if not norm or norm in HALLUCINATIONS:
@@ -650,10 +794,9 @@ class Listener:
         fvad_on = False
         try:
             while True:
-                c = self.src.read()
+                c = self._read()
                 if c is None:
                     break
-                self.rep.set_level(min(1.0, float(np.sqrt(np.mean(c ** 2))) * 8))
                 pre.append(c)
                 if self.src.clock() < self.followup_until:
                     # No wake word needed in the window: speech starting is enough.
@@ -680,7 +823,8 @@ class Listener:
                 hit = self.kws.get_result(stream)
                 if hit:
                     self.wakes += 1
-                    self._mark("wake", hit)
+                    agc = f", agc {self.agc.gain:.1f}x" if self.agc else ""
+                    self._mark("wake", f"spotter hit {hit!r}{agc}")
                     self.kws.reset_stream(stream)
                     self.rep.update("listening")
                     # The keyword fires just after the word ends, so a short pre-roll catches an
@@ -714,6 +858,10 @@ def build_parser():
     p.add_argument("--kws-threads", type=int, default=int(os.environ.get("MIRA_KWS_THREADS", "1")))
     p.add_argument("--kws-threshold", type=float, default=float(os.environ.get("MIRA_KWS_THRESHOLD", "0.15")))
     p.add_argument("--kws-score", type=float, default=float(os.environ.get("MIRA_KWS_SCORE", "1.0")))
+    p.add_argument("--agc", action=argparse.BooleanOptionalAction, default=os.environ.get("MIRA_AGC", "1") != "0",
+                   help="software AGC on the mic (MIRA_AGC=0 turns it off); knobs are the MIRA_AGC_* env vars")
+    for knob in ("target", "max-gain", "rest", "gate"):
+        p.add_argument(f"--agc-{knob}", type=float, default=None, help=f"override MIRA_AGC_{knob.upper().replace('-', '_')}")
     p.add_argument("--vad-model", default=d["vad_model"])
     p.add_argument("--vad-threshold", type=float, default=0.5)
     p.add_argument("--end-silence", type=float, default=0.7, help="seconds of silence that end a request")
@@ -729,6 +877,8 @@ def build_parser():
     p.add_argument("--identity", default=d["identity"])
     p.add_argument("--voice-url", default=d["voice_url"])
     p.add_argument("--voice-token-file", default=d["voice_token_file"])
+    p.add_argument("--level-lag", type=float, default=float(os.environ.get("MIRA_LEVEL_LAG", "0.15")),
+                   help="seconds from starting mira-audio say to sound, for the wall's reply level")
     p.add_argument("--error-hold", type=float, default=4.0, help="seconds the error state stays on the wall")
     p.add_argument("--music-url", default=d["music_url"])
     p.add_argument("--music-auth-file", default=d["music_auth_file"])
@@ -741,7 +891,9 @@ def main(argv=None):
     args = build_parser().parse_args(argv)
     src = WavSource(args.wav) if args.wav else PwSource()
     lis = Listener(args, src)
-    log(f"mira-listen up ({'wav' if args.wav else 'mic'}), kws threshold {args.kws_threshold}")
+    agc = lis.agc
+    log(f"mira-listen up ({'wav' if args.wav else 'mic'}), kws threshold {args.kws_threshold} score {args.kws_score}, "
+        + (f"agc target {agc.target} max {agc.max_gain}x rest {agc.rest}x gate {agc.gate}" if agc else "agc off"))
     try:
         lis.run()
     except KeyboardInterrupt:
