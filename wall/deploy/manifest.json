@@ -1,0 +1,26 @@
+{
+ "version": 1,
+ "comment": "Files that `mira deploy` ships, per machine. A plain string is copied to the same relative path; {src, dst} maps a repo path under wall/ to a path inside the install dir. Directories are shipped recursively without __pycache__.",
+ "pi": {
+  "ssh": "mira@pi",
+  "root": "/home/mira/mira-listen",
+  "config_dir": "/home/mira/.config/mira",
+  "unit": "mira-listen",
+  "startup_regex": "mira-listen up \\(",
+  "wait_s": 20,
+  "files": ["mira_launch.py", "mira_listen.py", "mira_listen_v1.py", "mira_shadow.py", "mirakit", "listener_plugins"]
+ },
+ "speech": {
+  "ssh": "mini",
+  "root": "/Users/aryavora/Library/Application Support/mira-speech",
+  "config_dir": "/Users/aryavora/.config/mira",
+  "label": "org.aryavora.mira-speech",
+  "uid": 501,
+  "files": [
+   {"src": "speech/server.py", "dst": "server.py"},
+   {"src": "speech/server_v1.py", "dst": "server_v1.py"},
+   "mirakit",
+   "speech_plugins"
+  ]
+ }
+}

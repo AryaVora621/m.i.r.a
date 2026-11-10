@@ -1,0 +1,123 @@
+{
+ "machine": "arm64",
+ "numpy": "2.5.4",
+ "result": {
+  "agc_digests": [
+   "68ae1a1f0d81cb0ad8b4c1b4e0bc156f5cc0b2aa447af7f7186e4dc7fe430f2d",
+   "6dfe1b178f240707698d8a5b7b454993395480c355dc46c78954896b07ce25b8",
+   "f227a46cb3f1668559aad85b4d8b13bfd506ed365264143c93d489a41345fc46",
+   "6131f202b462dcf6964922b7bb70cd7a574fa5d2d252c496fb15f86dd185929c",
+   "780578277ef2f8d2af3c31a1b3633346c2860ff3e058832a1f5fe095e6528af8",
+   "fbe34b0370148c5a32dcbffbf123a1cc995a0cf3f657064f8c4487497be3ef1a",
+   "578be3ba555499166f9d86a59b833c73f05af922a54e2bf6e824facb238f5132",
+   "09db16eb92ac2505362091d134bf3e437c232fac2cabffb9c90a04bcd9c5279e",
+   "f56edcbbe190c0da750d76a4be2a77ad1468ed9992fa2edd557f129e27ee95cb",
+   "1b4d2123ae237a5b0ecd886af3ba80e152abcca3ce23b5b02aa2ec129bdc32c9",
+   "d64ff9a51380a9a5257db0f24282e57be2e4374e920ee07d7ef4381675421d84",
+   "27d520c6ad2b1924cc3caabedc5f22e6ab884ed180a0cfcfd6b3f472547f0a03",
+   "5ecb6c6b900ffbca7529c65b9666a4cb059818b31a83b3f11187b06bd8473d65",
+   "fb7b6749ba24682d8dbf8e91a914c5db5e9daea926a434568dcab8c51f830def",
+   "50c248a363124932b779376fd71bca26e42050554024975c2e463ea428546ab5",
+   "6320d78b69165e9e7fcb04fdbff10f70a4d4c27a34864c761c772eeec30c9a8d",
+   "9295943fdced9ce7e3e33974c6149c23eb7cf214f609e1338f3f47f328d6572c",
+   "03d92a1cd6bda1bba6152d6cd8f2058720256cff1ffab843ca13ce0c2a9e67f6",
+   "262f0e73f34adceb76a9be4f9e016d3c51998ab591c3173db11f553e1e375139",
+   "27093d9def9f668a0715522cd9840164760ae5823d5842944c121428aeca343e",
+   "50e5a90f825d24ed37f0f93915c6cde0c85cd4071b84ce13ed0773b7b842eaad",
+   "4f041f529990117bd5a25f7d4f39240c73db26f0594dd780e8535402b500d64d",
+   "938f27c0ccce106485a8f9b92cb6f68bda4efbf4f468cc9a3025cae81392628b",
+   "e390fc3d8ac56e981ee1a9b282e4e94801f3538e5105d5baafdc2732c5e8597d",
+   "95714c426ceed9a3ab8b6789414521c3fc0283a818e8c9e4000195689a34fbdd",
+   "d95412f8798c2705975d0ee1deb7eddf714c7ff6c51d8aa7f14e2b034d6be25c",
+   "8e89aa03e992acf748a6bca8d042249c7841246c45acfbcc8a2ed9011e5bbc20",
+   "259a67b46984a8d42698aecac77e670c6086372dfce756a4a5be790bb8c53226",
+   "7efd2fe53d1582531fb5b3eb2c71abe99b14d47ed3d33eddbf4c874ffa435b11",
+   "b535ee7f567722d3998580718c869cf8ac663f90890ef111146d6599c12a3040",
+   "bea7affcdb4b9dd2956d3b39d1fd6a0dafcf076d300b8011ea0c973f931d745d",
+   "b09ee20194c1e9979bec8d09aee4ee830a8b1731fbc5af4d984625e2f4849faa",
+   "0faf7782ca9a52b982e3b26b0e6cc1e72b857fa8dc67f3882f6593df749c9068",
+   "9100353e42e0c38c418090287edb92bc86513320f0593fe66531e3211f98246a",
+   "7e3939d5a1b0574c9c7862fb1da30a236f1103b14fd590e1f9d6ec1f6d82e263",
+   "f8292d61156a79cb04b6d3ad7b8559bd8c387429293f1e3df91d0bb023fa5c51",
+   "2c3c8c9765389d3b5cbf674f9d777a93435d2d4570451e1ef0ff61684c45bae3",
+   "daefaa336bd8ddd9c8a22b0f95ac7d07d364257f4bb9b1a8baf43dc3247af8fc",
+   "732454b8204f106734d10b2905c90ca78d99d83d213a7badc4d26c119f9e66ac",
+   "13961c02096ba9dc877678cd8f009525c465ba459f416dab4b5a3dd82cc9cfb8",
+   "11e1c3b56dc149195d8a269b5fe6c4a8e8e03d72a9851a6788de5fae3320df7f",
+   "38147738298b68550803598ebdd7e015e624451c59a6c7c3e54f468f3f8fda32",
+   "77894da8e7608e5f52a09cdaee217b1fdc6603cccfd1e299b0188fcfca153116",
+   "92cf4b0ed1b9ef96f1b441a6e3fcd755d0aa4e6edc958ae88facb9e72e675c02",
+   "4a155d2d39fc623c71bc5fb60b2dfcdbd8237727f6ebd52df0e6d027762a9346",
+   "43d237138595c1b50b2056737fd218da8570c4027ad7b863b169c85c65cb761b",
+   "40542d596893e0c243c9ed9ddc139803b7312a26cd76cdae538a8f80f0b03dfa",
+   "bb5679d4598e172937e6019e689fbccc2b20a97159e4f1c679490e1577b5eaaa",
+   "ed6714d6dd7abec20a0269e835aff09ca93db5e72cec294b1adafb85deb584be",
+   "1f7822a49aaebfdda80e60fc2f0990d0832aad78a68f2c06271224f3bb4fb3e2"
+  ],
+  "audio_calls": [],
+  "captures": [
+   [
+    2.8,
+    5.0,
+    40000
+   ]
+  ],
+  "events": [
+   [
+    "mic",
+    "live",
+    1.0
+   ],
+   [
+    "wake",
+    "spotter hit 'MIRA', agc 1.0x",
+    2.8
+   ]
+  ],
+  "exception": "JSONDecodeError",
+  "hermes_bodies": [],
+  "hook": [
+   {
+    "heard": "",
+    "level": 0.0,
+    "reply": "",
+    "state": "idle"
+   },
+   {
+    "heard": "",
+    "level": 0.0,
+    "mic": "live",
+    "reply": "",
+    "state": "idle"
+   },
+   {
+    "heard": "",
+    "level": 0.47,
+    "mic": "live",
+    "reply": "",
+    "state": "listening"
+   },
+   {
+    "heard": "",
+    "level": 0.0,
+    "mic": "live",
+    "reply": "",
+    "state": "thinking"
+   },
+   {
+    "heard": "",
+    "level": 0.0,
+    "mic": "live",
+    "reply": "",
+    "state": "idle"
+   }
+  ],
+  "music_calls": [],
+  "raw_chunks": 50,
+  "stt_sha256": [
+   "e21cd69dc59d4527ac6ad0986b9f426cf8e53f6012afbc43c9b43f992f21b002"
+  ],
+  "tts_bodies": []
+ },
+ "scenario": "s16_stt_invalid_json"
+}

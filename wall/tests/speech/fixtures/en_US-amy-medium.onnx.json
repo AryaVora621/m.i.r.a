@@ -1,0 +1,29 @@
+{
+ "audio": {
+  "sample_rate": 22050,
+  "quality": "medium"
+ },
+ "espeak": {
+  "voice": "en-us"
+ },
+ "inference": {
+  "noise_scale": 0.667,
+  "length_scale": 1,
+  "noise_w": 0.8
+ },
+ "phoneme_type": "espeak",
+ "phoneme_map": {},
+ "num_symbols": 256,
+ "num_speakers": 1,
+ "speaker_id_map": {},
+ "piper_version": "1.0.0",
+ "language": {
+  "code": "en_US",
+  "family": "en",
+  "region": "US",
+  "name_native": "English",
+  "name_english": "English",
+  "country_english": "United States"
+ },
+ "dataset": "amy"
+}

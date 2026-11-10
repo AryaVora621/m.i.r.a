@@ -1,0 +1,29 @@
+{
+ "$comment": "Written by mirakit. Change with `mira set` on the mini; see wall/AGENTS.md.",
+ "format": 1, "machine": "speech", "revision": 1,
+ "core": {"engine": "plugins", "legacy_env": "ignore", "unit_nice": 5, "unit_throttle_s": 15, "unit_keep_alive": true,
+  "crash_window_s": 600, "crash_guard_after": 3, "crash_legacy_after": 4, "crash_guard_revert_s": 1800},
+ "plugins": {
+  "server.http": {"enabled": true, "config": {"bind": ["127.0.0.1", "100.77.98.89"], "port": 8765,
+    "token_file": "/Users/aryavora/.config/mira/speech.token",
+    "base_dir": "/Users/aryavora/Library/Application Support/mira-speech", "max_stt_s": 30.0, "max_tts_chars": 600,
+    "tts_body_max": 4096}},
+  "control.http": {"enabled": true, "config": {"owner_token_file": "/Users/aryavora/.config/mira/control.owner.token",
+    "pi_token_file": "/Users/aryavora/.config/mira/control.pi.token", "trial_default_s": 600, "trial_max_s": 1800,
+    "agent_writes_per_10min": 12, "busy_defer_s": 10.0, "history_keep": 50, "changelog_max_bytes": 5000000}},
+  "stt.engine": {"enabled": true, "config": {"kind": "faster-whisper:tiny.en", "threads": 4, "warm": true}},
+  "stt.faster_whisper": {"enabled": true, "config": {"compute": "int8", "beam": 1,
+    "prompt": "Vocabulary: Mira, Hermes, 3D printers, Sovol SV08, Onshape, OrcaSlicer, slicer, vault, timer, calendar, YouTube Music.",
+    "hotwords": "", "language": "en"}},
+  "stt.sherpa_whisper": {"enabled": true, "config": {}},
+  "stt.sherpa_moonshine": {"enabled": true, "config": {"retry_min_s": 1.0, "retry_rms": 0.01, "retry_offset_s": 0.2}},
+  "stt.sherpa_moonshine_v2": {"enabled": true, "config": {}},
+  "stt.sherpa_transducer": {"enabled": true, "config": {}},
+  "tts.engine": {"enabled": true, "config": {"voice": "vits-piper-en_US-amy-medium#0", "speed": 1.0, "peak": 0.89,
+    "threads": 4, "max_loaded": 2, "warm": true}},
+  "tts.piper": {"enabled": true, "config": {"length_scale": 1.0}},
+  "tts.kokoro": {"enabled": true, "config": {}},
+  "voices.catalog": {"enabled": true, "config": {"rescan_s": 300, "featured": ["amy", "jenny", "lessac", "kristin", "hfc_female"],
+    "agent_max_rtf": 0.5, "rtf_file": "/Users/aryavora/.config/mira/voices.rtf.json"}}
+ }
+}

@@ -1,0 +1,10 @@
+# Rendered by `mira unit apply` from the core.unit_* knobs in mira.json. Do not edit by hand:
+# change a value with `mira set core.unit_nice=5` and render again.
+[Service]
+ExecStart=
+ExecStart=%h/mira-listen/venv/bin/python -B %h/mira-listen/current/mira_launch.py --config %h/.config/mira/mira.json
+MemoryMax=${memory_max}
+CPUQuota=${cpu_quota}
+Nice=${nice}
+Restart=${restart}
+RestartSec=${restart_sec}

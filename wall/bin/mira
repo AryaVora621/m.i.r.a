@@ -1,0 +1,31 @@
+#!/bin/sh
+# Installed as ~/.local/bin/mira on the Pi (user mira) and on the Mac mini. Runs the CLI of the code that is live:
+# the Pi's current release, or the newest release when `current` does not exist yet; the mini's install dir.
+# Every path comes from a variable so tests can point the wrapper at temp dirs.
+PI_ROOT="${MIRA_PI_ROOT:-/home/mira/mira-listen}"
+SPEECH_ROOT="${MIRA_SPEECH_ROOT:-$HOME/Library/Application Support/mira-speech}"
+
+if [ -x "$PI_ROOT/venv/bin/python" ]; then
+    py="$PI_ROOT/venv/bin/python"
+    if [ -d "$PI_ROOT/current" ]; then
+        code="$PI_ROOT/current"
+    else
+        code="$(ls -1dt "$PI_ROOT"/releases/*/ 2>/dev/null | head -n 1)"
+        code="${code%/}"
+    fi
+    if [ -z "$code" ]; then
+        echo "mira: no release under $PI_ROOT (run: mira deploy pi --stage from the Mac)" >&2
+        exit 127
+    fi
+    export MIRA_MACHINE=listener
+elif [ -x "$SPEECH_ROOT/venv/bin/python" ]; then
+    py="$SPEECH_ROOT/venv/bin/python"
+    code="$SPEECH_ROOT"
+    export MIRA_MACHINE=speech
+else
+    echo "mira: no install found (looked in $PI_ROOT and $SPEECH_ROOT)" >&2
+    exit 127
+fi
+
+export PYTHONDONTWRITEBYTECODE=1
+PYTHONPATH="$code${PYTHONPATH:+:$PYTHONPATH}" exec "$py" -B -m mirakit.cli "$@"

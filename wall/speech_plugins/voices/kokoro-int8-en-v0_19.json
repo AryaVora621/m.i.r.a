@@ -1,0 +1,18 @@
+{
+ "n_speakers": 11,
+ "sample_rate": 24000,
+ "speaker_names": [
+  "af",
+  "af_bella",
+  "af_nicole",
+  "af_sarah",
+  "af_sky",
+  "am_adam",
+  "am_michael",
+  "bf_emma",
+  "bf_isabella",
+  "bm_george",
+  "bm_lewis"
+ ],
+ "source": "ONNX metadata_props speaker_names and n_speakers, read on the mini 2026-11-10 (framing bytes stripped)"
+}

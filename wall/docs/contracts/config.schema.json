@@ -1,0 +1,73 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "mira/config.schema.json",
+ "title": "Mira config file (spec 2.4.1)",
+ "description": "One file per machine. Keys starting with $ are ignored. Per-knob validation is the core's job, driven by the plugin specs.",
+ "type": "object",
+ "required": [
+  "format",
+  "machine",
+  "revision",
+  "core",
+  "plugins"
+ ],
+ "properties": {
+  "format": {
+   "enum": [
+    1
+   ]
+  },
+  "machine": {
+   "enum": [
+    "listener",
+    "speech"
+   ]
+  },
+  "revision": {
+   "type": "integer"
+  },
+  "core": {
+   "type": "object",
+   "patternProperties": {
+    "^\\$": {}
+   }
+  },
+  "plugins": {
+   "type": "object",
+   "patternProperties": {
+    "^\\$": {}
+   },
+   "additionalProperties": {
+    "$ref": "#/$defs/PluginEntry"
+   }
+  }
+ },
+ "patternProperties": {
+  "^\\$": {}
+ },
+ "additionalProperties": false,
+ "$defs": {
+  "PluginEntry": {
+   "type": "object",
+   "required": [
+    "enabled",
+    "config"
+   ],
+   "properties": {
+    "enabled": {
+     "type": "boolean"
+    },
+    "config": {
+     "type": "object",
+     "patternProperties": {
+      "^\\$": {}
+     }
+    }
+   },
+   "additionalProperties": false,
+   "patternProperties": {
+    "^\\$": {}
+   }
+  }
+ }
+}

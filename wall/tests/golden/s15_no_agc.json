@@ -1,0 +1,126 @@
+{
+ "machine": "arm64",
+ "numpy": "2.5.4",
+ "result": {
+  "agc_digests": [],
+  "audio_calls": [
+   "duck",
+   "say <tmp> d3fc83fabb4938cf6c25e2fb9816676bef8d06366429cd8a80b6a7c25b4f04b0",
+   "unduck"
+  ],
+  "captures": [
+   [
+    2.8,
+    5.0,
+    40000
+   ]
+  ],
+  "events": [
+   [
+    "mic",
+    "live",
+    1.0
+   ],
+   [
+    "wake",
+    "spotter hit 'MIRA'",
+    2.8
+   ],
+   [
+    "wake_accepted",
+    "opens \"Mira, what's on\"",
+    5.0
+   ],
+   [
+    "heard",
+    "what's on my calendar today?",
+    5.0
+   ],
+   [
+    "reply",
+    "You have a physics review at three and nothing else today.",
+    5.0
+   ],
+   [
+    "followup",
+    "8.0s",
+    5.0
+   ],
+   [
+    "eof",
+    "",
+    9.19
+   ]
+  ],
+  "exception": null,
+  "hermes_bodies": [
+   {
+    "body": {
+     "title": "<title>"
+    },
+    "path": "/api/sessions"
+   },
+   {
+    "body": {
+     "instructions": "# Mira on the wall\n\nYou are Mira, Arya's ambient assistant, speaking from the monitor on his wall. Everything you write is\nread aloud by a text-to-speech voice, so you are heard, not read.\n\n## How to speak\n\n- One to three short, plain sentences. Most answers are one. Say the answer first.\n- No markdown, no lists, no headings, no code, no links, no emoji, no asterisks. Say times and dates the\n  way a person would (\"three thirty this afternoon\", \"Friday\"). Spell out symbols and units.\n- Warm and direct, not chipper. No openers like \"Sure!\" or \"Great question\", no closers like \"Let me know\n  if you need anything else\".\n- If a result is long (a full inbox, a week of events), give the count and the top two or three items,\n  then offer the rest on the wall or in Agent OS.\n- Arya might be across the room: if you need a choice from him, ask one short yes or no question.\n\n## What you can do\n\nYou are the voice of Hermes, his agent. Through Hermes's own tools you can read his calendar, his mail,\nthe school to-do list, the printers (including the Sovol SV08) and the running agent sessions, and search\nhis notes. Music play, pause, next and volume are handled before they reach you.\n\n## Honesty\n\n- Say plainly when you do not know something, when a tool failed, or when something is not built yet.\n  Never invent events, mail, numbers or a success you did not see.\n- Do not send mail, change the calendar or start a print unless he clearly asked for exactly that, and\n  confirm the details out loud first.\n- Never read out secrets, tokens, passwords or keys, even if asked.\n- The request came from a speech recognizer and can be wrong: \"Hermes\", \"SV08\", \"AP Physics\" may arrive\n  misspelled. Use judgement, and ask when the doubt matters.\n",
+     "message": "what's on my calendar today?"
+    },
+    "path": "/api/sessions/sess_1/chat/stream"
+   }
+  ],
+  "hook": [
+   {
+    "heard": "",
+    "level": 0.0,
+    "reply": "",
+    "state": "idle"
+   },
+   {
+    "heard": "",
+    "level": 0.01,
+    "mic": "live",
+    "reply": "",
+    "state": "idle"
+   },
+   {
+    "heard": "",
+    "level": 0.47,
+    "mic": "live",
+    "reply": "",
+    "state": "listening"
+   },
+   {
+    "heard": "what's on my calendar today?",
+    "level": 0.01,
+    "mic": "live",
+    "reply": "",
+    "state": "thinking"
+   },
+   {
+    "heard": "what's on my calendar today?",
+    "level": 0.01,
+    "mic": "live",
+    "reply": "You have a physics review at three and nothing else today.",
+    "state": "speaking"
+   },
+   {
+    "heard": "what's on my calendar today?",
+    "level": 0.0,
+    "mic": "live",
+    "reply": "You have a physics review at three and nothing else today.",
+    "state": "idle"
+   }
+  ],
+  "music_calls": [],
+  "raw_chunks": 92,
+  "stt_sha256": [
+   "9398491f2e2b53203d9f96a5d33074e82ed001688e87e0fad21eee1faeae5a82"
+  ],
+  "tts_bodies": [
+   {
+    "text": "You have a physics review at three and nothing else today."
+   }
+  ]
+ },
+ "scenario": "s15_no_agc"
+}

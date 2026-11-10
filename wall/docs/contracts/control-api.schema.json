@@ -1,0 +1,894 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "mira/control-api.schema.json",
+ "title": "Mira control API shapes (spec 2.7)",
+ "description": "Normative copy lives in SPEC.md; SPEC.md wins.",
+ "$defs": {
+  "Change": {
+   "description": "Change wire form (spec 2.5.1); also the changes.jsonl record.",
+   "type": "object",
+   "properties": {
+    "id": {
+     "type": "string"
+    },
+    "ts": {
+     "type": "string"
+    },
+    "machine": {
+     "enum": [
+      "listener",
+      "speech"
+     ]
+    },
+    "actor": {
+     "type": "string"
+    },
+    "scope": {
+     "enum": [
+      "owner",
+      "agent",
+      "system"
+     ]
+    },
+    "session": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "reason": {
+     "type": "string"
+    },
+    "edits": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "key": {
+        "type": "string"
+       },
+       "old": {},
+       "new": {}
+      },
+      "required": [
+       "key",
+       "old",
+       "new"
+      ]
+     }
+    },
+    "applies": {
+     "enum": [
+      "live",
+      "rebuild",
+      "restart"
+     ]
+    },
+    "status": {
+     "enum": [
+      "dry_run",
+      "queued",
+      "applied",
+      "pending_restart",
+      "failed",
+      "reverted",
+      "confirmed"
+     ]
+    },
+    "rev_before": {
+     "type": "integer"
+    },
+    "rev_after": {
+     "type": "integer"
+    },
+    "trial_expires": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "undo_of": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "error": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "announce": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "ts",
+    "machine",
+    "actor",
+    "scope",
+    "session",
+    "reason",
+    "edits",
+    "applies",
+    "status",
+    "rev_before",
+    "rev_after",
+    "trial_expires",
+    "undo_of",
+    "error",
+    "announce"
+   ]
+  },
+  "Error": {
+   "description": "Error body (spec 2.7.1).",
+   "type": "object",
+   "properties": {
+    "error": {
+     "enum": [
+      "invalid",
+      "unknown_key",
+      "unknown_plugin",
+      "unknown_voice",
+      "unauthorized",
+      "policy",
+      "not_in_voice_turn",
+      "quiet_hours",
+      "session_cap",
+      "stale_revision",
+      "undo_conflict",
+      "file_changed",
+      "provider_conflict",
+      "agents_locked",
+      "rate_limited",
+      "busy",
+      "speech_unreachable",
+      "internal"
+     ]
+    },
+    "message": {
+     "type": "string"
+    },
+    "field": {
+     "type": "string"
+    },
+    "allowed": {
+     "type": "object"
+    },
+    "owner_command": {
+     "type": "string"
+    },
+    "current": {},
+    "revision": {
+     "type": "integer"
+    },
+    "near": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "effective": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "error",
+    "message",
+    "revision"
+   ]
+  },
+  "InventoryRow": {
+   "type": "object",
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "kind": {
+     "type": "string"
+    },
+    "version": {
+     "type": "string"
+    },
+    "machine": {
+     "enum": [
+      "listener",
+      "speech"
+     ]
+    },
+    "state": {
+     "enum": [
+      "pending",
+      "loading",
+      "active",
+      "failed",
+      "disabled",
+      "stopped"
+     ]
+    },
+    "enabled": {
+     "type": "boolean"
+    },
+    "required": {
+     "type": "boolean"
+    },
+    "core": {
+     "type": "boolean"
+    },
+    "provides": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "needs": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "missing": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "toggle": {
+     "enum": [
+      "live",
+      "restart"
+     ]
+    },
+    "rev": {
+     "type": "integer"
+    },
+    "pending_restart": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "last_error": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "status": {
+     "type": "object"
+    }
+   },
+   "required": [
+    "name",
+    "kind",
+    "version",
+    "machine",
+    "state",
+    "enabled",
+    "required",
+    "core",
+    "provides",
+    "needs",
+    "missing",
+    "toggle",
+    "rev",
+    "pending_restart",
+    "last_error",
+    "status"
+   ]
+  },
+  "KnobRow": {
+   "type": "object",
+   "properties": {
+    "key": {
+     "type": "string"
+    },
+    "type": {
+     "enum": [
+      "bool",
+      "int",
+      "float",
+      "str",
+      "path",
+      "url",
+      "enum",
+      "list[str]",
+      "map[str,str]",
+      "regex",
+      "voice",
+      "time_window"
+     ]
+    },
+    "value": {},
+    "default": {},
+    "source": {
+     "enum": [
+      "default",
+      "env",
+      "file",
+      "argv",
+      "session"
+     ]
+    },
+    "min": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "max": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "unit": {
+     "type": "string"
+    },
+    "applies": {
+     "enum": [
+      "live",
+      "rebuild",
+      "restart"
+     ]
+    },
+    "agent": {
+     "enum": [
+      "deny",
+      "bounded"
+     ]
+    },
+    "agent_min": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "agent_max": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "agent_step": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "settable_by_voice": {
+     "type": "boolean"
+    },
+    "description": {
+     "type": "string"
+    },
+    "spoken": {
+     "type": "string"
+    },
+    "effect": {
+     "type": "string"
+    },
+    "topic": {
+     "type": "string"
+    },
+    "pending": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      null,
+      "queued",
+      "restart"
+     ]
+    },
+    "secret": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "key",
+    "type",
+    "value",
+    "default",
+    "source",
+    "min",
+    "max",
+    "unit",
+    "applies",
+    "agent",
+    "agent_min",
+    "agent_max",
+    "agent_step",
+    "settable_by_voice",
+    "description",
+    "spoken",
+    "effect",
+    "topic",
+    "pending",
+    "secret"
+   ]
+  },
+  "Session": {
+   "description": "Voice tuning session (spec 2.5.4).",
+   "type": "object",
+   "properties": {
+    "id": {
+     "type": "string"
+    },
+    "state": {
+     "type": "string"
+    },
+    "topic": {
+     "type": "string"
+    },
+    "started": {
+     "type": "string"
+    },
+    "expires": {
+     "type": "string"
+    },
+    "last_activity": {
+     "type": "string"
+    },
+    "changes": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "followup_s": {
+     "type": "number"
+    },
+    "turn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "id",
+    "state",
+    "topic",
+    "started",
+    "expires",
+    "last_activity",
+    "changes",
+    "followup_s",
+    "turn"
+   ]
+  },
+  "Status": {
+   "type": "object",
+   "properties": {
+    "ok": {
+     "type": "boolean"
+    },
+    "machine": {
+     "enum": [
+      "listener",
+      "speech"
+     ]
+    },
+    "engine": {
+     "type": "string"
+    },
+    "version": {
+     "type": "string"
+    },
+    "revision": {
+     "type": "integer"
+    },
+    "uptime_s": {
+     "type": "number"
+    },
+    "loop": {
+     "enum": [
+      "armed",
+      "followup",
+      "turn"
+     ]
+    },
+    "turn": {
+     "type": [
+      "object",
+      "null"
+     ],
+     "properties": {
+      "id": {
+       "type": "string"
+      },
+      "phase": {
+       "type": "string"
+      },
+      "since_s": {
+       "type": "number"
+      }
+     },
+     "required": [
+      "id",
+      "phase",
+      "since_s"
+     ]
+    },
+    "mic": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      null,
+      "muted",
+      "live"
+     ]
+    },
+    "failed": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "pending_restart": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "session": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/Session"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "agents_locked": {
+     "type": "boolean"
+    },
+    "config_error": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "speech": {
+     "type": "object",
+     "properties": {
+      "reachable": {
+       "type": "boolean"
+      },
+      "engine": {
+       "type": "string"
+      },
+      "stt": {
+       "type": "string"
+      },
+      "voice": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "reachable",
+      "engine",
+      "stt",
+      "voice"
+     ]
+    }
+   },
+   "required": [
+    "ok",
+    "machine",
+    "engine",
+    "version",
+    "revision",
+    "uptime_s",
+    "loop",
+    "turn",
+    "mic",
+    "failed",
+    "pending_restart",
+    "session",
+    "agents_locked",
+    "config_error",
+    "speech"
+   ]
+  },
+  "TuningGuide": {
+   "type": "object",
+   "properties": {
+    "topic": {
+     "type": "string"
+    },
+    "knobs": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "key": {
+        "type": "string"
+       },
+       "spoken": {
+        "type": "string"
+       },
+       "value": {},
+       "unit": {
+        "type": "string"
+       },
+       "settable_by_voice": {
+        "type": "boolean"
+       },
+       "agent_min": {
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "agent_max": {
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "agent_step": {
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "ladder": {
+        "type": "array",
+        "items": {}
+       },
+       "effect": {
+        "type": "string"
+       },
+       "phrases": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "applies": {
+        "enum": [
+         "live",
+         "rebuild",
+         "restart"
+        ]
+       }
+      },
+      "required": [
+       "key",
+       "spoken",
+       "value",
+       "unit",
+       "settable_by_voice",
+       "agent_min",
+       "agent_max",
+       "agent_step",
+       "ladder",
+       "effect",
+       "phrases",
+       "applies"
+      ]
+     }
+    },
+    "owner_only": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "key": {
+        "type": "string"
+       },
+       "spoken": {
+        "type": "string"
+       },
+       "why": {
+        "type": "string"
+       },
+       "owner_command": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "key",
+       "spoken",
+       "why",
+       "owner_command"
+      ]
+     }
+    }
+   },
+   "required": [
+    "topic",
+    "knobs",
+    "owner_only"
+   ]
+  },
+  "VoiceEntry": {
+   "description": "Voice catalog entry (spec 2.9.3).",
+   "type": "object",
+   "properties": {
+    "id": {
+     "type": "string"
+    },
+    "alias": {
+     "type": "string"
+    },
+    "aliases": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "label": {
+     "type": "string"
+    },
+    "lang": {
+     "type": "string"
+    },
+    "gender": {
+     "type": "string"
+    },
+    "engine": {
+     "type": "string"
+    },
+    "model_dir": {
+     "type": "string"
+    },
+    "speaker": {
+     "type": "string"
+    },
+    "speakers": {
+     "type": "integer"
+    },
+    "variants": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "usable": {
+     "type": "boolean"
+    },
+    "reason": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "loaded": {
+     "type": "boolean"
+    },
+    "current": {
+     "type": "boolean"
+    },
+    "featured": {
+     "type": "boolean"
+    },
+    "size_mb": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "rtf": {
+     "type": [
+      "number",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "id",
+    "alias",
+    "aliases",
+    "label",
+    "lang",
+    "gender",
+    "engine",
+    "usable",
+    "loaded",
+    "current",
+    "featured",
+    "rtf"
+   ]
+  },
+  "Voices": {
+   "type": "object",
+   "properties": {
+    "current": {
+     "type": "object",
+     "properties": {
+      "id": {
+       "type": "string"
+      },
+      "alias": {
+       "type": "string"
+      },
+      "label": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "id",
+      "alias",
+      "label"
+     ]
+    },
+    "voices": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/VoiceEntry"
+     }
+    },
+    "families": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "model_dir": {
+        "type": "string"
+       },
+       "speakers": {
+        "type": "integer"
+       },
+       "alias_prefix": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "model_dir",
+       "speakers",
+       "alias_prefix"
+      ]
+     }
+    }
+   },
+   "required": [
+    "current",
+    "voices",
+    "families"
+   ]
+  },
+  "Health": {
+   "type": "object",
+   "properties": {
+    "ok": {
+     "type": "boolean"
+    },
+    "machine": {
+     "enum": [
+      "listener",
+      "speech"
+     ]
+    },
+    "version": {
+     "type": "string"
+    },
+    "engine": {
+     "type": "string"
+    },
+    "uptime_s": {
+     "type": "number"
+    },
+    "revision": {
+     "type": "integer"
+    }
+   },
+   "required": [
+    "ok",
+    "machine",
+    "version",
+    "engine",
+    "uptime_s",
+    "revision"
+   ]
+  }
+ }
+}

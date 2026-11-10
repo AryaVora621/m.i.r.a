@@ -1,0 +1,286 @@
+{
+ "machine": "arm64",
+ "numpy": "2.5.4",
+ "result": {
+  "agc_digests": [
+   "68ae1a1f0d81cb0ad8b4c1b4e0bc156f5cc0b2aa447af7f7186e4dc7fe430f2d",
+   "6dfe1b178f240707698d8a5b7b454993395480c355dc46c78954896b07ce25b8",
+   "f227a46cb3f1668559aad85b4d8b13bfd506ed365264143c93d489a41345fc46",
+   "6131f202b462dcf6964922b7bb70cd7a574fa5d2d252c496fb15f86dd185929c",
+   "780578277ef2f8d2af3c31a1b3633346c2860ff3e058832a1f5fe095e6528af8",
+   "fbe34b0370148c5a32dcbffbf123a1cc995a0cf3f657064f8c4487497be3ef1a",
+   "578be3ba555499166f9d86a59b833c73f05af922a54e2bf6e824facb238f5132",
+   "09db16eb92ac2505362091d134bf3e437c232fac2cabffb9c90a04bcd9c5279e",
+   "f56edcbbe190c0da750d76a4be2a77ad1468ed9992fa2edd557f129e27ee95cb",
+   "1b4d2123ae237a5b0ecd886af3ba80e152abcca3ce23b5b02aa2ec129bdc32c9",
+   "d64ff9a51380a9a5257db0f24282e57be2e4374e920ee07d7ef4381675421d84",
+   "27d520c6ad2b1924cc3caabedc5f22e6ab884ed180a0cfcfd6b3f472547f0a03",
+   "5ecb6c6b900ffbca7529c65b9666a4cb059818b31a83b3f11187b06bd8473d65",
+   "fb7b6749ba24682d8dbf8e91a914c5db5e9daea926a434568dcab8c51f830def",
+   "50c248a363124932b779376fd71bca26e42050554024975c2e463ea428546ab5",
+   "6320d78b69165e9e7fcb04fdbff10f70a4d4c27a34864c761c772eeec30c9a8d",
+   "9295943fdced9ce7e3e33974c6149c23eb7cf214f609e1338f3f47f328d6572c",
+   "03d92a1cd6bda1bba6152d6cd8f2058720256cff1ffab843ca13ce0c2a9e67f6",
+   "262f0e73f34adceb76a9be4f9e016d3c51998ab591c3173db11f553e1e375139",
+   "27093d9def9f668a0715522cd9840164760ae5823d5842944c121428aeca343e",
+   "50e5a90f825d24ed37f0f93915c6cde0c85cd4071b84ce13ed0773b7b842eaad",
+   "4f041f529990117bd5a25f7d4f39240c73db26f0594dd780e8535402b500d64d",
+   "938f27c0ccce106485a8f9b92cb6f68bda4efbf4f468cc9a3025cae81392628b",
+   "e390fc3d8ac56e981ee1a9b282e4e94801f3538e5105d5baafdc2732c5e8597d",
+   "95714c426ceed9a3ab8b6789414521c3fc0283a818e8c9e4000195689a34fbdd",
+   "d95412f8798c2705975d0ee1deb7eddf714c7ff6c51d8aa7f14e2b034d6be25c",
+   "8e89aa03e992acf748a6bca8d042249c7841246c45acfbcc8a2ed9011e5bbc20",
+   "259a67b46984a8d42698aecac77e670c6086372dfce756a4a5be790bb8c53226",
+   "7efd2fe53d1582531fb5b3eb2c71abe99b14d47ed3d33eddbf4c874ffa435b11",
+   "b535ee7f567722d3998580718c869cf8ac663f90890ef111146d6599c12a3040",
+   "bea7affcdb4b9dd2956d3b39d1fd6a0dafcf076d300b8011ea0c973f931d745d",
+   "b09ee20194c1e9979bec8d09aee4ee830a8b1731fbc5af4d984625e2f4849faa",
+   "0faf7782ca9a52b982e3b26b0e6cc1e72b857fa8dc67f3882f6593df749c9068",
+   "9100353e42e0c38c418090287edb92bc86513320f0593fe66531e3211f98246a",
+   "7e3939d5a1b0574c9c7862fb1da30a236f1103b14fd590e1f9d6ec1f6d82e263",
+   "f8292d61156a79cb04b6d3ad7b8559bd8c387429293f1e3df91d0bb023fa5c51",
+   "2c3c8c9765389d3b5cbf674f9d777a93435d2d4570451e1ef0ff61684c45bae3",
+   "daefaa336bd8ddd9c8a22b0f95ac7d07d364257f4bb9b1a8baf43dc3247af8fc",
+   "732454b8204f106734d10b2905c90ca78d99d83d213a7badc4d26c119f9e66ac",
+   "13961c02096ba9dc877678cd8f009525c465ba459f416dab4b5a3dd82cc9cfb8",
+   "11e1c3b56dc149195d8a269b5fe6c4a8e8e03d72a9851a6788de5fae3320df7f",
+   "38147738298b68550803598ebdd7e015e624451c59a6c7c3e54f468f3f8fda32",
+   "77894da8e7608e5f52a09cdaee217b1fdc6603cccfd1e299b0188fcfca153116",
+   "92cf4b0ed1b9ef96f1b441a6e3fcd755d0aa4e6edc958ae88facb9e72e675c02",
+   "4a155d2d39fc623c71bc5fb60b2dfcdbd8237727f6ebd52df0e6d027762a9346",
+   "43d237138595c1b50b2056737fd218da8570c4027ad7b863b169c85c65cb761b",
+   "40542d596893e0c243c9ed9ddc139803b7312a26cd76cdae538a8f80f0b03dfa",
+   "bb5679d4598e172937e6019e689fbccc2b20a97159e4f1c679490e1577b5eaaa",
+   "ed6714d6dd7abec20a0269e835aff09ca93db5e72cec294b1adafb85deb584be",
+   "1f7822a49aaebfdda80e60fc2f0990d0832aad78a68f2c06271224f3bb4fb3e2",
+   "564d82fce5681564a98986fa8645bd0f535ec5155d280e9457de869c251f6583",
+   "23dc76d08e4c1434e906d45f9119a86f107fae15282241b0cbeec6e9989bafc1",
+   "7093e679624998791d77e8be9cd5f06872c81083a0c986d241a9f4c2c2c66024",
+   "2a46959c89f3efad1dcd95643f2c40faf1a1aa95729dc4e96c8de394fdcf9796",
+   "5d0658d0181e695bdbb193d20b6272b215d8d6273352f41914ec78ad07fe7006",
+   "e169e474c651a69b5caccd1734d99b6d7ab99358c9120ceb6c347bc7073d2d8d",
+   "80290dbb3b6d78aa39065d55d21223928b57ff44ec4dc6705ba3ad22b8e4743e",
+   "e648a0df6dd9e6771cdbd169576461be7f5c1e03f46f2b644429f0f5d5ddefe2",
+   "ffa4ad75ee5e61476da66c7a5bd6bbff391aac32dafe4574152c8910c96d8f9b",
+   "6e3b5a63f7dddf8348b5f82bd0d9ca06b2658395bc7dde9edc46347fe46d0442",
+   "9066f613e116297729240750dc7270519f28b06247189f10c9906b66e95691a1",
+   "5860f540453f501f5556865b20338b1a6289de967b17ebdf3e29d3dbfed782a9",
+   "6d1ea118503081d46d41cf945ad023e031949005c44a3a53547110ad0f058b4d",
+   "0bea64a3a17519c3872870e2a9a7d787d5eef72aac3e23b53205ec03e9aad9f5",
+   "a70a86bf9f87bbdcaa45169a49197f0f4e30eabaa7dad2f4b2d0eb31b6078fbe",
+   "499e39d578876e13531af9c643260dd15ac9afcda76bc011f89816ee7e6a0cf7",
+   "f111ac67431700f3e6433ed63699fa3aa705a5763524bc66a16ec29252aa3c6e",
+   "d11d5f53524a127f1f2d40798b8ff2012c01c3d1d816623e833a7b32781fb791",
+   "f0d68e0139db382a51edd9f8f10a0cf8a33cf4b17c492922d6663e9be0813976",
+   "c4b2881c6b0eefcd33c14cf1465fb048f51faf47f85934d1838cb8035fd749a5",
+   "1662c366833852e1d64fa77018112f1b68ee6f34ff86aa47615fdfd1ecdf9eac",
+   "af4a674d14fd98a09b66fd40bdbb2a5bfe17a5be0dfde7bc056f09aaa893d258",
+   "7925b05203876a2958cc78cb8ef3ad1eebeea866ec20386c8d7e4463f6517318",
+   "997d321550272cc38dfbad37db27a00bb0454612e3f6ad5b09b052c8b7249c69",
+   "e1713011edbaeeb88c8d153713886dc60aa48d3acd3a4cd750d8678a3f2d20ab",
+   "38d62528b60c2ecf3873e85bf26078c75ba2d05397576c0912ed80c365a08d15",
+   "d6fed7295b09fae341bcfaaee3982366deb32dc7de188aab93d7d26e5f7201d8",
+   "dce80e47566440e3a8662e74f0e2c8a09786ab6b8fd1fa03aaba193a84ff41f8",
+   "e951fc4f610e6c3cf84364f1d2ec132afd8a74abf2984a9fdea50bf584979dc5",
+   "1a211c584f4e1aad3201a05cc135e900dffc29298e2925d0449e247151bc9292",
+   "e674556c9d75bff7c1b240416dfa94659e6e9c4226e00ec1574040e86d158022",
+   "8a533be0c101d9b357893a88bc6868eefe766f50fe9ca2453b00120aa1b5f86a",
+   "b257a5fb803fa7897d5de9c3f0fd7f259a9a595674bce74c28aacb70c1271526",
+   "75e40e41dd78ee2b079dbb6335b9e854457586e9a6be6862026be4c724f292c1",
+   "d086859dd4d3725f57e4e8b915ebf5fab93d5d46381488e8bcc89028b8c89523",
+   "24cad4449b114e3a94cc3f0a65f5308803a63b4fdd869483a7aa454c6694ed89",
+   "7f14a84dae33b1d577c430b1333861ccfd03fafe76b6bc75468ae951fa6d4271",
+   "f848f5570273d469735f69cdb2ce71354a95d06e7d09753cd13d4708de73e677",
+   "e6ce07c7decbe46e1f314fee533447ca72f4ba2fb5769f881f68692fd6d34831",
+   "fc193598600c89219c17e2f88b7c260434e8f0c25b239b6ba3a2c22ad5845c17",
+   "fe70eb22c7db3305fa5cb9bfeeefe6f63c2615b56139775edc4e62ed7a880bf1",
+   "40ba56f6cb80f89a3d487df91756346c7bd28a1d1db47933beb55fa76d12858c",
+   "c321215fb12f2b8f37a970cb82159718e54668cc7c440d689716ddda40a69d1a",
+   "919cdb021d72b76e6bacc5c29bc634d063590a50db24bceebf9ae3e59bcda3be",
+   "c1340ac0d6c0d3cfebac7fc34e3632ea000b7a5cdbfc9af07484bc02157b7135",
+   "708da8f8825abd989fa41189970bc3319eddeaab06581a5c2c2216adb8da4375",
+   "c7dc9fa07b6aac446e9fc6dfce290737bc2d2b56ec975d786df28d492da42f38",
+   "d7bf594a310d0c35eb418278f684c0edff9b0227dfc64a78e764a7fb8c22dd92",
+   "77e0139143cc5baf3f4d8e4fdd8330c48d520f945b53d267fd7d05e5cc02cd25",
+   "c1fd5109437c24f42c86b6d27369561d9190457c8c87ca64eac641bd0285acc0",
+   "2b53e41e56572b293b4472e65cb33418551e735ef2e9235b21e1f701d6f7add2",
+   "5420cb68ceba41f5b4f2fe99884096e0ba34a8f4dd786eabeda312194873de9f",
+   "99f75dc61cc0addab3686661fa002bf6b0f1d2f2bf03cca8fc1c6be145739554",
+   "ffb5c7534d8731ee0bb9143d03695cd86374559d559222a4c017896b032f186c",
+   "f6a8deb0c91e73b51755dd4a6ace3264731d63631939ffed311971f47bc93663",
+   "134b8b27c586862837de0736b3a585c53d58c122992c4be4625d13c02a171063",
+   "a5fc7847876b488314117db9e1bd50c101a2befe9db3efb6a4a42a3738be46e8",
+   "e3e51e0b11b7c8185af5378c559e607f03b19edf3a01af374069d449aca15abd",
+   "890f82609cd71069a55640a6eb94f1da55a350f1226cf96fd3237f076bad0fac",
+   "e95c9548bef3369595830bd92ca5591ae1ae820023c59b2f77a6727a100e16d4",
+   "77445d9a3e91b1a616a5f947eff49a1c9a3a1a7b23078556c658825947f47908",
+   "4000301762e83948c97715b3d412d0a82acf62aaaefa9ea009dc19976e62ce0a",
+   "f1bc4f0185932b9e0aa49aa772b1acf28a74740dfa1a9b2c94f4d471bfa43880",
+   "0641a80aafe73044830d36cf593a0bc7003e7b12f16819c53e9b094876140192",
+   "3bcf64af0b4c7f4c0919876b55f66e359ee64734d0a45d4ab1bf6f0f11f562ad",
+   "7d1c2109d0384fb70bf96df500840a0ae31acde2804e7d7ad7482d13744e7670",
+   "01fc92e594b40f8af4488fb4bcee4ab108c6924979db5da4e41d086cfb83d540",
+   "eef2892c58d64b9e0b345e85a1255bf4eb6ea243e43ca7fb6524931ce54498f6",
+   "aa914a9c7859402b7a9f4bdf7e895caa617ddbd4f8c9454fe79bb501835a88a5",
+   "4b88a13b5a84e0f877aba97b9a1a9c9b1a16919a79fa083b16b8f661f046a50f",
+   "1a45cd16598a75d39f7e0639204a0201c01f014ae1c2116f93c0436c95edc06b",
+   "375a9bd400eff8242fb46b12fb13e509b4b0192d466d51647b17ad65bbc472a7",
+   "ca3afd8140c89d8e792e527f466c76998fd69d66b2b2ebfa077286f39f94b4d9",
+   "26f913ae6a020e47c69b4060c97a4bfbef3022174493b1a7f5770cd99d42f2c2",
+   "ad5504b7dd6b798413166ecc2d2aa4fffd5185d1e6a031fde0527df507597368",
+   "7d70a6b55b5710a5d6038f1e62dd8762ba76280ca0b40dc38554d6bebde592d6",
+   "ff592ac878e3022a92b57c841b4e0a0fc8739ca4daa7142b2d0672a955cf9ccc",
+   "0a5fb7aef0c33dd8eeac47d668bb9bea899a2b231289589e8af6eeaeff38b94a",
+   "6b661f0243bdf7091346915f29b8bb4c3ff61452cee5eb3b0c32dcc410fd9153",
+   "ba6699dfe097170afbf4d0d79bf4dfe15f34dcd22d4bf52234bf85ad667c5a33",
+   "2fdc2944af92c75577172ebd6b74874369429b119b055304b42c744c0afc8b13",
+   "21bc55b4f9c93acd1da60b937082d26af740c0be575c8667839cfef68ccb3d27",
+   "4558305f31559ba05d0a1a05b78ef3f975f6a301aca280c058e14c8266ce005a",
+   "c1dec827e24ff720404ab20a159b1e3c3ff60c4ef73421da5997c431bc5120bf",
+   "15547dea63ccd15f0cae4f5d163d69ff59761482f9302fc2e3889d6607c2bbe5",
+   "ec6553ab76c1df60d4ad308a6298517fe99fe09b96d09a806e7d7dfdc38d21ab",
+   "31ac312f61e69c1da5f99d4f4883ff1f88bfd279807812c3a52de66eb0be2ce9",
+   "d2bc76bee93e5b367dcf923ab1c266ec68e9de7f4ed8e2b0c15d4d7bea8ad191",
+   "41c698f26606148b10e6e45b9336361825b1f4f60433ab5e15cc65a68bf7baf2",
+   "251ea3d7b40a600a691d45909bca0d4db358801910c31c4a4e4cd776620da9c0",
+   "7d44f01b2abc99e3a5ea6652ff9e856b189e4aa3980d268699e8370f72eeb203",
+   "524d0c0f11ebf606dffd1225a9c3ddd2e31ec25aec55572b71bb60862d0a2c69",
+   "56a43ef88ddfcd0f56f7dd973312c0e73d62f59655c01d7b4e59aaa3be8b3fb6",
+   "56a43ef88ddfcd0f56f7dd973312c0e73d62f59655c01d7b4e59aaa3be8b3fb6",
+   "56a43ef88ddfcd0f56f7dd973312c0e73d62f59655c01d7b4e59aaa3be8b3fb6",
+   "56a43ef88ddfcd0f56f7dd973312c0e73d62f59655c01d7b4e59aaa3be8b3fb6",
+   "56a43ef88ddfcd0f56f7dd973312c0e73d62f59655c01d7b4e59aaa3be8b3fb6",
+   "56a43ef88ddfcd0f56f7dd973312c0e73d62f59655c01d7b4e59aaa3be8b3fb6",
+   "56a43ef88ddfcd0f56f7dd973312c0e73d62f59655c01d7b4e59aaa3be8b3fb6",
+   "56a43ef88ddfcd0f56f7dd973312c0e73d62f59655c01d7b4e59aaa3be8b3fb6",
+   "56a43ef88ddfcd0f56f7dd973312c0e73d62f59655c01d7b4e59aaa3be8b3fb6",
+   "9146c2385e968310d4358f9ae347ddfde58d411222ae85e07baa500d55f2a689"
+  ],
+  "audio_calls": [
+   "duck",
+   "say <tmp> d3fc83fabb4938cf6c25e2fb9816676bef8d06366429cd8a80b6a7c25b4f04b0",
+   "unduck"
+  ],
+  "captures": [
+   [
+    2.8,
+    5.0,
+    40000
+   ]
+  ],
+  "events": [
+   [
+    "mic",
+    "live",
+    1.0
+   ],
+   [
+    "wake",
+    "spotter hit 'MIRA', agc 1.0x",
+    2.8
+   ],
+   [
+    "wake_accepted",
+    "opens \"Mira, what's on\"",
+    5.0
+   ],
+   [
+    "heard",
+    "what's on my calendar today?",
+    5.0
+   ],
+   [
+    "reply",
+    "I cannot reach Hermes right now.",
+    5.0
+   ],
+   [
+    "followup",
+    "8.0s",
+    5.0
+   ],
+   [
+    "eof",
+    "",
+    15.19
+   ]
+  ],
+  "exception": null,
+  "hermes_bodies": [
+   {
+    "body": {
+     "title": "<title>"
+    },
+    "path": "/api/sessions"
+   },
+   {
+    "body": {
+     "instructions": "# Mira on the wall\n\nYou are Mira, Arya's ambient assistant, speaking from the monitor on his wall. Everything you write is\nread aloud by a text-to-speech voice, so you are heard, not read.\n\n## How to speak\n\n- One to three short, plain sentences. Most answers are one. Say the answer first.\n- No markdown, no lists, no headings, no code, no links, no emoji, no asterisks. Say times and dates the\n  way a person would (\"three thirty this afternoon\", \"Friday\"). Spell out symbols and units.\n- Warm and direct, not chipper. No openers like \"Sure!\" or \"Great question\", no closers like \"Let me know\n  if you need anything else\".\n- If a result is long (a full inbox, a week of events), give the count and the top two or three items,\n  then offer the rest on the wall or in Agent OS.\n- Arya might be across the room: if you need a choice from him, ask one short yes or no question.\n\n## What you can do\n\nYou are the voice of Hermes, his agent. Through Hermes's own tools you can read his calendar, his mail,\nthe school to-do list, the printers (including the Sovol SV08) and the running agent sessions, and search\nhis notes. Music play, pause, next and volume are handled before they reach you.\n\n## Honesty\n\n- Say plainly when you do not know something, when a tool failed, or when something is not built yet.\n  Never invent events, mail, numbers or a success you did not see.\n- Do not send mail, change the calendar or start a print unless he clearly asked for exactly that, and\n  confirm the details out loud first.\n- Never read out secrets, tokens, passwords or keys, even if asked.\n- The request came from a speech recognizer and can be wrong: \"Hermes\", \"SV08\", \"AP Physics\" may arrive\n  misspelled. Use judgement, and ask when the doubt matters.\n",
+     "message": "what's on my calendar today?"
+    },
+    "path": "/api/sessions/sess_1/chat/stream"
+   }
+  ],
+  "hook": [
+   {
+    "heard": "",
+    "level": 0.0,
+    "reply": "",
+    "state": "idle"
+   },
+   {
+    "heard": "",
+    "level": 0.0,
+    "mic": "live",
+    "reply": "",
+    "state": "idle"
+   },
+   {
+    "heard": "",
+    "level": 0.47,
+    "mic": "live",
+    "reply": "",
+    "state": "listening"
+   },
+   {
+    "heard": "what's on my calendar today?",
+    "level": 0.0,
+    "mic": "live",
+    "reply": "",
+    "state": "thinking"
+   },
+   {
+    "heard": "what's on my calendar today?",
+    "level": 0.0,
+    "mic": "live",
+    "reply": "I cannot reach Hermes right now.",
+    "state": "error"
+   },
+   {
+    "heard": "what's on my calendar today?",
+    "level": 0.0,
+    "mic": "live",
+    "reply": "I cannot reach Hermes right now.",
+    "state": "speaking"
+   },
+   {
+    "heard": "what's on my calendar today?",
+    "level": 0.0,
+    "mic": "live",
+    "reply": "I cannot reach Hermes right now.",
+    "state": "idle"
+   }
+  ],
+  "music_calls": [],
+  "raw_chunks": 152,
+  "stt_sha256": [
+   "e21cd69dc59d4527ac6ad0986b9f426cf8e53f6012afbc43c9b43f992f21b002"
+  ],
+  "tts_bodies": [
+   {
+    "text": "I cannot reach Hermes right now."
+   }
+  ]
+ },
+ "scenario": "s06_hermes_failure"
+}
