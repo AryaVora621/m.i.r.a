@@ -190,3 +190,62 @@ def test_wav_envelope_follows_loudness():
     assert len(env) == 10 and env[0][0] == 0.0
     assert all(l == 0 for _, l in env[:5]) and all(l > 0.5 for _, l in env[5:])
     assert ml.wav_envelope(b"nope") == []
+
+
+# ------------------------------------------------------------------------------------ mic mute detector
+
+def _muted_chunks(n_chunks, spikes=True):
+    """What pw-record gives a muted JV603: digital zero, a few big spikes where the stream starts."""
+    out = [np.zeros(CH, dtype=np.float32) for _ in range(n_chunks)]
+    if spikes and out:
+        out[0][:6] = 0.86
+    return out
+
+
+def _run(det, chunks):
+    return [det.feed(c) for c in chunks]
+
+
+def test_mute_detector_goes_muted_after_ten_seconds_of_zeros_and_not_before():
+    det = ml.MuteDetector()
+    ev = _run(det, _muted_chunks(99))  # 9.9 s: not yet
+    assert "muted" not in ev and det.state != "muted"
+    ev = _run(det, _muted_chunks(10, spikes=False))
+    assert ev.count("muted") == 1 and det.state == "muted"
+
+
+def test_mute_detector_hiss_stays_live_and_reports_live_once():
+    det = ml.MuteDetector()
+    ev = _run(det, hiss(300))  # 30 s of a live mic
+    assert det.state == "live"
+    assert [e for e in ev if e] == ["live"]
+
+
+def test_mute_detector_returns_to_live_within_about_a_second_of_hiss():
+    det = ml.MuteDetector()
+    _run(det, _muted_chunks(120))
+    assert det.state == "muted"
+    ev = _run(det, hiss(10))
+    assert "live" in ev and det.state == "live"
+
+
+def test_mute_detector_repeats_once_a_minute_while_muted():
+    det = ml.MuteDetector()
+    ev = _run(det, _muted_chunks(10 * 10 + 60 * 10 * 2 + 5, spikes=False))
+    assert ev.count("muted") == 1
+    assert ev.count("repeat") == 2
+
+
+def test_voice_posts_carry_the_last_known_mic_state(tmp_path):
+    s, rep = _reporter(tmp_path)
+    rep.update("idle")
+    rep.set_mic("muted")
+    rep.update("listening")
+    rep.set_mic("live")
+    rep.update("idle", "a", "b")
+    rep.close()
+    posts = _posts(s)
+    assert "mic" not in posts[0]
+    assert [p.get("mic") for p in posts[1:]] == ["muted", "muted", "live", "live"]
+    assert posts[1]["state"] == "idle"  # the mic report repeats the current state
+    s.stop()

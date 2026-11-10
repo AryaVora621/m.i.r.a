@@ -242,6 +242,53 @@ class MicAGC:
         return out
 
 
+# ------------------------------------------------------------------------------------- mic mute detector
+
+class MuteDetector:
+    """Tells a muted USB mic from a live one, on the raw chunks before the AGC.
+
+    The JV603's touch button mutes in hardware: the stream is then digital zero apart from a few spikes
+    when it starts. A live mic always carries hiss, so its samples are almost never exactly zero. The
+    verdict therefore counts exactly-zero samples (rms would be inflated by the spikes). Time is counted in
+    samples, not the wall clock, so a stalled reader cannot fake a mute.
+
+    Samples are judged in blocks of `block_s` seconds. `muted` needs `mute_s` seconds in a row of blocks
+    with at least `mute_share` zeros; one block under `live_share` zeros makes it `live` again (also the
+    first verdict after start). `feed` returns "muted" or "live" on a change, "repeat" every `repeat_s`
+    while muted (so a restarted Agent OS learns the state again), else None. `state` is None until known.
+    """
+
+    def __init__(self, mute_s=10.0, mute_share=0.99, live_share=0.90, block_s=1.0, repeat_s=60.0, rate=RATE):
+        self.mute_s, self.mute_share, self.live_share = mute_s, mute_share, live_share
+        self.block, self.repeat_s, self.rate = int(block_s * rate), repeat_s, rate
+        self.state = None
+        self._n = 0  # samples in the open block
+        self._zeros = 0
+        self._zero_run_s = 0.0
+        self._since_post_s = 0.0
+
+    def feed(self, chunk):
+        self._n += len(chunk)
+        self._zeros += int(len(chunk) - np.count_nonzero(chunk))
+        if self._n < self.block:
+            return None
+        share, secs = self._zeros / self._n, self._n / self.rate
+        self._n = self._zeros = 0
+        self._zero_run_s = self._zero_run_s + secs if share >= self.mute_share else 0.0
+        if self.state != "muted" and self._zero_run_s >= self.mute_s:
+            self.state, self._since_post_s = "muted", 0.0
+            return "muted"
+        if self.state != "live" and share < self.live_share:
+            self.state = "live"
+            return "live"
+        if self.state == "muted":
+            self._since_post_s += secs
+            if self._since_post_s >= self.repeat_s:
+                self._since_post_s = 0.0
+                return "repeat"
+        return None
+
+
 # -------------------------------------------------------------------------------- small HTTP kit
 
 def http(method, url, body=None, headers=None, timeout=10.0):
@@ -282,6 +329,7 @@ class VoiceReporter:
         self.q = []
         self.cv = threading.Condition()
         self.last = None  # (state, heard, reply) of the last item enqueued
+        self.mic = None  # "muted" / "live" once the mute detector knows; every post carries it from then on
         self.level = 0.0
         self.closed = False
         self.thread = threading.Thread(target=self._run, daemon=True)
@@ -296,11 +344,22 @@ class VoiceReporter:
             if key == self.last:
                 return
             item = {"state": state, "level": round(self.level, 3), "heard": heard, "reply": reply}
+            if self.mic:
+                item["mic"] = self.mic
             if self.q and self.q[-1]["state"] == state and self.last and self.last[0] == state:
                 self.q[-1].update(item)  # text change on a queued item: coalesce
             else:
                 self.q.append(item)
             self.last = key
+            self.cv.notify()
+
+    def set_mic(self, mic):
+        """Record the mic state and post the current voice state with it (also the minute repeat while muted)."""
+        with self.cv:
+            self.mic = mic
+            state, heard, reply = self.last or ("idle", "", "")
+            # Always its own queue item: a coalesced text change must not swallow the mic report.
+            self.q.append({"state": state, "level": round(self.level, 3), "heard": heard, "reply": reply, "mic": mic})
             self.cv.notify()
 
     def _next(self, posted, last_level_at):
@@ -606,6 +665,7 @@ class Listener:
         self.agc = MicAGC(**{k: v for k, v in (("target", args.agc_target), ("max_gain", args.agc_max_gain),
                                                ("rest", args.agc_rest), ("gate", args.agc_gate)) if v is not None}) \
             if args.agc else None
+        self.mute = MuteDetector()
         self.followup_until = 0.0
         self.wakes = 0
         self.events = []  # (kind, detail) trail for tests and --verbose
@@ -632,6 +692,11 @@ class Listener:
         c = self.src.read()
         if c is None:
             return None
+        verdict = self.mute.feed(c)  # raw chunk: the AGC must not touch the zero count
+        if verdict:
+            if verdict != "repeat":
+                self._mark("mic", verdict)  # logs "mic muted" / "mic live"
+            self.rep.set_mic(self.mute.state)
         if self.agc is not None:
             c = self.agc.process(c)
             self.rep.set_level(self.agc.level)
