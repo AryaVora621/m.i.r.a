@@ -5,10 +5,12 @@ from mirakit.plugin import PluginSpec
 
 
 def specs() -> list[PluginSpec]:
-    from . import (agc_mic, brain_hermes, control_http, gate_wake, intent_music, loop_turns, mute_zero, persona_file,
+    from . import (agc_mic, brain_hermes, control_http, gate_wake, intent_calendar, intent_music, intent_printers,
+                   intent_school, intent_time, intent_weather, loop_turns, mute_zero, persona_file,
                    playback_miraaudio, reporter_agentos, source_pipewire, source_wav, speech_link, stt_remote,
                    tts_remote, vad_silero, wake_kws)
     return [m.SPEC for m in (
         loop_turns, source_pipewire, source_wav, mute_zero, agc_mic, wake_kws, vad_silero, speech_link, stt_remote,
-        tts_remote, gate_wake, intent_music, brain_hermes, persona_file, playback_miraaudio, reporter_agentos,
+        tts_remote, gate_wake, intent_music, intent_time, intent_weather, intent_school, intent_calendar, intent_printers,
+        brain_hermes, persona_file, playback_miraaudio, reporter_agentos,
         control_http)]

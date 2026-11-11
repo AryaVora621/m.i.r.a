@@ -12,7 +12,8 @@ from mirakit.testkit import FakeCore, FakeCtx, run_plugin_contract
 
 SPECS = H.lp.specs()
 NAMES = [s.name for s in SPECS]
-EXPECTED = ["agc.mic", "brain.hermes", "control.http", "gate.wake", "intent.music", "loop.turns", "mute.zero",
+EXPECTED = ["agc.mic", "brain.hermes", "control.http", "gate.wake", "intent.calendar", "intent.music",
+            "intent.printers", "intent.school", "intent.time", "intent.weather", "loop.turns", "mute.zero",
             "persona.file", "playback.miraaudio", "reporter.agentos", "source.pipewire", "source.wav", "speech.link",
             "stt.remote", "tts.remote", "vad.silero", "wake.kws"]
 
@@ -70,8 +71,8 @@ def _stub_control(monkeypatch):
     monkeypatch.setattr(mirakit, "control", mod, raising=False)
 
 
-def test_the_seventeen_specs_are_unique_and_listed():
-    assert sorted(NAMES) == EXPECTED and len(set(NAMES)) == 17
+def test_the_twenty_two_specs_are_unique_and_listed():
+    assert sorted(NAMES) == EXPECTED and len(set(NAMES)) == 22
     assert all(isinstance(s, PluginSpec) and s.machine == "listener" for s in SPECS)
     assert all(s.kind == s.name.split(".")[0] for s in SPECS)
 
@@ -125,9 +126,12 @@ def test_provider_rules():
         assert svc in providers, svc
     assert set(providers["source"]) == {"source.pipewire"}
     assert [s.name for s in SPECS if s.core] == ["loop.turns"]
-    assert [s.name for s in SPECS if not s.required] == ["control.http"]
+    # The quick-answer intents are optional too: a failure in one must never take the listener down (exit 78).
+    quick = ["intent.calendar", "intent.printers", "intent.school", "intent.time", "intent.weather"]
+    assert sorted(s.name for s in SPECS if not s.required) == sorted(["control.http"] + quick)
+    assert all(not H.spec_named(n).default_enabled for n in quick)
     # control.http is restart class: the CLI that would enable it needs the API it starts (stage.verify defect 5)
-    assert {s.name for s in SPECS if s.toggle == "live"} == {"intent.music"}
+    assert {s.name for s in SPECS if s.toggle == "live"} == {"intent.music"} | set(quick)
     assert H.spec_named("control.http").toggle == "restart"
 
 

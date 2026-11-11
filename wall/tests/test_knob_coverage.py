@@ -23,6 +23,8 @@ V1_LINES = V1_SRC.split("\n")
 KNOBS = {f"{s.name}.{k.name}": (s, k) for s in lp.specs() for k in s.knobs}
 
 # Loop and reporter attributes that are new in the plugin engine: they have a knob `arg` but no v1 flag.
+# Plugins that exist only in the plugin engine: v1 reads none of their keys (control.http, and the five quick-answer intents).
+NEW_PLUGINS = ("control.http.", "intent.time.", "intent.weather.", "intent.school.", "intent.calendar.", "intent.printers.")
 NEW_ARGS = {"followup_wait_s", "followup_seed_chunks", "wake_seed_chunks", "preroll_chunks", "offline_text",
             "level_scale"}
 
@@ -258,10 +260,10 @@ def test_every_knob_default_is_accounted_for():
         "playback.miraaudio.night_window", "playback.miraaudio.night_gain",
     }
     unexplained = set(KNOBS) - from_flag_env - from_literal - new_in_plugin_engine
-    unexplained = {k for k in unexplained if not k.startswith("control.http.")}
+    unexplained = {k for k in unexplained if not k.startswith(NEW_PLUGINS)}
     assert not unexplained, sorted(unexplained)
     # control.http is new in its entirety: nothing in v1 reads any of its keys
-    assert all(not kn.arg and not kn.env for k, (s, kn) in KNOBS.items() if k.startswith("control.http."))
+    assert all(not kn.arg and not kn.env for k, (s, kn) in KNOBS.items() if k.startswith(NEW_PLUGINS))
 
 
 # ------------------------------------------------------------------ the example file against the schema

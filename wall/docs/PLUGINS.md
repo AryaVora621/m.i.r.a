@@ -91,6 +91,22 @@ Transcript gate that confirms the spotter's wake word.
 | wake_prefixes | list[str] | ["hey", "hi", "ok", "okay"] | 0..10 items | items | live | deny | Words allowed before her name. |
 | hallucinations | list[str] | ["you", "thank you", "thanks", "thanks for watching", "bye", "okay", "uh", "um", "hmm", "the"] | 0..50 items | items | live | deny | Transcripts treated as empty. |
 
+### intent.calendar
+
+Local answers to today's and tomorrow's calendar from Agent OS.
+
+- version 1; provides: intent; needs: nothing; optional; off by default; toggle live
+
+| key | type | default | bounds | unit | applies | agent | description |
+|---|---|---|---|---|---|---|---|
+| priority | int | 90 | 0..1000 | rank | live | deny | Higher runs first among intents; music is 100. |
+| url | url | http://127.0.0.1:3456 |  |  | live | deny | Agent OS address; loopback only. |
+| token_file | path | ~/.config/mira/quick_token |  |  | live | deny | Bearer token file for the quick route, read per call. |
+| timeout_s | float | 3 | 0.5..8 | s | live | deny | Seconds the fetch may take before the question goes to Hermes. |
+| timezone | str | America/New_York | 3..40 chars | zone | live | deny | Zone that decides what today and tomorrow mean. |
+| patterns | map[str,str] | {"next": "what'?s next on my calendar\|what'?s my next (event\|meeting\|appointment)\|when is my next (event\|meeting\|appointment)\|what is my next (event\|meeting\|appointment)", "tomorrow": "(what'?s\|what is) on my calendar tomorrow\|what do i have on my calendar tomorrow\|do i have anything on my calendar tomorrow\|what (meetings\|events\|appointments) do i have tomorrow\|do i have any (meetings\|events\|appointments) tomorrow\|what'?s on the calendar tomorrow\|what'?s on tomorrow'?s? calendar", "today": "(what'?s\|what is) on my calendar( today\| for today)?\|what do i have on my calendar( today\| for today)?\|do i have anything on my calendar( today\| for today)?\|what (meetings\|events\|appointments) do i have( today\| for today)?\|do i have any (meetings\|events\|appointments)( today\| for today)?\|what'?s on the calendar( today\| for today)?\|what'?s on today'?s? calendar"} |  |  | live | deny | Phrasings tried in order, matched whole inside a polite lead-in and tail. |
+| max_words | int | 25 | 12..60 | words | live | deny | Longest spoken answer; titles and items are dropped to fit. |
+
 ### intent.music
 
 Local music commands (play, pause, next, volume, status) answered without Hermes.
@@ -106,6 +122,66 @@ Local music commands (play, pause, next, volume, status) answered without Hermes
 | volume_step | int | 10 | 1..50 | percent | live | deny | Volume change for up or down. |
 | patterns | map[str,str] | {"status": "(what'?s\|what is\|what song is) (playing\|on)( right now\| now)?\|what am i listening to\|what song is this", "volume_up": "(turn \|make it \|volume )?(the )?(volume )?(up\|louder)( a (little\|bit))?\|volume up\|turn (it\|the music\|the volume) up\|louder", "volume_down": "volume down\|turn (it\|the music\|the volume) down\|(turn \|make it )?(the )?(volume )?(down\|quieter\|softer)( a (little\|bit))?\|quieter", "pause": "(pause[ds]?\|stop\|mute)( the)?( music\| song\| playback)?\|pause it", "next": "(next\|skip(ped)?)( the)?( song\| track)?\|next song\|skip it", "play": "(play(s\|ed)?\|resume\|start)( the)?( music\| song\| playback)?\|play it"} |  |  | live | deny | Command patterns tried in order, matched whole inside an optional please. |
 | replies | map[str,str] | {"play": "Playing.", "pause": "Paused.", "next": "Next song.", "volume": "Volume {n}.", "echo_down": "The speaker is not connected.", "playing": "Music is playing.", "paused": "Music is paused.", "nothing": "Nothing is playing.", "done": "Done.", "unreachable": "I could not reach the music player."} |  |  | live | deny | Spoken confirmations. |
+
+### intent.printers
+
+Local answers to whether the printers are running and the time left.
+
+- version 1; provides: intent; needs: nothing; optional; off by default; toggle live
+
+| key | type | default | bounds | unit | applies | agent | description |
+|---|---|---|---|---|---|---|---|
+| priority | int | 90 | 0..1000 | rank | live | deny | Higher runs first among intents; music is 100. |
+| url | url | http://127.0.0.1:3456 |  |  | live | deny | Agent OS address; loopback only. |
+| token_file | path | ~/.config/mira/quick_token |  |  | live | deny | Bearer token file for the quick route, read per call. |
+| timeout_s | float | 4 | 0.5..8 | s | live | deny | Seconds the fetch may take before the question goes to Hermes. |
+| timezone | str | America/New_York | 3..40 chars | zone | live | deny | Zone that decides what today and tomorrow mean. |
+| patterns | map[str,str] | {"status": "are (the\|my) printers (running\|printing\|busy\|going\|done\|finished)\|is (the\|my) printer (running\|printing\|busy\|done\|finished)\|is the print (done\|finished\|going\|running)\|are (the\|my) prints (done\|finished\|going)\|how('?s\| is\| are) (the\|my) (print\|prints)( going)?\|(printer\|print) status\|what (are\|is) (the\|my) (printers\|printer) doing\|what'?s the printer doing\|how (long\|much time) (is )?(left\|remaining) (on\|for) (the \|my )?(print\|prints\|printer\|printers)\|how long (until\|till) (the \|my )?(print\|prints\|printer\|printers) (is \|are )?(done\|finished\|finish\|finishes)\|when (will\|is) (the \|my )?(print\|prints\|printer\|printers) (be )?(done\|finished)"} |  |  | live | deny | Phrasings tried in order, matched whole inside a polite lead-in and tail. |
+| max_words | int | 25 | 12..60 | words | live | deny | Longest spoken answer; titles and items are dropped to fit. |
+
+### intent.school
+
+Local answers to what is due and what is missing, from Agent OS.
+
+- version 1; provides: intent; needs: nothing; optional; off by default; toggle live
+
+| key | type | default | bounds | unit | applies | agent | description |
+|---|---|---|---|---|---|---|---|
+| priority | int | 90 | 0..1000 | rank | live | deny | Higher runs first among intents; music is 100. |
+| url | url | http://127.0.0.1:3456 |  |  | live | deny | Agent OS address; loopback only. |
+| token_file | path | ~/.config/mira/quick_token |  |  | live | deny | Bearer token file for the quick route, read per call. |
+| timeout_s | float | 3 | 0.5..8 | s | live | deny | Seconds the fetch may take before the question goes to Hermes. |
+| timezone | str | America/New_York | 3..40 chars | zone | live | deny | Zone that decides what today and tomorrow mean. |
+| patterns | map[str,str] | {"missing": "what'?s missing\|what is missing\|what am i missing\|what (assignments\|work\|homework) am i missing\|(do i have\|is there) anything missing\|(do i have )?(any )?(missing\|overdue\|late) (assignments\|homework\|work)\|what'?s overdue\|anything overdue\|anything late\|what (assignments are\|work is\|homework is) missing\|what'?s missing (from\|in) school\|what do i have missing\|how many (assignments\|things) am i missing", "week": "(what'?s\|what is\|what do i have\|do i have anything\|do i have any (homework\|assignments\|work)\|is there anything\|anything\|any (homework\|assignments\|work)\|what (homework\|assignments\|work) (is\|are)) due (this week\|in the next (7\|seven) days\|over the next (7\|seven) days\|for the week)\|what (homework\|assignments\|work) do i have( due)? this week", "tomorrow": "(what'?s\|what is\|what do i have\|do i have anything\|do i have any (homework\|assignments\|work)\|is there anything\|anything\|any (homework\|assignments\|work)\|what (homework\|assignments\|work) (is\|are)) due tomorrow\|what (homework\|assignments\|work) do i have( due)? tomorrow\|do i have (any )?(homework\|assignments\|work)( due)? tomorrow\|(what )?(homework\|assignments) (do i have \|is \|are )?(due )?tomorrow", "today": "(what'?s\|what is\|what do i have\|do i have anything\|do i have any (homework\|assignments\|work)\|is there anything\|anything\|any (homework\|assignments\|work)\|what (homework\|assignments\|work) (is\|are)) due( (today\|tonight))?\|what (homework\|assignments\|work) do i have( due)?( (today\|tonight))?\|do i have (any )?(homework\|assignments\|work)( due)?( (today\|tonight))?\|(what )?(homework\|assignments) (do i have \|is \|are )?(due )?(today\|tonight)"} |  |  | live | deny | Phrasings tried in order, matched whole inside a polite lead-in and tail. |
+| max_words | int | 25 | 12..60 | words | live | deny | Longest spoken answer; titles and items are dropped to fit. |
+| stale_hours | float | 10 | 1..72 | h | live | deny | A school list older than this goes to Hermes instead of being spoken. |
+
+### intent.time
+
+Local answers to the time and the date, with no network.
+
+- version 1; provides: intent; needs: nothing; optional; off by default; toggle live
+
+| key | type | default | bounds | unit | applies | agent | description |
+|---|---|---|---|---|---|---|---|
+| priority | int | 90 | 0..1000 | rank | live | deny | Higher runs first among intents; music is 100. |
+| timezone | str | America/New_York | 3..40 chars | zone | live | deny | Zone that decides what today and tomorrow mean. |
+| patterns | map[str,str] | {"time": "(what'?s \|what is )?the (current )?time( is it)?( now\| right now)?\|what time (is it\|it is)( now\| right now\| currently)?\|current time\|time now", "date": "((what'?s\|what is) (the \|today'?s )?\|the \|today'?s )(date\|day)( is it)?( today)?\|what('?s\| is) today\|what (day\|date) is it( today)?\|what day of the week is it( today)?\|today'?s date"} |  |  | live | deny | Phrasings tried in order, matched whole inside a polite lead-in and tail. |
+
+### intent.weather
+
+Local answers to today's and tomorrow's weather from Agent OS.
+
+- version 1; provides: intent; needs: nothing; optional; off by default; toggle live
+
+| key | type | default | bounds | unit | applies | agent | description |
+|---|---|---|---|---|---|---|---|
+| priority | int | 90 | 0..1000 | rank | live | deny | Higher runs first among intents; music is 100. |
+| url | url | http://127.0.0.1:3456 |  |  | live | deny | Agent OS address; loopback only. |
+| token_file | path | ~/.config/mira/quick_token |  |  | live | deny | Bearer token file for the quick route, read per call. |
+| timeout_s | float | 3 | 0.5..8 | s | live | deny | Seconds the fetch may take before the question goes to Hermes. |
+| timezone | str | America/New_York | 3..40 chars | zone | live | deny | Zone that decides what today and tomorrow mean. |
+| patterns | map[str,str] | {"today": "((what'?s\|what is) )?the (weather\|forecast)( like)?( today\| outside\| right now\| now\| like today\| like outside)?\|how'?s the weather( today\| outside\| right now\| now)?\|how is the weather( today\| outside\| right now\| now)?\|(what'?s\|what is) it like outside( today\| right now)?\|weather( today\| right now\| outside)?\|(what'?s\|what is) today'?s (weather\|forecast)\|how (hot\|cold\|warm) is it( outside\| right now\| now)?\|(what'?s\|what is) the temperature( outside\| right now\| now)?", "rain": "(will\|is) it (going to )?(rain\|snow)( today\| tonight)?", "tomorrow": "(what'?s\|what is) the (weather\|forecast)( going to be)?( like)? tomorrow\|how'?s the weather tomorrow\|weather tomorrow\|forecast for tomorrow\|(what'?s\|what is) tomorrow'?s (weather\|forecast)\|(will\|is) it (going to )?(rain\|snow) tomorrow"} |  |  | live | deny | Phrasings tried in order, matched whole inside a polite lead-in and tail. |
 
 ### loop.turns
 
