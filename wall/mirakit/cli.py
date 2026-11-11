@@ -151,6 +151,10 @@ def resolve_target(ctx: Ctx) -> tuple[str, str, str]:
     return url.rstrip("/"), prefix, os.path.expanduser(token.replace("${HOME}", str(ctx.home)))
 
 
+class TokenMissing(CliError):
+    """No usable owner token. Only the online path needs one, so rollback treats this like an unreachable process."""
+
+
 class OnlineBackend:
     def __init__(self, base: str, prefix: str, token_file: str, timeout_s: float = 30.0) -> None:
         self.base, self.prefix, self.token_file, self.timeout_s = base, prefix, token_file, timeout_s
@@ -159,10 +163,13 @@ class OnlineBackend:
         try:
             token = Path(self.token_file).read_text().strip()
         except OSError:
-            raise CliError(EXIT_USAGE, f"the owner token file {self.token_file} is not readable; "
-                                       f"`mira tokens install` creates it") from None
+            raise TokenMissing(EXIT_USAGE, f"the owner token file {self.token_file} is not readable; run "
+                                           f"`mira tokens install`, or pass --offline to work on the settings file "
+                                           f"directly") from None
         if not token:
-            raise CliError(EXIT_USAGE, f"the owner token file {self.token_file} is empty")
+            raise TokenMissing(EXIT_USAGE, f"the owner token file {self.token_file} is empty; run "
+                                           f"`mira tokens install`, or pass --offline to work on the settings file "
+                                           f"directly")
         return token
 
     def request(self, method: str, path: str, body: Optional[dict] = None) -> Any:
@@ -256,6 +263,11 @@ def backend_of(ctx: Ctx, *, fallback_offline: bool = False) -> Any:
             online.request("GET", "/v1/health")
         except Unreachable:
             ctx.err(f"mira: no process answers at {base}; working on the file instead")
+            ctx.backend = open_offline(ctx)
+            return ctx.backend
+        except TokenMissing:
+            # the safety net must not depend on a token that may never have been installed
+            ctx.err(f"mira: no usable owner token at {token_file}; working on the file instead (offline)")
             ctx.backend = open_offline(ctx)
             return ctx.backend
     ctx.backend = online
@@ -738,7 +750,10 @@ def cmd_rollback(ctx: Ctx) -> int:
                 if knob.get("secret") or key not in values:
                     continue
                 if ctx.machine == "listener":
-                    representable = bool(knob.get("env")) or bool(knob.get("arg"))
+                    from mirakit import envmap
+                    known = envmap.v1_flags()
+                    flag = "--" + str(knob.get("arg") or "").replace("_", "-")
+                    representable = bool(knob.get("env")) or (bool(knob.get("arg")) and (known is None or flag in known))
                 else:
                     representable = key not in ("tts.engine.voice", "tts.engine.speed", "tts.engine.peak")
                 if not representable and value != knob.get("default"):
@@ -924,6 +939,28 @@ def read_env_file(path: Path) -> dict[str, str]:
     return env
 
 
+def execstart_script(unit_text: str, home: Path) -> Optional[Path]:
+    """The script the unit's ExecStart runs (the listener, or the launcher once the drop-in is in place)."""
+    joined = re.sub(r"\\\n\s*", " ", unit_text)
+    for line in joined.splitlines():
+        if line.startswith("ExecStart=") and line != "ExecStart=":
+            for t in shlex.split(line[len("ExecStart="):].replace("%h", str(home))):
+                if t.endswith(".py"):
+                    return Path(t)
+    return None
+
+
+def live_install_dir(unit_text: str, home: Path, root: Path) -> Path:
+    """The install root that holds the data files (persona, chime, models) beside the code: the folder of the
+    listener script the unit runs, minus a `current` or `releases/<id>` step when it is a release. Without a unit
+    it is the folder this code runs from, treated the same way."""
+    script = execstart_script(unit_text, home) if unit_text else None
+    base = script.parent if script is not None else Path(root)
+    if base.name == "current" or base.parent.name == "releases":
+        base = base.parent if base.name == "current" else base.parent.parent
+    return base
+
+
 def execstart_argv(unit_text: str, home: Path) -> list[str]:
     """Arguments after the script on the unit's ExecStart (line continuations joined, %h expanded)."""
     joined = re.sub(r"\\\n\s*", " ", unit_text)
@@ -990,6 +1027,11 @@ def cmd_adopt(ctx: Ctx) -> int:
         argv = execstart_argv(unit.read_text(), ctx.home) if unit.exists() else []
         env = read_env_file(ctx.home / ".config" / "mira" / "listen.env")
         doc = envmap.adopt_listener(argv, env, specs, parser)
+        install = live_install_dir(unit.read_text() if unit.exists() else "", ctx.home, ctx.root)
+        for key, _old, new in envmap.freeze_here_paths(doc, specs, install):
+            layers[key] = "install"
+        for key in envmap.unfrozen_here_paths(doc, specs):
+            ctx.err(f"mira: {key} still points into the release (${{HERE}}); no such file beside {install}")
         explicit = envmap.argv_layer(envmap.explicit_from_argv(parser, argv), specs) if argv else {}
         for key in envmap.env_layer(env, specs):
             layers[key] = "env"

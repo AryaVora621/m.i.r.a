@@ -286,3 +286,32 @@ def test_arg_attr_uses_loop_turns_names():
     assert envmap.arg_attr(lt, lt.knobs[0]) == "followup_wait_s"
     assert envmap.arg_attr(other, other.knobs[0]) is None
     assert envmap.arg_attr(other, Knob("a", "float", 1.0, "d", arg="zed")) == "zed"
+
+
+def test_legacy_mirror_drops_flags_the_v1_parser_does_not_define_and_reports_changed_ones():
+    sp = mirror_specs()
+    eff = {f"{s.name}.{k.name}": k.default for s in sp for k in s.knobs}
+    eff["loop.turns.wait_speech"] = 6.0
+    eff["vad.silero.end_silence"] = 0.9
+    known = frozenset({"--end-silence", "--kws-dir", "--vad-model", "--speech-token-file", "--hermes-key-file"})
+    _env, args, lost = envmap.legacy_mirror(eff, sp, None, known)
+    assert "--wait-speech" not in args and "--end-silence" in args            # one known, one not
+    assert {"key": "loop.turns.wait_speech", "value": 6.0, "default": 4.0} in lost
+    # with no known set the old behaviour holds (unit tests with fake specs)
+    assert "--wait-speech" in envmap.legacy_mirror(eff, sp, None)[1]
+
+
+def test_freeze_here_paths_writes_the_file_beside_the_install_or_leaves_the_default(tmp_path):
+    sp = [spec("persona.file", Knob("path", "path", "${HERE}/MIRA_WALL_IDENTITY.md", "d")),
+          spec("playback.miraaudio", Knob("chime", "path", "${HERE}/assets/offline.wav", "d")),
+          spec("vad.silero", Knob("model", "path", "${HERE}/models/silero_vad.onnx", "d"))]
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "MIRA_WALL_IDENTITY.md").write_text("persona")
+    (tmp_path / "assets" / "offline.wav").write_bytes(b"RIFF")
+    doc = {"plugins": {s.name: {"config": {k.name: k.default for k in s.knobs}} for s in sp}}
+    changed = envmap.freeze_here_paths(doc, sp, tmp_path)
+    assert {k for k, _o, _n in changed} == {"persona.file.path", "playback.miraaudio.chime"}
+    assert doc["plugins"]["persona.file"]["config"]["path"] == str(tmp_path / "MIRA_WALL_IDENTITY.md")
+    assert doc["plugins"]["playback.miraaudio"]["config"]["chime"] == str(tmp_path / "assets" / "offline.wav")
+    assert doc["plugins"]["vad.silero"]["config"]["model"] == "${HERE}/models/silero_vad.onnx"     # no such file
+    assert envmap.unfrozen_here_paths(doc, sp) == ["vad.silero.model"]

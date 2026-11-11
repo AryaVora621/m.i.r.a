@@ -65,7 +65,7 @@ Values that differ from the schema default are marked in 2.4.5. Paths are the Pi
  }
 }
 ```
-`control.http` stays disabled at cutover and is enabled live in migration step M8.
+`control.http` stays disabled at cutover and is enabled in migration step M8 (a file edit and one restart).
 
 #### 2.4.4 Full mini file (`deploy/speech.example.json`; values equal the live LaunchAgent)
 ```json

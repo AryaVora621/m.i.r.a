@@ -85,7 +85,19 @@ def test_live_change_mid_turn_applies_after_the_turn_and_the_next_chunk_uses_it(
     assert r.core.changes(limit=1)[0]["status"] == "applied"
 
 
-def test_rebuild_waits_for_an_armed_quiet_safe_point_then_resets_the_stream(rig_factory, monkeypatch):
+@pytest.fixture
+def rebuild_class_kws(monkeypatch):
+    """The shipped wake.kws knobs are restart class (a Pi spotter build takes 5 to 13 s, pre-flight 2026-11-10), so the
+    rebuild machinery of the core is exercised with a rig-local copy of the spec that applies them as a rebuild."""
+    import dataclasses
+    real = wake_kws_mod.SPEC
+    assert {k.applies for k in real.knobs} == {"restart"}          # the real specs stay restart class
+    monkeypatch.setattr(wake_kws_mod, "SPEC", dataclasses.replace(
+        real, knobs=tuple(dataclasses.replace(k, applies="rebuild") if k.applies == "restart" and k.name != "threads" else k
+                          for k in real.knobs)))
+
+
+def test_rebuild_waits_for_an_armed_quiet_safe_point_then_resets_the_stream(rig_factory, monkeypatch, rebuild_class_kws):
     r = rig_factory(cal_audio(tail=30.0), stt=[CAL_TEXT], hermes=[CAL_REPLY])
     log = spy_loop(r, monkeypatch)
     old_kws = r.core.service("wake")._real
@@ -116,7 +128,7 @@ def test_rebuild_waits_for_an_armed_quiet_safe_point_then_resets_the_stream(rig_
     assert r.args.kws_threshold == 0.12
 
 
-def test_a_rebuild_never_runs_while_a_follow_up_window_is_open(rig_factory, monkeypatch):
+def test_a_rebuild_never_runs_while_a_follow_up_window_is_open(rig_factory, monkeypatch, rebuild_class_kws):
     r = rig_factory(cal_audio(tail=6.0), stt=[CAL_TEXT], hermes=[CAL_REPLY])
     log = spy_loop(r, monkeypatch)
     r.hermes.on_chat = lambda i: r.core.submit([Edit("wake.kws.threshold", 0.12)], actor="owner", scope="owner")
@@ -126,7 +138,7 @@ def test_a_rebuild_never_runs_while_a_follow_up_window_is_open(rig_factory, monk
     assert r.core.service("wake")._real is not None
 
 
-def test_a_failing_rebuild_reverts_the_value_and_the_file(tmp_path, monkeypatch):
+def test_a_failing_rebuild_reverts_the_value_and_the_file(tmp_path, monkeypatch, rebuild_class_kws):
     real_build = wake_kws_mod.build_kws
 
     def build(args):

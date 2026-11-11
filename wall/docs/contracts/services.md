@@ -133,4 +133,4 @@ Provider rules:
 2. `--wav FILE` on the command line is an in-memory override: `source.wav.enabled=true`, `source.wav.path=FILE`, `source.pipewire.enabled=false`. Nothing is written.
 3. Disabling a plugin that provides a required service is refused at runtime; in the file it makes boot exit 78 with the missing service named.
 4. Multi services are ordered by the provider's `priority` knob (descending), then plugin name.
-5. `toggle="live"` plugins (`control.http`, `intent.*`) start or stop at the next safe point; all others are `restart`.
+5. `toggle="live"` plugins (`intent.*`) start or stop at the next safe point; all others are `restart`, `control.http` included (the CLI that would enable it needs the API it starts, so enabling it is `mira enable control.http --offline` plus one restart).

@@ -39,7 +39,8 @@ class WakeKws(PluginBase):
         self.ctx.provide("wake", self.kws)
 
     def rebuild(self, cfg):
-        """Dispose first: two spotters never coexist (MemoryMax=200M). The provided reference is dropped, the old
+        """Not reached by the core while every knob is restart class (see SPEC); kept for a faster spotter.
+        Dispose first: two spotters never coexist (MemoryMax=200M). The provided reference is dropped, the old
         spotter is released and collected, and only then is the new one built."""
         self.ctx.provide("wake", None)
         old, self.kws = self.kws, None
@@ -56,17 +57,19 @@ SPEC = PluginSpec(
     name="wake.kws", kind="wake", version="1", machine="listener", provides=("wake",),
     summary="Streaming keyword spotter for the wake word.",
     create=lambda ctx, cfg: WakeKws(ctx, cfg), order=50,
+    # Every knob is restart class: a spotter build measured 5 s unthrottled and 12 to 13 s under the unit's CPUQuota on
+    # the Pi (pre-flight 2026-11-10), far over the 2 s a live rebuild may take, and the wake word would be deaf meanwhile.
     knobs=(
-        Knob("kws_dir", "path", "${HERE}/../voice/models/kws", "Spotter model folder.", applies="rebuild",
+        Knob("kws_dir", "path", "${HERE}/../voice/models/kws", "Spotter model folder.", applies="restart",
              arg="kws_dir", env="MIRA_KWS_DIR"),
         Knob("keywords", "str", "keywords.txt", "Keyword file inside kws_dir.", min=1, max=120, unit="chars",
-             applies="rebuild", arg="keywords"),
+             applies="restart", arg="keywords"),
         Knob("threshold", "float", 0.15, "Spotter sensitivity; lower fires easier (the transcript gate decides).",
-             unit="score", min=0.01, max=0.5, applies="rebuild", arg="kws_threshold", env="MIRA_KWS_THRESHOLD",
+             unit="score", min=0.01, max=0.5, applies="restart", arg="kws_threshold", env="MIRA_KWS_THRESHOLD",
              topic="wake", spoken="wake sensitivity", effect="fires less often",
              phrases=("you wake up too much", "you don't wake up")),
         Knob("score", "float", 1.0, "Keyword boost; raising it hurt recall.", unit="score", min=0.5, max=3.0,
-             applies="rebuild", arg="kws_score", env="MIRA_KWS_SCORE"),
+             applies="restart", arg="kws_score", env="MIRA_KWS_SCORE"),
         Knob("threads", "int", 1, "Spotter CPU threads.", unit="threads", min=1, max=2, applies="restart",
              arg="kws_threads", env="MIRA_KWS_THREADS"),
     ),

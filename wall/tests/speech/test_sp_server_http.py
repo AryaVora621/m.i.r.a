@@ -147,6 +147,26 @@ def test_stt_transcribes_a_wav_and_notes_busy(srv):
     assert srv.stt.seen == [24000] and srv.core.busy == 1
 
 
+@pytest.mark.parametrize("path,payload,raw", [("/stt", None, False), ("/tts", {"text": "hello"}, True)])
+def test_the_busy_note_is_made_before_the_reply_leaves(srv, path, payload, raw):
+    # A slow note_busy (a loaded machine) used to run after the reply was written, so a client that acted on the
+    # reply saw the engine idle. With the note before the flush the client cannot get the reply until it is made.
+    import time
+
+    def slow_note():
+        time.sleep(0.4)
+        srv.core.busy += 1
+
+    srv.core.note_busy = slow_note
+    code = (call(srv, "POST", path, wav16k(0.5) if payload is None else payload, raw=raw))[0]
+    assert code == 200 and srv.core.busy == 1
+
+
+def test_a_failed_request_is_still_noted_busy_before_its_error_reply(srv):
+    assert call(srv, "POST", "/stt", b"not a wav")[0] == 400
+    assert srv.core.busy == 1
+
+
 def test_stt_rejects_bad_audio_and_oversized_bodies_with_the_v1_answers(srv):
     assert call(srv, "POST", "/stt", wav16k(1.0, rate=8000))[:2] == (400, {"error": "need 16 kHz mono 16-bit WAV"})
     assert call(srv, "POST", "/stt", wav16k(1.0, channels=2))[0] == 400

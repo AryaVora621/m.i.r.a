@@ -70,7 +70,7 @@ def test_importing_the_plugin_does_not_import_mirakit_control():
 
 
 def test_spec_flags():
-    assert SPEC.required is False and SPEC.default_enabled is False and SPEC.toggle == "live" and SPEC.provides == ()
+    assert SPEC.required is False and SPEC.default_enabled is False and SPEC.toggle == "restart" and SPEC.provides == ()
     assert all(k.agent == "deny" for k in SPEC.knobs)
     k = {x.name: x for x in SPEC.knobs}
     assert k["preview_quiet"].default == ""  # addendum: no quiet window unless the owner sets one

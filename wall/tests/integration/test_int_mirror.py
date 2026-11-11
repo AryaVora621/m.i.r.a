@@ -95,3 +95,43 @@ def test_a_run_through_main_writes_only_under_home(tmp_path, monkeypatch, capsys
     assert {p.name for p in new if p.parent == cfgdir} <= {"listen.env", "legacy.args", "changes.jsonl", "mira.json.lastgood",
                                                              "mira.json.lock", "history", "state"}
     r.close()
+
+
+def v1_accepts(cfgdir):
+    """Parse legacy.args with the frozen v1 listener's own parser: argparse exits 2 on a flag it does not know,
+    which is exactly what the launcher's fallback and `mira rollback` would hit."""
+    import mira_listen_v1
+    argv = tokens((cfgdir / "legacy.args").read_text())
+    return mira_listen_v1.build_parser().parse_args(argv), argv
+
+
+def test_the_mirror_never_holds_a_flag_the_v1_parser_rejects_after_boot_and_after_sets(tmp_path, monkeypatch):
+    r, cfgdir = mk(tmp_path, monkeypatch)
+    try:
+        v1_accepts(cfgdir)
+        # knobs v1 has a flag for, knobs it has none for (loop.turns names that exist only on the new engine), and an undo
+        r.core.submit([Edit("loop.turns.followup_s", 10.0), Edit("loop.turns.followup_wait_s", 2.0),
+                       Edit("loop.turns.preroll_chunks", 20), Edit("loop.turns.offline_text", "Speech is down."),
+                       Edit("vad.silero.end_silence", 0.9)], actor="owner", scope="owner")
+        r.core.safe_point(True)
+        ns, argv = v1_accepts(cfgdir)
+        assert ns.followup_s == 10.0 and ns.end_silence == 0.9
+        for flag in ("--followup-wait-s", "--preroll-chunks", "--offline-text", "--level-scale", "--wake-seed-chunks",
+                     "--followup-seed-chunks"):
+            assert flag not in argv
+        r.core.undo(actor="owner", scope="owner")
+        r.core.safe_point(True)
+        v1_accepts(cfgdir)
+    finally:
+        r.close()
+
+
+def test_what_the_mirror_cannot_carry_is_reported_as_lost(tmp_path, monkeypatch):
+    r, cfgdir = mk(tmp_path, monkeypatch)
+    try:
+        r.core.submit([Edit("loop.turns.followup_wait_s", 2.0)], actor="owner", scope="owner")
+        r.core.safe_point(True)
+        lost = {row["key"]: row for row in r.core.legacy_mirror_report()}
+        assert lost["loop.turns.followup_wait_s"]["value"] == 2.0
+    finally:
+        r.close()

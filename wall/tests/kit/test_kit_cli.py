@@ -257,6 +257,14 @@ def test_exit_9_when_the_mini_does_not_answer(tmp_path, world):
 def test_unreadable_token_file_is_a_usage_error_not_a_crash(world):
     code, _, err = run(world, "status", token="nothing-here")
     assert code == 1 and "tokens install" in err
+    # one clear line, and it names the way out
+    assert len([line for line in err.splitlines() if line.strip()]) == 1 and "--offline" in err
+
+
+@pytest.mark.parametrize("argv", [["status"], ["inventory"], ["restart"], ["enable", "agc.mic"], ["set", "agc.mic.target=0.06"]])
+def test_every_online_command_without_tokens_fails_with_one_line_naming_offline(world, argv):
+    code, _, err = run(world, *argv, token="nothing-here")
+    assert code == 1 and len(err.splitlines()) == 1 and "--offline" in err and "tokens install" in err
 
 
 def test_reset_reads_the_default_and_writes_it(world):
@@ -399,6 +407,30 @@ def test_rollback_works_on_the_file_when_the_process_is_down(tmp_path):
     rec = []
     code, out, err = run(w, "rollback", offline_opener=opener, runner_factory=lambda **kw: rec.append(RecRunner()) or rec[-1])
     assert code == 0 and core.values["core.engine"] == "legacy" and "working on the file instead" in err
+
+
+def test_rollback_with_no_tokens_and_no_server_still_works_offline_and_says_so(tmp_path):
+    core, opener, _ = offline_world(tmp_path)
+    s = socket.socket()
+    s.bind(("127.0.0.1", 0))
+    port = s.getsockname()[1]
+    s.close()
+    w = dict(url=f"http://127.0.0.1:{port}", tmp=tmp_path, out=[], err=[])           # no owner token file exists at all
+    rec = []
+    code, out, err = run(w, "rollback", token="never-installed", offline_opener=opener,
+                         runner_factory=lambda **kw: rec.append(RecRunner()) or rec[-1])
+    assert code == 0 and core.values["core.engine"] == "legacy"
+    assert "no usable owner token" in err and "offline" in err
+
+
+def test_rollback_with_no_tokens_but_a_running_server_falls_back_to_the_file(world):
+    # the server answers but the CLI has no token to prove who it is: the safety net must not need one
+    rec = []
+    opener = lambda ctx: CLI.OfflineBackend(world["core"])
+    code, out, err = run(world, "rollback", token="never-installed", offline_opener=opener,
+                         runner_factory=lambda **kw: rec.append(RecRunner()) or rec[-1])
+    assert code == 0 and world["core"].values["core.engine"] == "legacy"
+    assert "no usable owner token" in err
 
 
 # ---------------------------------------------------------------- config
@@ -567,6 +599,46 @@ def test_legacy_args_written_by_adopt_are_accepted_by_the_v1_parser(tmp_path, mo
     v1 = importlib.import_module("mira_listen_v1")
     tokens = (cfgdir / "legacy.args").read_text().splitlines()
     v1.build_parser().parse_args(tokens)
+
+
+def test_adopt_writes_the_true_persona_and_chime_paths_from_the_live_install(tmp_path, monkeypatch):
+    """Drift B1: `${HERE}` is releases/<id>/ after the switch, which holds code only, so adopt must freeze the files
+    that exist beside the live install (the folder of the script the unit runs) as absolute paths, in the file and
+    in the legacy mirror."""
+    monkeypatch.setenv("HOME", str(tmp_path))
+    cfgdir, _ = _listener_adopt_setup(tmp_path)
+    install = tmp_path / "mira-listen"
+    (install / "assets").mkdir(parents=True)
+    (install / "MIRA_WALL_IDENTITY.md").write_text("I am Mira.\n")
+    (install / "assets" / "offline.wav").write_bytes(b"RIFF....WAVE")
+    dry = []
+    CLI.main(["adopt"], env={"HOME": str(tmp_path), "MIRA_MACHINE": "listener"}, home=tmp_path, out=dry.append,
+             err=lambda s: None, root=WALL)
+    assert any("persona.file.path" in line and line.rstrip().endswith("install") for line in "\n".join(dry).splitlines())
+    out, err = [], []
+    code = CLI.main(["adopt", "--write"], env={"HOME": str(tmp_path), "MIRA_MACHINE": "listener"}, home=tmp_path,
+                    out=out.append, err=err.append, root=WALL)
+    assert code == 0, err
+    doc = json.loads((cfgdir / "mira.json").read_text())
+    persona = str(install / "MIRA_WALL_IDENTITY.md")
+    chime = str(install / "assets" / "offline.wav")
+    assert doc["plugins"]["persona.file"]["config"]["path"] == persona
+    assert doc["plugins"]["playback.miraaudio"]["config"]["chime"] == chime
+    args = (cfgdir / "legacy.args").read_text().splitlines()
+    assert args[args.index("--identity") + 1] == persona and args[args.index("--chime") + 1] == chime
+    assert f"MIRA_IDENTITY_FILE={persona}" in (cfgdir / "listen.env").read_text()
+
+
+def test_adopt_warns_and_keeps_the_default_when_the_install_has_no_such_file(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    cfgdir, _ = _listener_adopt_setup(tmp_path)
+    out, err = [], []
+    code = CLI.main(["adopt", "--write"], env={"HOME": str(tmp_path), "MIRA_MACHINE": "listener"}, home=tmp_path,
+                    out=out.append, err=err.append, root=WALL)
+    assert code == 0
+    assert json.loads((cfgdir / "mira.json").read_text())["plugins"]["persona.file"]["config"]["path"] == \
+        "${HERE}/MIRA_WALL_IDENTITY.md"
+    assert any("persona.file.path" in line and "no such file" in line for line in err)
 
 
 def test_adopt_refuses_to_overwrite_an_existing_file_and_force_keeps_history(tmp_path, monkeypatch):

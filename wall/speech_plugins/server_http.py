@@ -95,7 +95,17 @@ def make_handler(plugin: "ServerHttpPlugin"):
         def log_message(self, fmt, *args):  # request lines only, never bodies
             ctx.log.info("%s %s", self.client_address[0], fmt % args)
 
+        _busy_pending = False
+
+        def _note_busy_once(self):
+            # The note must land before the first byte of the reply leaves: a client (or a test) that acts on
+            # the reply would otherwise race a note made after the write and see the engine as idle.
+            if self._busy_pending:
+                self._busy_pending = False
+                plugin.note_busy()
+
         def _send(self, code, body: bytes, ctype="application/json", headers=None):
+            self._note_busy_once()
             self.send_response(code)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
@@ -161,6 +171,7 @@ def make_handler(plugin: "ServerHttpPlugin"):
                 # Drain nothing: closing avoids keeping an unauthenticated body in memory.
                 self.close_connection = True
                 return self._json(401, {"error": "unauthorized"})
+            self._busy_pending = True
             try:
                 if path == "/stt":
                     self._stt()
@@ -170,7 +181,7 @@ def make_handler(plugin: "ServerHttpPlugin"):
                 ctx.log.error("error %s: %s", type(e).__name__, str(e)[:120])
                 self._json(500, {"error": "internal"})
             finally:
-                plugin.note_busy()
+                self._note_busy_once()      # only when no reply was written at all (a dropped connection)
 
         def _stt(self):
             cfg = plugin.cfg

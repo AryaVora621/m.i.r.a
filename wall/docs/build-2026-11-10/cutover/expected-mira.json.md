@@ -26,8 +26,8 @@ File header: `format` 1, `machine` "listener", `revision` 1 (adopt) then 2 (afte
 | brain.hermes.key_file | `/home/mira/.config/mira/hermes_api_key` | unit flag `--hermes-key-file` |
 | reporter.agentos.url | `http://127.0.0.1:3456/api/hooks/voice` | `listen.env` MIRA_VOICE_URL (equals the default) |
 | reporter.agentos.token_file | `/home/mira/.config/mira/voice_token` | unit flag `--voice-token-file` |
-| persona.file.path | `${HERE}/MIRA_WALL_IDENTITY.md` | NOT frozen from the live file: no flag, no MIRA_IDENTITY_FILE, so the default is written. Wrong after the switch (drift.md B1); fixed in section B |
-| playback.miraaudio.chime | `${HERE}/assets/offline.wav` | same cause; fixed in section B |
+| persona.file.path | `/home/mira/mira-listen/MIRA_WALL_IDENTITY.md` | frozen from the file beside the live install (source `install`; repair pass for drift.md B1). Before the repair adopt wrote `${HERE}/MIRA_WALL_IDENTITY.md`, which points into the release; the old section B step is then a no-op |
+| playback.miraaudio.chime | `/home/mira/mira-listen/assets/offline.wav` | same: frozen from the install, source `install` |
 | playback.miraaudio.bin | `mira-audio` | default (no MIRA_AUDIO_BIN live); the patched helper that applies the 12 percent level |
 | playback.miraaudio.night_window | "" (off) | nothing in the legacy world has it; adopt cannot produce 23:00-06:00 |
 | playback.miraaudio.night_gain | 0.5 | schema default |
@@ -41,7 +41,7 @@ File header: `format` 1, `machine` "listener", `revision` 1 (adopt) then 2 (afte
 | core.unit_restart_sec | 3.0 | unit `RestartSec=` |
 | core.crash_window_s, crash_guard_after, crash_legacy_after, crash_guard_revert_s | 600.0, 3, 4, 1800.0 | defaults |
 
-All 17 listener plugins are present; enabled everywhere except `source.wav` and `control.http`. The dry run lists only values with source env or flag, or that differ from the default, so persona path, chime and the AGC values that equal their default are visible only with `mira adopt --all` (AGC shows because its source is the environment).
+All 17 listener plugins are present; enabled everywhere except `source.wav` and `control.http`. The dry run lists only values with source env or flag, or that differ from the default, so the AGC values that equal their default are visible only with `mira adopt --all`; the persona path and chime now show in the plain dry run (source `install`) (AGC shows because its source is the environment).
 
 ## B. Set after adopt, before the engine switch (runbook, drift.md deltas)
 

@@ -46,10 +46,13 @@ def validate(values):
         raise ConfigError("bind must be a loopback address", "bind")
 
 
+# toggle is restart: `mira enable` is an online command and this plugin is the API it would talk to, so a live
+# enable could never be requested without a file edit anyway, and a live start has nothing to prove it bound.
+# Enabling is `mira enable control.http --offline` plus one restart.
 SPEC = PluginSpec(
     name="control.http", kind="control", version="1", machine="listener", provides=(),
     summary="The Pi's control API: read, tune, preview and undo.",
-    create=lambda ctx, cfg: ControlHttp(ctx, cfg), required=False, default_enabled=False, toggle="live", order=200,
+    create=lambda ctx, cfg: ControlHttp(ctx, cfg), required=False, default_enabled=False, toggle="restart", order=200,
     validate=validate,
     knobs=(
         Knob("bind", "str", "127.0.0.1", "Address the control API listens on; loopback only.", applies="restart"),

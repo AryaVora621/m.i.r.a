@@ -126,7 +126,9 @@ def test_provider_rules():
     assert set(providers["source"]) == {"source.pipewire"}
     assert [s.name for s in SPECS if s.core] == ["loop.turns"]
     assert [s.name for s in SPECS if not s.required] == ["control.http"]
-    assert {s.name for s in SPECS if s.toggle == "live"} == {"control.http", "intent.music"}
+    # control.http is restart class: the CLI that would enable it needs the API it starts (stage.verify defect 5)
+    assert {s.name for s in SPECS if s.toggle == "live"} == {"intent.music"}
+    assert H.spec_named("control.http").toggle == "restart"
 
 
 def test_needs_and_reads_name_real_services_and_knobs():

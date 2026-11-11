@@ -40,7 +40,7 @@ i. Remove the stage tests' leftovers in shared /tmp (mira-owned scratch): `PI 'r
   ```
   Verify the md5 on the Pi equals `git -C "$WALL/.." show 71dcc7c:wall/deploy/mira-listen.dropin.tmpl | md5`.
 
-**Gap B: the `mira` command is not installed on either machine.** `wall/bin/mira` is a sh wrapper meant for `~/.local/bin/mira`, but the manifest does not ship it and no step installs it (the Pi's `~/.local/bin` holds only `claude`; the mini has no `mira`). Install it (a new file that nothing live reads):
+**Gap B: the `mira` command is not installed on either machine.** `wall/bin/mira` is a sh wrapper meant for `~/.local/bin/mira`, but the manifest does not ship it and no step installs it (the Pi's `~/.local/bin` holds only `claude`; the mini has no `mira`). After the repair pass `mira deploy pi --stage` and `mira deploy speech` install the command as a link themselves and refuse to replace a plain file at `~/.local/bin/mira`; if you use the hand copy below, delete that file (`rm ~/.local/bin/mira`) before the first repaired stage. Hand copy (a new file that nothing live reads):
 ```
 cat "$WALL/bin/mira" | PI 'cat > /home/mira/.local/bin/mira && chmod 755 /home/mira/.local/bin/mira'
 cat "$WALL/bin/mira" | MINI 'mkdir -p "$HOME/.local/bin" && cat > "$HOME/.local/bin/mira" && chmod 755 "$HOME/.local/bin/mira"'
@@ -187,7 +187,7 @@ PI 'grep -E "MIRA_IDENTITY_FILE|MIRA_CHIME|MIRA_SPEECH_URL" /home/mira/.config/m
 ```
 Expect `MIRA_IDENTITY_FILE=/home/mira/mira-listen/MIRA_WALL_IDENTITY.md`, `MIRA_CHIME=/home/mira/mira-listen/assets/offline.wav`, `MIRA_SPEECH_URL=http://127.0.0.1:8766`, a legacy.args tail of `--identity <path> --chime <path>`, and `0` for both `releases` counts.
 
-### 3.4 Clean legacy.args (needed; section 6, item 4; repeat after every later `mira set`)
+### 3.4 Clean legacy.args (only for a release staged before the repair pass, which regenerates the mirror with flags v1 rejects; the repaired code never writes them, so then this step is a harmless check; section 6, item 4)
 After any `mira set`, the legacy mirror carries flags the v1 listener does not define (six in the rehearsal: `--followup-wait-s --followup-seed-chunks --wake-seed-chunks --preroll-chunks --offline-text --level-scale`). The launcher's crash fallback runs v1 with that file and v1 exits 2, so the safety net would fail. Only `mira rollback` strips them. Strip them with the release's own v1 parser (same logic as `mirakit.cli.sanitize_legacy_args`):
 ```
 PI "cd /home/mira/mira-listen/releases/$REL && PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. /home/mira/mira-listen/venv/bin/python -B - <<'EOF'
@@ -256,7 +256,7 @@ Then the 24 h watch (rung 7), `sv08watch` style: tail the journal, every 30 minu
 ```
 PI '/home/mira/.local/bin/mira rollback --offline'
 ```
-Use `--offline` until the tokens exist: plain `mira rollback` tries the control API first and stops with `the owner token file ... is not readable` (reproduced), the worst moment for it. Expect `core.engine plugins -> legacy ...`, possibly a list of values legacy cannot represent (`playback.miraaudio.night_window = 23:00-06:00`), a line about dropped `legacy.args` flags, and `restarted mira-listen on the legacy engine`. The launcher then runs `mira_listen_v1.py` from the release with the tuned values; the persona and chime stay the shared absolute paths.
+Use `--offline` until the tokens exist (a release from before the repair pass stops plain `mira rollback` with `the owner token file ... is not readable`, the worst moment for it; the repaired one falls back to the file by itself and says so). Expect `core.engine plugins -> legacy ...`, possibly a list of values legacy cannot represent (`playback.miraaudio.night_window = 23:00-06:00`), a line about dropped `legacy.args` flags, and `restarted mira-listen on the legacy engine`. The launcher then runs `mira_listen_v1.py` from the release with the tuned values; the persona and chime stay the shared absolute paths.
 Fallbacks in order: `deploy pi --rollback` from the Mac needs `releases/.previous`, which exists only after a `--activate`, so tonight it answers `no previous release recorded`; skip it. Last resort, runs the untouched original file:
 ```
 PI "rm /home/mira/.config/systemd/user/mira-listen.service.d/mira.conf && $XDG systemctl --user daemon-reload && $XDG systemctl --user restart mira-listen"
@@ -268,7 +268,7 @@ Automatic fallback: 3 unplanned starts in 10 minutes turn the boot guard on, 4 r
 
 ## 4. M8: the control plane (INTERRUPTS: one more restart of about 20 s; to avoid it, fold 4.1 and 4.2 into 3.5 at the cost of changing two things at once)
 
-The spec calls `mira enable control.http` live, but it cannot bootstrap itself: it is an online command and needs the control API it would start. The CLI route is a file edit plus a restart (the code has no config file watcher and no SIGHUP).
+control.http is restart class (decision of the repair pass, 2026-11-10; the spec first called it live): `mira enable` is an online command and needs the control API it would start, so it cannot bootstrap itself. The route is `mira enable control.http --offline` plus a restart (the code has no config file watcher and no SIGHUP). A smaller and safer change than a live bootstrap.
 
 ### 4.1 Tokens (no interruption)
 ```
@@ -305,7 +305,7 @@ PI '/home/mira/.local/bin/mira get agc.mic.target --effective'                # 
 Run 3.4 afterwards. Expect change log lines in `mira changes` and `MIRA_AGC_TARGET=0.05` in the legacy mirror at the end.
 
 ### 4.4 Rollback of M8
-`PI '/home/mira/.local/bin/mira disable control.http'` (live, no restart). If the control plane blocks the CLI: `... disable control.http --offline` plus `restart --offline`.
+`PI '/home/mira/.local/bin/mira disable control.http --offline'` plus `PI '/home/mira/.local/bin/mira restart --offline'` (control.http is restart class, so a disable is not live either).
 
 ---------------------------------------------------------------------------------------------------
 
@@ -348,11 +348,13 @@ PI 'sudo -n -u agent /home/agent/.local/bin/hermes skills list | grep -i mira'  
 
 ## 6. Tooling I believe will fail on the real machines (with reasons)
 
+**Repair pass (later the same night): items 1 to 5 and 9 below are fixed in code, and the stage tool now installs the `mira` command (Gaps A and B need no hand steps once a newer release is staged).** Release 71dcc7c34598 on the Pi predates the repair and still has the defects: stage the repaired commit first (`mira deploy pi --stage`, then check `mira --help` on the Pi), and treat the hand steps of Gap A and Gap B as the fallback only. Item 5 was settled by making `control.http` restart class, and `wake.kws` knobs are restart class too. reports/repair.md has the details.
+
 1. **`mira unit render|apply` on the Pi (blocker).** It reads `<release>/deploy/mira-listen.dropin.tmpl`, which the manifest does not ship: `FileNotFoundError` (reproduced with a release-only copy of the 42 files). Fix: Gap A.
 2. **No `mira` command on either machine (blocker for every `mira ...` line).** `wall/bin/mira` is never shipped or installed. Fix: Gap B, or call `PYTHONPATH=<release> <venv>/bin/python -B -m mirakit.cli`.
 3. **Online commands fail until M8.** Without `control.owner.token` the CLI stops before any network call: `mira status`, `inventory`, `restart` and `rollback` without `--offline`, `enable`, and `set` without `--offline` all print `the owner token file ... is not readable`. The spec's 7.1 steps 4 to 6 (`mira restart`, `mira status`, `mira inventory`, `mira rollback`) fail as written. The runbook uses `--offline` or the journal. Bare `mira rollback` before 4.1 is the case that matters.
 4. **`legacy.args` goes stale after every `mira set` (breaks the automatic fallback).** Reproduced: right after `adopt --write` all 16 flags are known to v1; after one `mira set` it holds 22, six unknown to `mira_listen_v1.py`. `mira_launch.py` feeds that file to v1 on a crash-loop fallback and argparse exits 2, so the 4-starts safety net would loop. Only `mira rollback` cleans it. Code fix: call the sanitizer after every mirror write. Until then, step 3.4 after every set.
-5. **`mira enable control.http` cannot be live-first.** Section 4: two restarts instead of zero. Later fix: a SIGHUP or file-watch reload.
+5. **`mira enable control.http` is restart class.** Section 4: one more restart. Settled in the repair pass by changing the schema, not the process; a SIGHUP or file-watch reload would be the later way to avoid it.
 6. **`launchctl kickstart` over ssh on the mini.** `gui/501` works for `print` (checked); `kickstart` normally works while the owner is logged in at the console. If it fails, run from a Terminal on the mini.
 7. **A broken mini restart deafens her for more than 30 s.** The 15 s launchd throttle times 4 unplanned starts before the legacy fallback is over a minute of no STT; the rollback is by hand (2.5).
 8. **Branch.** `deploy` ships HEAD of the checked-out branch: 71dcc7c is on `feat/mira-voice-loop`, not `main` (0.3).

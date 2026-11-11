@@ -1,6 +1,6 @@
 {
  "version": 1,
- "comment": "Files that `mira deploy` ships, per machine. A plain string is copied to the same relative path; {src, dst} maps a repo path under wall/ to a path inside the install dir. Directories are shipped recursively without __pycache__.",
+ "comment": "Files that `mira deploy` ships, per machine. A plain string is copied to the same relative path; {src, dst} maps a repo path under wall/ to a path inside the install dir. Directories are shipped recursively without __pycache__. A \"command\" entry names the stable `mira` link under the install user's HOME: on the Pi it follows the current release, on the mini it points at the flat install. Every file the CLI reads at run time must be listed.",
  "pi": {
   "ssh": "mira@pi",
   "root": "/home/mira/mira-listen",
@@ -8,7 +8,9 @@
   "unit": "mira-listen",
   "startup_regex": "mira-listen up \\(",
   "wait_s": 20,
-  "files": ["mira_launch.py", "mira_listen.py", "mira_listen_v1.py", "mira_shadow.py", "mirakit", "listener_plugins"]
+  "files": ["mira_launch.py", "mira_listen.py", "mira_listen_v1.py", "mira_shadow.py", "mirakit", "listener_plugins",
+   "bin/mira", "deploy/mira-listen.dropin.tmpl"],
+  "command": {"link": ".local/bin/mira", "target": "current/bin/mira", "fallback": "bin/mira"}
  },
  "speech": {
   "ssh": "mini",
@@ -19,8 +21,10 @@
   "files": [
    {"src": "speech/server.py", "dst": "server.py"},
    {"src": "speech/server_v1.py", "dst": "server_v1.py"},
+   {"src": "bin/mira", "dst": "bin/mira"},
    "mirakit",
    "speech_plugins"
-  ]
+  ],
+  "command": {"link": ".local/bin/mira", "target": "bin/mira"}
  }
 }

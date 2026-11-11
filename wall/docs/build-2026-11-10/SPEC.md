@@ -369,7 +369,7 @@ Provider rules:
 2. `--wav FILE` on the command line is an in-memory override: `source.wav.enabled=true`, `source.wav.path=FILE`, `source.pipewire.enabled=false`. Nothing is written.
 3. Disabling a plugin that provides a required service is refused at runtime; in the file it makes boot exit 78 with the missing service named.
 4. Multi services are ordered by the provider's `priority` knob (descending), then plugin name.
-5. `toggle="live"` plugins (`control.http`, `intent.*`) start or stop at the next safe point; all others are `restart`.
+5. `toggle="live"` plugins (`intent.*`) start or stop at the next safe point; all others are `restart`, `control.http` included (the CLI that would enable it needs the API it starts, so enabling it is `mira enable control.http --offline` plus one restart).
 
 ### 2.3 Core API, threading and safe points (`mirakit/core.py`, normative)
 
@@ -488,7 +488,7 @@ if flags & RESET_STREAM:
 Why the backlog is flushed: while the loop thread is busy, `PwSource` keeps queuing up to 60 s of audio. Processing it after a rebuild would feed seconds of old audio to the mute counter, AGC and spotter in a burst. Dropping it costs only the same deafness the rebuild already caused; the mute detector counts samples, so a flush only delays a mute verdict.
 
 #### 2.3.3 Measured deaf window gate
-Before any Pi knob is shipped as `rebuild`, pre-flight P0.5 (section 5) measures on the Pi: spotter build time, peak RSS during dispose-then-build, VAD build time, and cold start (import plus model load to the first chunk). If a spotter rebuild takes more than 2.0 s, or peak RSS of the listener during a rebuild exceeds 170 MB, `wake.kws` knobs are shipped as `restart` instead. Cold start counts as deaf time inside `RestartSec=3`; it is recorded in the report and in the vault note.
+Before any Pi knob is shipped as `rebuild`, pre-flight P0.5 (section 5) measures on the Pi: spotter build time, peak RSS during dispose-then-build, VAD build time, and cold start (import plus model load to the first chunk). If a spotter rebuild takes more than 2.0 s, or peak RSS of the listener during a rebuild exceeds 170 MB, `wake.kws` knobs are shipped as `restart` instead. Result (pre-flight 2026-11-10): 5.0 s unthrottled and 11.7 to 13.6 s under the unit quota, so every `wake.kws` knob ships as `restart`. Cold start counts as deaf time inside `RestartSec=3`; it is recorded in the report and in the vault note.
 
 #### 2.3.4 Turn phase
 `core.turn` is `None` or a frozen `Turn(id: str, phase: "brain", started: float)`. `turn_begin()` sets it, `turn_end()` clears it. `id` is `T-<monotonic counter>`. Only the brain phase is tracked: it is the only time Hermes can call tools for this turn.
@@ -583,13 +583,13 @@ Legend: `L` live, `R` rebuild, `S` restart. Agent column: `deny`, or `min..max s
 | floor_rate_mid | float | 0.05 | 0..1 | L | deny | (literal) | rate otherwise |
 Cross rule: `rest <= max_gain` (apply re-clamps exactly as `MicAGC.__init__`). `reads=("reporter.agentos.level_scale",)`.
 
-**wake.kws** (every knob is owner only; R becomes S if P0.5 fails the gate of 2.3.3)
+**wake.kws** (every knob is owner only; all four are S, restart class: P0.5 failed the gate of 2.3.3)
 | key | type | default | bounds (unit) | ap | agent | legacy | description |
 |---|---|---|---|---|---|---|---|
-| kws_dir | path | "${HERE}/../voice/models/kws" | | R | deny | MIRA_KWS_DIR, --kws-dir | spotter model folder |
-| keywords | str | "keywords.txt" | 1..120 chars | R | deny | --keywords | keyword file inside kws_dir |
-| threshold | float | 0.15 | 0.01..0.5 score | R | deny | MIRA_KWS_THRESHOLD, --kws-threshold | spotter sensitivity, lower fires easier (the transcript gate decides) |
-| score | float | 1.0 | 0.5..3.0 | R | deny | MIRA_KWS_SCORE, --kws-score | keyword boost (raising it hurt recall) |
+| kws_dir | path | "${HERE}/../voice/models/kws" | | S | deny | MIRA_KWS_DIR, --kws-dir | spotter model folder |
+| keywords | str | "keywords.txt" | 1..120 chars | S | deny | --keywords | keyword file inside kws_dir |
+| threshold | float | 0.15 | 0.01..0.5 score | S | deny | MIRA_KWS_THRESHOLD, --kws-threshold | spotter sensitivity, lower fires easier (the transcript gate decides) |
+| score | float | 1.0 | 0.5..3.0 | S | deny | MIRA_KWS_SCORE, --kws-score | keyword boost (raising it hurt recall) |
 | threads | int | 1 | 1..2 threads | S | deny | MIRA_KWS_THREADS, --kws-threads | spotter CPU threads |
 
 **vad.silero** (live knobs take effect at the next capture, F5)
@@ -686,7 +686,7 @@ FIXED (freeze list): verify on wake clips, empty is a reject, a reject opens no 
 | close_wait_s | float | 20.0 | 1..120 s | S | deny | (literal L419) | |
 | level_scale | float | 8.0 | 1..32 x | L | deny | (literal x3: L241, L704, L641) | ring level = rms times this, capped at 1; the one copy |
 
-**control.http** (`required=False`, `default_enabled=False`, `toggle="live"`; every knob owner only)
+**control.http** (`required=False`, `default_enabled=False`, `toggle="restart"`; every knob owner only)
 | key | type | default | bounds (unit) | ap | agent | legacy | description |
 |---|---|---|---|---|---|---|---|
 | bind | str | "127.0.0.1" | loopback only | S | deny | | |
@@ -838,7 +838,7 @@ Values that differ from the schema default are marked in 2.4.5. Paths are the Pi
  }
 }
 ```
-`control.http` stays disabled at cutover and is enabled live in migration step M8.
+`control.http` stays disabled at cutover and is enabled in migration step M8 (a file edit and one restart).
 
 #### 2.4.4 Full mini file (`deploy/speech.example.json`; values equal the live LaunchAgent)
 ```json
@@ -1361,7 +1361,7 @@ Nothing reaches a machine until M4. M0 to M3 land on `main` in the mira and agen
 | M5 | OW Shadow 24 h (section 6.6): counting-only engine from the release beside the live listener | rung 6 compare script PASS | `systemctl --user stop mira-shadow` (live listener never touched) |
 | M6 | OW Mini: deploy speech plugins, adopt the plist env into `speech.json`, engine plugins, kickstart (about 30 s of speech offline) | `/health` fields equal plus additive ones; `/stt` and `/tts` round trip from the Pi with curl (no sound); `voices` lists the catalog; a preview render saved to /tmp (not played); a `jenny` switch with `--trial 120` reverts by itself; one day of normal use | `mira config set core.engine=legacy` on the mini plus kickstart, or `mira deploy speech --rollback` (restores the snapshot and `server.py.bak-plugins-<date>`) plus kickstart |
 | M7 | OW Pi cutover, owner awake, weekday (section 7.1) | startup line identical to v1; `mira inventory` all active; owner speaks one wake and reply, one follow-up, one music intent; rung 7 watch for at least 24 h | `mira rollback` (engine legacy, one command, keeps tuned values); auto fallback after 4 unplanned starts in 10 min; `mira deploy pi --rollback`; last resort `rm` the drop-in plus daemon-reload plus restart runs the untouched original file |
-| M8 | Control plane: `mira tokens install`, `mira enable control.http` (live), owner canary `mira set agc.mic.target=0.06 --trial 120` reverts by itself, `mira undo` of a permanent change | `/v1/health` ok; change log lines; legacy mirror updated | `mira disable control.http` (live) |
+| M8 | Control plane: `mira tokens install`, `mira enable control.http --offline` plus one restart (restart class), owner canary `mira set agc.mic.target=0.06 --trial 120` reverts by itself, `mira undo` of a permanent change | `/v1/health` ok; change log lines; legacy mirror updated | `mira disable control.http` (live) |
 | M9 | Hermes surface: install `/opt/mira-mcp`, register `mira-eval` (mock on 8651) in both profiles, run `dialogue_eval.py`, remove `mira-eval`, register `mira` (real), install skill, MEMORY line; persona line with `persona.file.reread=turn` (Q3) or at the next OW restart | `smoke_test.py` as user agent; `hermes skills list` shows mira-self; dialogue eval PASS; owner speaks the voice script (OW) | remove the `mcp_servers.mira` entries (reconciles without restart); restore `.bak` of skill, MEMORY.md and persona |
 | M10 | Soak 7 days on the plugin engine; legacy kept on disk; then the owner decides `sigterm_idle`, the facade cleanup task, and shrinking the mini plist env to `MIRA_SPEECH_CONFIG` only (OW, a kickstart) | daily `mira doctor`; journal counts vs baseline | n/a |
 
@@ -1397,11 +1397,15 @@ git -C .. diff --exit-code -- wall/tests/test_unit.py wall/tests/test_agc_report
 ```
 Pi (T-pi; orchestrator only):
 ```
-ssh ... mira 'sudo -n -u mira bash -lc "rm -rf /tmp/mira-test && mkdir -p /tmp/mira-test && tar -C /tmp/mira-test -xf -"' < wall-and-kws.tar
-ssh ... mira 'sudo -n -u mira bash -lc "/home/mira/mira-listen/venv/bin/python -m pip install -q --target /tmp/mira-test/site pytest"'
-ssh ... mira 'sudo -n -u mira XDG_RUNTIME_DIR=/run/user/1000 systemd-run --user --scope -p CPUQuota=40% -p MemoryMax=400M -p Nice=10 \
-  bash -lc "cd /tmp/mira-test/wall && PYTHONPATH=/tmp/mira-test/site PYTHONDONTWRITEBYTECODE=1 \
-  MIRA_SPEECH_TOKEN_FILE=/home/mira/.config/mira/speech.token /home/mira/mira-listen/venv/bin/python -B -m pytest -q -p no:cacheprovider tests"'
+# T = the folder the first command prints (each ssh call is a new shell: paste it into the next ones); a private folder (mode 0700) made with mktemp -d under /home/mira, never a fixed name in /tmp; deleted at the end with pytest's --basetemp inside it
+# wall-and-kws.tar holds wall/ complete (tests, speech, speech_plugins, models, assets, docs, deploy, bin/mira, MIRA_WALL_IDENTITY.md, requirements.txt)
+# and voice/models/kws beside it; without bin/ and the kws folder 86 tests fail for setup reasons, not product ones.
+ssh ... mira 'sudo -n -u mira bash -lc "T=$(mktemp -d /home/mira/.mira-test.XXXXXX) && chmod 700 $T && tar -C $T -xf - && echo $T"' < wall-and-kws.tar
+ssh ... mira 'sudo -n -u mira bash -lc "/home/mira/mira-listen/venv/bin/python -m pip install -q --target $T/site pytest && cp -r $T/site/. $T/wall/"'   # pytest inside wall/ too: the scaffold test starts a subprocess with PYTHONPATH set to wall/ only
+ssh ... mira 'sudo -n -u mira XDG_RUNTIME_DIR=/run/user/1000 systemd-run --user --scope -p CPUQuota=40% -p MemoryMax=400M \
+  bash -lc "cd $T/wall && HOME=$T PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/home/mira/.config/mira/speech.token \
+  nice -n 10 /home/mira/mira-listen/venv/bin/python -B -m pytest -q -p no:cacheprovider --basetemp=$T/bt tests"'   # Nice= is not valid for a scope: use nice -n 10 inside; a full run takes about 32 minutes this way
+ssh ... mira 'rm -rf $T'   # also remove /tmp/pytest-of-mira if any run left it
 ```
 The e2e tests use the live mini speech server (STT and TTS only; `mira-audio` is faked, nothing plays).
 

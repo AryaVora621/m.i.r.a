@@ -55,10 +55,11 @@ class GitStub(D.Runner):
 class FakeRemote(D.Runner):
     """Real shell on temp dirs; service managers are recorded."""
 
-    def __init__(self, journal_ok: bool = True):
+    def __init__(self, journal_ok: bool = True, home: Path = None):
         super().__init__(None)
         self.service_calls: list[str] = []
         self.journal_ok = journal_ok
+        self.home = home            # the installing user's HOME, so the mira command link never touches the real one
 
     def _exec(self, argv, input, timeout):
         text = " ".join(argv)
@@ -67,6 +68,14 @@ class FakeRemote(D.Runner):
             if "journalctl" in text:
                 return D.Result(0, b"12:00:00 mira-listen up (mic), kws threshold 0.05\n" if self.journal_ok else b"")
             return D.Result(0)
+        if self.home is not None:
+            import subprocess
+            try:
+                proc = subprocess.run(argv, input=input, capture_output=True, timeout=timeout,
+                                      env={**os.environ, "HOME": str(self.home)})
+            except FileNotFoundError as exc:
+                return D.Result(127, b"", str(exc).encode())
+            return D.Result(proc.returncode, proc.stdout, proc.stderr)
         return super()._exec(argv, input, timeout)
 
 
@@ -77,6 +86,7 @@ def repo_tree() -> dict[str, bytes]:
         "wall/mirakit/__init__.py": b"VERSION = 1\n", "wall/mirakit/core.py": b"core\n",
         "wall/mirakit/__pycache__/core.cpython-313.pyc": b"junk",
         "wall/listener_plugins/__init__.py": b"", "wall/listener_plugins/agc_mic.py": b"agc\n",
+        "wall/bin/mira": b"#!/bin/sh\necho mira\n", "wall/deploy/mira-listen.dropin.tmpl": b"[Service]\n",
         "wall/speech/server.py": b"server v2\n", "wall/speech/server_v1.py": b"server v1\n",
         "wall/speech_plugins/__init__.py": b"", "wall/speech_plugins/voices/k.json": b"{}\n",
         "wall/tests/test_x.py": b"never shipped\n",
@@ -105,7 +115,7 @@ def world(tmp_path):
         clock["t"] += s
 
     def make(machine, *, dirty=False, journal_ok=True, remote=None):
-        remote = remote or FakeRemote(journal_ok)
+        remote = remote or FakeRemote(journal_ok, home=tmp_path / "home")
         out = []
         dep = D.Deployer(machine, wall, remote, local=GitStub(repo_tree(), dirty), out=out.append, sleep=sleep,
                          now=lambda: clock["t"], python_for_check=str(fake_py))
@@ -122,9 +132,10 @@ def files_under(path: Path) -> set[str]:
 def test_manifest_has_the_spec_file_lists():
     m = D.load_manifest(WALL)
     assert m["pi"]["files"] == ["mira_launch.py", "mira_listen.py", "mira_listen_v1.py", "mira_shadow.py", "mirakit",
-                                "listener_plugins"]
+                                "listener_plugins", "bin/mira", "deploy/mira-listen.dropin.tmpl"]
     assert D.manifest_entries(m["speech"]) == [("speech/server.py", "server.py"), ("speech/server_v1.py", "server_v1.py"),
-                                               ("mirakit", "mirakit"), ("speech_plugins", "speech_plugins")]
+                                               ("bin/mira", "bin/mira"), ("mirakit", "mirakit"),
+                                               ("speech_plugins", "speech_plugins")]
     assert m["pi"]["root"] == "/home/mira/mira-listen" and m["pi"]["unit"] == "mira-listen"
 
 
@@ -133,7 +144,7 @@ def test_collect_from_tar_maps_paths_and_skips_junk():
     blob = D.build_tar({k: v for k, v in tree.items()})
     entries = D.manifest_entries(D.load_manifest(WALL)["speech"])
     got = D.collect_from_tar(blob, entries)
-    assert sorted(got) == ["mirakit/__init__.py", "mirakit/core.py", "server.py", "server_v1.py",
+    assert sorted(got) == ["bin/mira", "mirakit/__init__.py", "mirakit/core.py", "server.py", "server_v1.py",
                            "speech_plugins/__init__.py", "speech_plugins/voices/k.json"]
     assert got["server.py"] == b"server v2\n"
 
@@ -187,7 +198,7 @@ def test_stage_ships_head_into_releases_and_runs_check(world):
     name = dep.stage_pi()
     release = tmp / "pi" / "mira-listen" / "releases" / SHA
     assert name == SHA
-    assert files_under(release) - {"CHECKED"} == {"mira_launch.py", "mira_listen.py", "mira_listen_v1.py", "mira_shadow.py",
+    assert files_under(release) - {"CHECKED"} == {"bin/mira", "deploy/mira-listen.dropin.tmpl", "mira_launch.py", "mira_listen.py", "mira_listen_v1.py", "mira_shadow.py",
                                     "mirakit/__init__.py", "mirakit/core.py", "listener_plugins/__init__.py",
                                     "listener_plugins/agc_mic.py", "RELEASE.json"}
     assert (release / "mira_listen.py").read_bytes() == b"listen v1\n"
@@ -316,6 +327,86 @@ def test_dry_run_prints_commands_and_diffs_without_touching_the_pi(world):
     assert any(line.startswith("+ ") and "systemctl" in line for line in dry_remote.log)
     assert any("ln -sfn" in line and line.startswith("+ ") for line in dry_remote.log)
     assert dry_remote.service_calls == []                      # nothing reached the service manager
+
+
+# ---------------------------------------------------------------- the stable mira command
+def test_the_wrapper_ships_executable_and_the_pi_command_follows_current(world):
+    tmp, wall, make, _ = world
+    root = tmp / "pi" / "mira-listen"
+    link = tmp / "home" / ".local" / "bin" / "mira"
+    dep, remote, out = make("pi")
+    dep.stage_pi()
+    # staged but not yet current: the command points into the staged release instead of dangling
+    assert os.readlink(link) == str(root / "releases" / SHA / "bin" / "mira")
+    assert os.access(link, os.X_OK) and stat.S_IMODE((root / "releases" / SHA / "bin" / "mira").stat().st_mode) == 0o755
+    assert stat.S_IMODE((root / "releases" / SHA / "mira_launch.py").stat().st_mode) == 0o644
+    dep.activate_pi(SHA)
+    assert os.readlink(link) == str(root / "current" / "bin" / "mira")     # follows whatever release is current
+    assert os.access(link, os.X_OK)
+    dep.stage_pi()                                                           # restaging keeps it pointing at current
+    assert os.readlink(link) == str(root / "current" / "bin" / "mira")
+
+
+def test_the_command_install_refuses_to_replace_a_foreign_file(world):
+    tmp, wall, make, _ = world
+    link = tmp / "home" / ".local" / "bin" / "mira"
+    link.parent.mkdir(parents=True)
+    link.write_text("not ours\n")
+    dep, remote, out = make("pi")
+    with pytest.raises(D.DeployError, match="mira command"):
+        dep.stage_pi()
+    assert link.read_text() == "not ours\n"
+
+
+def test_a_foreign_file_at_the_command_path_never_leaves_an_activation_half_done(world):
+    tmp, wall, make, _ = world
+    root = tmp / "pi" / "mira-listen"
+    link = tmp / "home" / ".local" / "bin" / "mira"
+    dep, remote, out = make("pi")
+    dep.stage_pi()
+    link.unlink()
+    link.write_text("hand-copied wrapper\n")                  # the runbook's manual fallback leaves exactly this
+    dep.activate_pi(SHA)                                      # must still flip, record .previous-ready state and restart
+    assert os.readlink(root / "current") == f"releases/{SHA}"
+    assert any("systemctl --user restart" in call for call in remote.service_calls)
+    assert any("could not install the mira command" in line for line in out)
+    assert link.read_text() == "hand-copied wrapper\n"
+
+
+def test_a_release_without_the_wrapper_keeps_the_existing_command_link(world):
+    tmp, wall, make, _ = world
+    link = tmp / "home" / ".local" / "bin" / "mira"
+    dep, remote, out = make("pi")
+    dep.stage_pi()
+    before = os.readlink(link)
+    old = tmp / "pi" / "mira-listen" / "releases" / "oldsha"
+    old.mkdir()
+    (old / "mira_launch.py").write_text("x")
+    root = tmp / "pi" / "mira-listen"
+    dep.install_command("oldsha")                             # neither current/bin/mira nor oldsha/bin/mira is executable
+    assert os.readlink(link) == before
+    dep.activate_pi("oldsha")
+    assert os.readlink(link) == before
+
+
+def test_the_mini_command_points_at_the_flat_install(world):
+    tmp, wall, make, _ = world
+    dep, remote, out = make("speech")
+    dep.deploy_speech()
+    root = tmp / "mini" / "mira-speech"
+    link = tmp / "home" / ".local" / "bin" / "mira"
+    assert (root / "bin" / "mira").exists() and os.access(root / "bin" / "mira", os.X_OK)
+    assert os.readlink(link) == str(root / "bin" / "mira")
+
+
+def test_dry_run_shows_the_command_link_and_creates_none(world):
+    tmp, wall, make, _ = world
+    dry_remote = FakeRemote(home=tmp / "home")
+    dry_remote.dry_run = True
+    dep, _, out = make("pi", remote=dry_remote)
+    dep.stage_pi()
+    assert any(line.startswith("+ ") and ".local/bin/mira" in line for line in dry_remote.log)
+    assert not (tmp / "home").exists()
 
 
 # ---------------------------------------------------------------- mini

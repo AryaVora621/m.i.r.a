@@ -32,7 +32,7 @@ from typing import Any, Callable, Literal, Mapping, Optional, Sequence
 
 from . import VERSION
 from .changelog import LIVE_STATUSES, ChangeLog, fmt_ts, parse_ts, plan_reverts
-from .envmap import arg_attr, argv_layer, env_layer, explicit_from_argv, layer_from_args, legacy_mirror
+from .envmap import arg_attr, argv_layer, env_layer, explicit_from_argv, layer_from_args, legacy_mirror, v1_flags
 from .plugin import (RESET, RESET_STREAM, CONTRACT_VERSION, Change, ConfigError, ConflictError, CoreAPI, Edit,
                      Knob, Paths, PluginConfig, PluginSpec, PolicyError, RemoteClient, Scope, State)
 from .policy import Policy, Settings, settings_from
@@ -397,7 +397,7 @@ class Core(CoreAPI):
             return
         try:
             env_text, args_lines, _lost = legacy_mirror(self.store.effective(), list(self.specs.values()),
-                                                        self.paths)
+                                                        self.paths, v1_flags())
             d = self.store.cfgdir
             d.mkdir(parents=True, exist_ok=True)
             envp = d / "listen.env"
@@ -424,7 +424,7 @@ class Core(CoreAPI):
 
     def legacy_mirror_report(self) -> list[dict]:
         """Knobs the legacy listener cannot represent whose value differs from the code default."""
-        return legacy_mirror(self.store.effective(), list(self.specs.values()), self.paths)[2]
+        return legacy_mirror(self.store.effective(), list(self.specs.values()), self.paths, v1_flags())[2]
 
     def shutdown(self) -> None:
         if self._shut:

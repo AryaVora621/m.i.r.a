@@ -16,3 +16,13 @@
 - P2's golden and characterization tests import `mira_listen` by name and must keep passing unchanged (reports/P2.md lists the names they use).
 - Other workers are running tests on this Mac at the same time. If a test times out under load and passes alone, say so in the report instead of weakening it.
 - Report files under the scratchpad (`reports/<ID>.md`) are required and allowed.
+
+## Repair pass (2026-11-10 night, after the cold verifier's stage run)
+Decisions that override the spec where they differ; reports/repair.md has the evidence per defect.
+- `control.http` is restart class (`toggle="restart"`). `mira enable` talks to the API it would start, so a live toggle could never be asked for. Enabling is `mira enable control.http --offline` plus one restart; disabling is the same. This was the smaller and safer of the two options (a live bootstrap would need a second listener thread started from a file watch or a signal).
+- Every `wake.kws` knob is restart class (spec gate 2.3.3 failed in pre-flight: 5 s unthrottled, 12 to 13 s under the unit quota, limit 2 s).
+- The legacy mirror (`listen.env`, `legacy.args`) only ever holds flags that `mira_listen_v1.build_parser()` accepts; knobs v1 cannot take are reported as lost (`mira rollback` prints them) and stay in `mira.json`.
+- `mira rollback` needs no tokens and no control server: with no owner token it says so and edits the file. Other online commands fail with one line that names `--offline`.
+- A release carries `bin/mira` and `deploy/mira-listen.dropin.tmpl`. `mira deploy` puts `~/.local/bin/mira` on the install user's PATH: on the Pi a link to `current/bin/mira` (to the staged release's copy until a release that has it is current), on the mini a link to the flat install's `bin/mira`. It never replaces a file or a link that is not its own; `--dry-run` lists the command.
+- `mira adopt` freezes `${HERE}` path defaults (persona, offline chime, models) to the files that exist beside the live install, so they survive the move into `releases/<id>/`; a file that is not there is reported and left as `${HERE}`.
+- The speech server notes `busy` before the first byte of a reply leaves.

@@ -14,7 +14,7 @@ Nothing reaches a machine until M4. M0 to M3 land on `main` in the mira and agen
 | M5 | OW Shadow 24 h (section 6.6): counting-only engine from the release beside the live listener | rung 6 compare script PASS | `systemctl --user stop mira-shadow` (live listener never touched) |
 | M6 | OW Mini: deploy speech plugins, adopt the plist env into `speech.json`, engine plugins, kickstart (about 30 s of speech offline) | `/health` fields equal plus additive ones; `/stt` and `/tts` round trip from the Pi with curl (no sound); `voices` lists the catalog; a preview render saved to /tmp (not played); a `jenny` switch with `--trial 120` reverts by itself; one day of normal use | `mira config set core.engine=legacy` on the mini plus kickstart, or `mira deploy speech --rollback` (restores the snapshot and `server.py.bak-plugins-<date>`) plus kickstart |
 | M7 | OW Pi cutover, owner awake, weekday (section 7.1) | startup line identical to v1; `mira inventory` all active; owner speaks one wake and reply, one follow-up, one music intent; rung 7 watch for at least 24 h | `mira rollback` (engine legacy, one command, keeps tuned values); auto fallback after 4 unplanned starts in 10 min; `mira deploy pi --rollback`; last resort `rm` the drop-in plus daemon-reload plus restart runs the untouched original file |
-| M8 | Control plane: `mira tokens install`, `mira enable control.http` (live), owner canary `mira set agc.mic.target=0.06 --trial 120` reverts by itself, `mira undo` of a permanent change | `/v1/health` ok; change log lines; legacy mirror updated | `mira disable control.http` (live) |
+| M8 | Control plane: `mira tokens install`, `mira enable control.http --offline` plus one restart (restart class), owner canary `mira set agc.mic.target=0.06 --trial 120` reverts by itself, `mira undo` of a permanent change | `/v1/health` ok; change log lines; legacy mirror updated | `mira disable control.http` (live) |
 | M9 | Hermes surface: install `/opt/mira-mcp`, register `mira-eval` (mock on 8651) in both profiles, run `dialogue_eval.py`, remove `mira-eval`, register `mira` (real), install skill, MEMORY line; persona line with `persona.file.reread=turn` (Q3) or at the next OW restart | `smoke_test.py` as user agent; `hermes skills list` shows mira-self; dialogue eval PASS; owner speaks the voice script (OW) | remove the `mcp_servers.mira` entries (reconciles without restart); restore `.bak` of skill, MEMORY.md and persona |
 | M10 | Soak 7 days on the plugin engine; legacy kept on disk; then the owner decides `sigterm_idle`, the facade cleanup task, and shrinking the mini plist env to `MIRA_SPEECH_CONFIG` only (OW, a kickstart) | daily `mira doctor`; journal counts vs baseline | n/a |
 
@@ -50,11 +50,15 @@ git -C .. diff --exit-code -- wall/tests/test_unit.py wall/tests/test_agc_report
 ```
 Pi (T-pi; orchestrator only):
 ```
-ssh ... mira 'sudo -n -u mira bash -lc "rm -rf /tmp/mira-test && mkdir -p /tmp/mira-test && tar -C /tmp/mira-test -xf -"' < wall-and-kws.tar
-ssh ... mira 'sudo -n -u mira bash -lc "/home/mira/mira-listen/venv/bin/python -m pip install -q --target /tmp/mira-test/site pytest"'
-ssh ... mira 'sudo -n -u mira XDG_RUNTIME_DIR=/run/user/1000 systemd-run --user --scope -p CPUQuota=40% -p MemoryMax=400M -p Nice=10 \
-  bash -lc "cd /tmp/mira-test/wall && PYTHONPATH=/tmp/mira-test/site PYTHONDONTWRITEBYTECODE=1 \
-  MIRA_SPEECH_TOKEN_FILE=/home/mira/.config/mira/speech.token /home/mira/mira-listen/venv/bin/python -B -m pytest -q -p no:cacheprovider tests"'
+# T = the folder the first command prints (each ssh call is a new shell: paste it into the next ones); a private folder (mode 0700) made with mktemp -d under /home/mira, never a fixed name in /tmp; deleted at the end with pytest's --basetemp inside it
+# wall-and-kws.tar holds wall/ complete (tests, speech, speech_plugins, models, assets, docs, deploy, bin/mira, MIRA_WALL_IDENTITY.md, requirements.txt)
+# and voice/models/kws beside it; without bin/ and the kws folder 86 tests fail for setup reasons, not product ones.
+ssh ... mira 'sudo -n -u mira bash -lc "T=$(mktemp -d /home/mira/.mira-test.XXXXXX) && chmod 700 $T && tar -C $T -xf - && echo $T"' < wall-and-kws.tar
+ssh ... mira 'sudo -n -u mira bash -lc "/home/mira/mira-listen/venv/bin/python -m pip install -q --target $T/site pytest && cp -r $T/site/. $T/wall/"'   # pytest inside wall/ too: the scaffold test starts a subprocess with PYTHONPATH set to wall/ only
+ssh ... mira 'sudo -n -u mira XDG_RUNTIME_DIR=/run/user/1000 systemd-run --user --scope -p CPUQuota=40% -p MemoryMax=400M \
+  bash -lc "cd $T/wall && HOME=$T PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/home/mira/.config/mira/speech.token \
+  nice -n 10 /home/mira/mira-listen/venv/bin/python -B -m pytest -q -p no:cacheprovider --basetemp=$T/bt tests"'   # Nice= is not valid for a scope: use nice -n 10 inside; a full run takes about 32 minutes this way
+ssh ... mira 'rm -rf $T'   # also remove /tmp/pytest-of-mira if any run left it
 ```
 The e2e tests use the live mini speech server (STT and TTS only; `mira-audio` is faked, nothing plays).
 

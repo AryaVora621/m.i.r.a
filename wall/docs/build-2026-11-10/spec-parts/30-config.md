@@ -89,13 +89,13 @@ Legend: `L` live, `R` rebuild, `S` restart. Agent column: `deny`, or `min..max s
 | floor_rate_mid | float | 0.05 | 0..1 | L | deny | (literal) | rate otherwise |
 Cross rule: `rest <= max_gain` (apply re-clamps exactly as `MicAGC.__init__`). `reads=("reporter.agentos.level_scale",)`.
 
-**wake.kws** (every knob is owner only; R becomes S if P0.5 fails the gate of 2.3.3)
+**wake.kws** (every knob is owner only; all four are S, restart class: P0.5 failed the gate of 2.3.3)
 | key | type | default | bounds (unit) | ap | agent | legacy | description |
 |---|---|---|---|---|---|---|---|
-| kws_dir | path | "${HERE}/../voice/models/kws" | | R | deny | MIRA_KWS_DIR, --kws-dir | spotter model folder |
-| keywords | str | "keywords.txt" | 1..120 chars | R | deny | --keywords | keyword file inside kws_dir |
-| threshold | float | 0.15 | 0.01..0.5 score | R | deny | MIRA_KWS_THRESHOLD, --kws-threshold | spotter sensitivity, lower fires easier (the transcript gate decides) |
-| score | float | 1.0 | 0.5..3.0 | R | deny | MIRA_KWS_SCORE, --kws-score | keyword boost (raising it hurt recall) |
+| kws_dir | path | "${HERE}/../voice/models/kws" | | S | deny | MIRA_KWS_DIR, --kws-dir | spotter model folder |
+| keywords | str | "keywords.txt" | 1..120 chars | S | deny | --keywords | keyword file inside kws_dir |
+| threshold | float | 0.15 | 0.01..0.5 score | S | deny | MIRA_KWS_THRESHOLD, --kws-threshold | spotter sensitivity, lower fires easier (the transcript gate decides) |
+| score | float | 1.0 | 0.5..3.0 | S | deny | MIRA_KWS_SCORE, --kws-score | keyword boost (raising it hurt recall) |
 | threads | int | 1 | 1..2 threads | S | deny | MIRA_KWS_THREADS, --kws-threads | spotter CPU threads |
 
 **vad.silero** (live knobs take effect at the next capture, F5)
@@ -192,7 +192,7 @@ FIXED (freeze list): verify on wake clips, empty is a reject, a reject opens no 
 | close_wait_s | float | 20.0 | 1..120 s | S | deny | (literal L419) | |
 | level_scale | float | 8.0 | 1..32 x | L | deny | (literal x3: L241, L704, L641) | ring level = rms times this, capped at 1; the one copy |
 
-**control.http** (`required=False`, `default_enabled=False`, `toggle="live"`; every knob owner only)
+**control.http** (`required=False`, `default_enabled=False`, `toggle="restart"`; every knob owner only)
 | key | type | default | bounds (unit) | ap | agent | legacy | description |
 |---|---|---|---|---|---|---|---|
 | bind | str | "127.0.0.1" | loopback only | S | deny | | |

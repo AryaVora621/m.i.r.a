@@ -49,7 +49,7 @@ Hermes through Agent OS's session API.
 
 The Pi's control API: read, tune, preview and undo.
 
-- version 1; provides: nothing; needs: nothing; optional; off by default; toggle live
+- version 1; provides: nothing; needs: nothing; optional; off by default; toggle restart
 
 | key | type | default | bounds | unit | applies | agent | description |
 |---|---|---|---|---|---|---|---|
@@ -270,10 +270,10 @@ Streaming keyword spotter for the wake word.
 
 | key | type | default | bounds | unit | applies | agent | description |
 |---|---|---|---|---|---|---|---|
-| kws_dir | path | ${HERE}/../voice/models/kws |  |  | rebuild | deny | Spotter model folder. |
-| keywords | str | keywords.txt | 1..120 chars | chars | rebuild | deny | Keyword file inside kws_dir. |
-| threshold | float | 0.15 | 0.01..0.5 | score | rebuild | deny | Spotter sensitivity; lower fires easier (the transcript gate decides). |
-| score | float | 1 | 0.5..3 | score | rebuild | deny | Keyword boost; raising it hurt recall. |
+| kws_dir | path | ${HERE}/../voice/models/kws |  |  | restart | deny | Spotter model folder. |
+| keywords | str | keywords.txt | 1..120 chars | chars | restart | deny | Keyword file inside kws_dir. |
+| threshold | float | 0.15 | 0.01..0.5 | score | restart | deny | Spotter sensitivity; lower fires easier (the transcript gate decides). |
+| score | float | 1 | 0.5..3 | score | restart | deny | Keyword boost; raising it hurt recall. |
 | threads | int | 1 | 1..2 | threads | restart | deny | Spotter CPU threads. |
 
 ## Machine: speech

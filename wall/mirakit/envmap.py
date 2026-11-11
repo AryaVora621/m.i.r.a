@@ -170,6 +170,39 @@ def adopt_listener(argv: Sequence[str], env: Mapping[str, str], specs: Sequence[
     return doc
 
 
+def freeze_here_paths(doc: dict, specs: Sequence[PluginSpec], install_dir: Path) -> list[tuple[str, str, str]]:
+    """Rewrite every path knob that still holds `${HERE}` to the absolute file beside the live install, when that
+    file exists. `${HERE}` is the folder of the running code, and after the switch that is releases/<id>/, which
+    holds code only; the persona, the offline chime and the models stay in the install root, so a default left as
+    `${HERE}/x` would silently point at nothing. Returns (key, old, new) for each rewrite."""
+    changed: list[tuple[str, str, str]] = []
+    for spec in specs:
+        body = (doc.get("plugins") or {}).get(spec.name)
+        if not body:
+            continue
+        cfg = body.get("config") or {}
+        for knob in spec.knobs:
+            value = cfg.get(knob.name)
+            if knob.type == "path" and isinstance(value, str) and "${HERE}" in value:
+                candidate = os.path.normpath(value.replace("${HERE}", str(install_dir)))
+                if os.path.exists(candidate):
+                    cfg[knob.name] = candidate
+                    changed.append((f"{spec.name}.{knob.name}", value, candidate))
+    return changed
+
+
+def unfrozen_here_paths(doc: dict, specs: Sequence[PluginSpec]) -> list[str]:
+    """Keys of path knobs that still hold `${HERE}` after freeze_here_paths (their file is not beside the install)."""
+    out = []
+    for spec in specs:
+        cfg = ((doc.get("plugins") or {}).get(spec.name) or {}).get("config") or {}
+        for knob in spec.knobs:
+            value = cfg.get(knob.name)
+            if knob.type == "path" and isinstance(value, str) and "${HERE}" in value:
+                out.append(f"{spec.name}.{knob.name}")
+    return out
+
+
 def _kokoro_voice(model_dir: str, name: str) -> str:
     table = Path(__file__).resolve().parent.parent / "speech_plugins" / "voices" / f"{model_dir}.json"
     try:
@@ -236,19 +269,38 @@ def _flag(knob: Knob) -> str:
     return "--" + (knob.arg or knob.name).replace("_", "-")
 
 
-def legacy_mirror(effective: Mapping[str, Any], specs: Sequence[PluginSpec], paths: Any = None
-                  ) -> tuple[str, list[str], list[dict]]:
+def v1_flags() -> Optional[frozenset]:
+    """Every option string the frozen v1 listener's own parser accepts, or None when that file cannot be imported.
+    The mirror is what the launcher's fallback and `mira rollback` feed to v1, and argparse exits 2 on a flag it
+    does not know, so the mirror must be built from this set and never from the knob list alone."""
+    try:
+        import mira_listen_v1
+        return frozenset(mira_listen_v1.build_parser()._option_string_actions)
+    except Exception as exc:
+        # without the set the mirror cannot be filtered, so say so: the fallback to v1 may then be fed a flag it rejects
+        log.warning("cannot read the v1 listener's flags (%s); legacy.args is not filtered", type(exc).__name__)
+        return None
+
+
+def legacy_mirror(effective: Mapping[str, Any], specs: Sequence[PluginSpec], paths: Any = None,
+                  known_flags: Optional[frozenset] = None) -> tuple[str, list[str], list[dict]]:
     """(listen.env text, legacy.args lines, unrepresentable) from the effective values (2.5.6).
 
     env: every knob with Knob.env as KEY=value. args: one argv token per line, for every knob that has a flag
     and no env var, plus the path flags with absolute paths. unrepresentable: knobs the v1 code cannot take
     (no env, no flag) whose value differs from the default, as {"key", "value", "default"} dicts, so
-    `mira rollback` can tell the owner what the rollback drops."""
+    `mira rollback` can tell the owner what the rollback drops. `known_flags`, when given, is the set of flags the
+    v1 parser defines (see v1_flags): a knob whose flag is not in it cannot be represented, so it is reported as
+    lost instead of being written."""
     env_lines = [ENV_HEADER]
     args: list[str] = []
     lost: list[dict] = []
     by_key = {k: (s, kn) for s, kn, k in _knobs(specs)}
     seen_env: set[str] = set()
+
+    def takes(flag: str) -> bool:
+        return known_flags is None or flag in known_flags
+
     for spec, knob, key in _knobs(specs):
         if spec.name == "core" or key not in effective:
             continue
@@ -261,6 +313,10 @@ def legacy_mirror(effective: Mapping[str, Any], specs: Sequence[PluginSpec], pat
         elif knob.arg and not knob.env and not (knob.type == "path" and _flag(knob) in PATH_FLAGS):
             if value == "" or key == "source.wav.path":
                 continue    # an empty flag value is the code default; --wav is a test override, never deployed
+            if not takes(_flag(knob)):
+                if value != knob.default:
+                    lost.append({"key": key, "value": value, "default": knob.default})
+                continue
             if knob.type == "bool":
                 args.append(f"--{knob.arg.replace('_', '-')}" if value else f"--no-{knob.arg.replace('_', '-')}")
             else:
@@ -272,5 +328,6 @@ def legacy_mirror(effective: Mapping[str, Any], specs: Sequence[PluginSpec], pat
             value = effective[key]
             if paths is not None:
                 value = expand_path(value, paths)
-            args.extend([flag, str(value)])
+            if takes(flag):
+                args.extend([flag, str(value)])
     return "\n".join(env_lines) + "\n", args, lost

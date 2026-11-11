@@ -22,6 +22,7 @@ from typing import Callable, Iterable, Optional, Sequence
 
 SKIP_NAMES = ("__pycache__", ".DS_Store")
 SKIP_SUFFIXES = (".pyc", ".pyo")
+EXEC_PREFIXES = ("bin/",)
 
 
 class DeployError(RuntimeError):
@@ -173,7 +174,7 @@ def build_tar(files: dict[str, bytes], extra: Optional[dict[str, bytes]] = None)
             info = tarfile.TarInfo(name)
             info.size = len(merged[name])
             info.mtime = 0           # deterministic archives: the same sha always ships the same bytes
-            info.mode = 0o644
+            info.mode = 0o755 if name.startswith(EXEC_PREFIXES) else 0o644     # bin/mira must run after extraction
             tar.addfile(info, io.BytesIO(merged[name]))
     return buf.getvalue()
 
@@ -276,6 +277,35 @@ class Deployer:
         path = posixpath.join(self.spec["config_dir"], "state", "planned")
         self.runner.sh('mkdir -p "$(dirname "$1")" && echo "$2" > "$1"', path, str(int(self.now())), check=True)
 
+    # ---- the stable `mira` command
+    def install_command(self, release: Optional[str] = None, strict: bool = True) -> None:
+        """Point the user's PATH command (manifest "command") at the wrapper. The Pi's link follows `current`, so
+        a later activation or rollback needs no second step; until a release with the wrapper is current (first
+        stage, or an older current) it points into the named release instead of dangling. Only a link this
+        function owns is replaced: a regular file or a link to some other tool is refused, not overwritten. With neither
+        target executable (a release from before the wrapper) the existing link is kept. strict=False (activation,
+        which must finish its restart) reports a refusal instead of raising."""
+        cmd = self.spec.get("command")
+        if not cmd:
+            return
+        target = posixpath.join(self.root, cmd["target"])
+        fallback = posixpath.join(self.root, "releases", release, cmd["fallback"]) if release and cmd.get("fallback") else ""
+        script = ('link="$HOME/$1"; target="$2"; fb="$3"; [ -x "$target" ] || { [ -n "$fb" ] && [ -x "$fb" ] && target="$fb"; }; '
+                  '[ -x "$target" ] || exit 0; '
+                  'if [ -e "$link" ] || [ -L "$link" ]; then '
+                  '[ -L "$link" ] || { echo "$link exists and is not a link" >&2; exit 3; }; '
+                  'case "$(readlink "$link")" in "$2"|"$3"|*/mira-listen/*|*/mira-speech/*) ;; '
+                  '*) echo "$link points at another tool" >&2; exit 3;; esac; fi; '
+                  'mkdir -p "$(dirname "$link")" && ln -sfn "$target" "$link"')
+        res = self.runner.sh(script, cmd["link"], target, fallback)
+        if not res.ok:
+            message = f"could not install the mira command: {res.err.strip()[:200]}"
+            if strict:
+                raise DeployError(message)
+            self.out(message)
+            return
+        self.out(f"mira command: ~/{cmd['link']} -> {target}")
+
     # ---- Pi
     def stage_pi(self, allow_dirty: bool = False, run_check: bool = True) -> str:
         name, files = self.collect(allow_dirty)
@@ -289,6 +319,7 @@ class Deployer:
             if not res.ok:
                 raise DeployError(f"mira check --fast failed in the staged release {name}: "
                                   f"{(res.out + res.err).strip()[-400:]}")
+        self.install_command(name)
         self.out(f"staged {name} in {dest}")
         return name
 
@@ -326,6 +357,7 @@ class Deployer:
         self.mark_planned()
         started = self.now()
         self._point(name)
+        self.install_command(name, strict=False)
         if previous:
             self.runner.write_bytes(posixpath.join(self.root, "releases", ".previous"), (previous + "\n").encode())
         self._restart_pi()
@@ -368,6 +400,7 @@ class Deployer:
                        check=True)
         blob = build_tar(files, self.release_info(name))
         self.runner.sh('mkdir -p "$1" && tar -xf - -C "$1"', self.root, input=blob, check=True)
+        self.install_command()
         self.out(f"copied {name} to {self.root}; snapshot {snap}")
         self.out(self.kickstart_hint())
         return name

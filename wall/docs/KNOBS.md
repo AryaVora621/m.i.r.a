@@ -117,10 +117,10 @@
 | vad.silero | max_speech | float | 30 | 5..60 | s | live | deny |  |  | literal |
 | vad.silero | threads | int | 1 | 1..2 | threads | live | deny |  |  | literal |
 | vad.silero | buffer_s | float | 30 | 10..120 | s | live | deny |  |  | literal |
-| wake.kws | kws_dir | path | ${HERE}/../voice/models/kws |  |  | rebuild | deny | MIRA_KWS_DIR | --kws-dir |  |
-| wake.kws | keywords | str | keywords.txt | 1..120 chars | chars | rebuild | deny |  | --keywords |  |
-| wake.kws | threshold | float | 0.15 | 0.01..0.5 | score | rebuild | deny | MIRA_KWS_THRESHOLD | --kws-threshold |  |
-| wake.kws | score | float | 1 | 0.5..3 | score | rebuild | deny | MIRA_KWS_SCORE | --kws-score |  |
+| wake.kws | kws_dir | path | ${HERE}/../voice/models/kws |  |  | restart | deny | MIRA_KWS_DIR | --kws-dir |  |
+| wake.kws | keywords | str | keywords.txt | 1..120 chars | chars | restart | deny |  | --keywords |  |
+| wake.kws | threshold | float | 0.15 | 0.01..0.5 | score | restart | deny | MIRA_KWS_THRESHOLD | --kws-threshold |  |
+| wake.kws | score | float | 1 | 0.5..3 | score | restart | deny | MIRA_KWS_SCORE | --kws-score |  |
 | wake.kws | threads | int | 1 | 1..2 | threads | restart | deny | MIRA_KWS_THREADS | --kws-threads |  |
 | control.http | owner_token_file | path | ~/.config/mira/control.owner.token |  |  | live | deny |  |  | literal |
 | control.http | pi_token_file | path | ~/.config/mira/control.pi.token |  |  | live | deny |  |  | literal |

@@ -102,7 +102,9 @@ def test_rebuild_with_a_stub_spotter_also_frees_it(monkeypatch):
 
 def test_knob_classes_and_owner_only():
     cls = {k.name: k.applies for k in SPEC.knobs}
-    assert cls == {"kws_dir": "rebuild", "keywords": "rebuild", "threshold": "rebuild", "score": "rebuild",
+    # a spotter build took 5 s unthrottled and 12 to 13 s under the unit's quota (pre-flight): over the 2 s limit of
+    # a live rebuild, so nothing about the spotter may be applied without a restart
+    assert cls == {"kws_dir": "restart", "keywords": "restart", "threshold": "restart", "score": "restart",
                    "threads": "restart"}
     assert all(k.agent == "deny" for k in SPEC.knobs)
     assert wk.LEGACY_CLASSES == ()
