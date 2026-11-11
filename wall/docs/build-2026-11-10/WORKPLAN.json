@@ -1,0 +1,283 @@
+[
+ {
+  "id": "P1",
+  "title": "Contracts, testkit and mock control server",
+  "wave": 1,
+  "depends_on": [],
+  "model": "sonnet",
+  "owned_files": [
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/__init__.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/plugin.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/services.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/testkit.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/docs/contracts/README.md",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/docs/contracts/plugin.md",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/docs/contracts/services.md",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/docs/contracts/config-format.md",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/docs/contracts/control-api.md",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/docs/contracts/control-api.schema.json",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/docs/contracts/config.schema.json",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_contracts.py",
+   "/Users/aryavora/Desktop/Personal Projects/agentic-os/pi/mira-mcp/mock_control.py",
+   "/Users/aryavora/Desktop/Personal Projects/agentic-os/pi/mira-mcp/mock_test.py"
+  ],
+  "gates": [
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/kit/test_kit_contracts.py  => exit 0",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/agentic-os/pi/mira-mcp\" && PYTHONDONTWRITEBYTECODE=1 \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider mock_test.py  => exit 0",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/test_unit.py tests/test_agc_reporter.py tests/test_e2e.py tests/stt_eval_test.py  => 65 passed, 8 skipped",
+   "git -C \"/Users/aryavora/Desktop/Personal Projects/mira\" diff --exit-code -- wall/tests/test_unit.py wall/tests/test_agc_reporter.py wall/tests/test_e2e.py wall/tests/stt_eval_test.py wall/tests/conftest.py wall/tests/room_eval.py wall/speech/bench_stt.py wall/speech/bench_tts.py wall/tests/stt_eval.py  => exit 0, no output",
+   "G-dash over every owned file => dash files: []"
+  ],
+  "brief_path": "/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/briefs/P1.md"
+ },
+ {
+  "id": "P2",
+  "title": "Legacy freeze, characterization and golden parity harness",
+  "wave": 1,
+  "depends_on": [],
+  "model": "sonnet",
+  "owned_files": [
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mira_listen_v1.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech/server_v1.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/golden/__init__.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/golden/fakes.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/golden/scenarios.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/golden/record.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/golden/*.json",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/test_golden_parity.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/test_characterize.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/test_pwsource.py"
+  ],
+  "gates": [
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/test_golden_parity.py tests/test_characterize.py tests/test_pwsource.py  => exit 0, three runs in a row",
+   "md5 -q \"/Users/aryavora/Desktop/Personal Projects/mira/wall/mira_listen_v1.py\"  => 8990842340a5ce68aa11515d0432f4ed",
+   "cmp \"/Users/aryavora/Desktop/Personal Projects/mira/wall/speech/server.py\" \"/Users/aryavora/Desktop/Personal Projects/mira/wall/speech/server_v1.py\"  => exit 0",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/test_unit.py tests/test_agc_reporter.py tests/test_e2e.py tests/stt_eval_test.py  => 65 passed, 8 skipped",
+   "git -C \"/Users/aryavora/Desktop/Personal Projects/mira\" diff --exit-code -- wall/tests/test_unit.py wall/tests/test_agc_reporter.py wall/tests/test_e2e.py wall/tests/stt_eval_test.py wall/tests/conftest.py wall/tests/room_eval.py wall/speech/bench_stt.py wall/speech/bench_tts.py wall/tests/stt_eval.py  => exit 0, no output",
+   "G-dash over every owned file => dash files: []"
+  ],
+  "brief_path": "/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/briefs/P2.md"
+ },
+ {
+  "id": "P3",
+  "title": "mirakit runtime: schema, store, change log, policy, registry, core",
+  "wave": 2,
+  "depends_on": [
+   "P1"
+  ],
+  "model": "opus",
+  "owned_files": [
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/schema.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/store.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/changelog.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/policy.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/registry.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/core.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/envmap.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_schema.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_store.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_changelog.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_policy.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_registry.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_core.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_envmap.py"
+  ],
+  "gates": [
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/kit/test_kit_schema.py tests/kit/test_kit_store.py tests/kit/test_kit_changelog.py tests/kit/test_kit_policy.py tests/kit/test_kit_registry.py tests/kit/test_kit_core.py tests/kit/test_kit_envmap.py  => exit 0",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -c \"import mirakit.core, mirakit.store, mirakit.changelog, mirakit.policy, mirakit.registry, mirakit.schema, mirakit.envmap\"  => exit 0, no output",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/test_unit.py tests/test_agc_reporter.py tests/test_e2e.py tests/stt_eval_test.py  => 65 passed, 8 skipped",
+   "git -C \"/Users/aryavora/Desktop/Personal Projects/mira\" diff --exit-code -- wall/tests/test_unit.py wall/tests/test_agc_reporter.py wall/tests/test_e2e.py wall/tests/stt_eval_test.py wall/tests/conftest.py wall/tests/room_eval.py wall/speech/bench_stt.py wall/speech/bench_tts.py wall/tests/stt_eval.py  => exit 0, no output",
+   "G-dash over every owned file => dash files: []"
+  ],
+  "brief_path": "/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/briefs/P3.md"
+ },
+ {
+  "id": "P4",
+  "title": "Listener plugins copied from v1, and knob coverage",
+  "wave": 2,
+  "depends_on": [
+   "P1",
+   "P2"
+  ],
+  "model": "sonnet",
+  "owned_files": [
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/__init__.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/common.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/source_pipewire.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/source_wav.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/mute_zero.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/agc_mic.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/wake_kws.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/vad_silero.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/loop_turns.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/speech_link.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/stt_remote.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/tts_remote.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/gate_wake.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/intent_music.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/brain_hermes.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/persona_file.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/playback_miraaudio.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/reporter_agentos.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/listener_plugins/control_http.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/deploy/mira.example.json",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/plugins/test_lp_*.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/test_knob_coverage.py"
+  ],
+  "gates": [
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/plugins tests/test_knob_coverage.py  => exit 0",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -c \"import listener_plugins as lp; s=lp.specs(); print(len(s))\"  => 17",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/test_unit.py tests/test_agc_reporter.py tests/test_e2e.py tests/stt_eval_test.py  => 65 passed, 8 skipped",
+   "git -C \"/Users/aryavora/Desktop/Personal Projects/mira\" diff --exit-code -- wall/tests/test_unit.py wall/tests/test_agc_reporter.py wall/tests/test_e2e.py wall/tests/stt_eval_test.py wall/tests/conftest.py wall/tests/room_eval.py wall/speech/bench_stt.py wall/speech/bench_tts.py wall/tests/stt_eval.py  => exit 0, no output",
+   "G-dash over every owned file => dash files: []"
+  ],
+  "brief_path": "/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/briefs/P4.md"
+ },
+ {
+  "id": "P5",
+  "title": "Speech server plugins, voice catalog, swaps, compat shim and launcher",
+  "wave": 2,
+  "depends_on": [
+   "P1",
+   "P2"
+  ],
+  "model": "sonnet",
+  "owned_files": [
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech/server.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/__init__.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/server_http.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/stt_engine.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/stt_faster_whisper.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/stt_sherpa_whisper.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/stt_sherpa_moonshine.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/stt_sherpa_moonshine_v2.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/stt_sherpa_transducer.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/tts_engine.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/tts_piper.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/tts_kokoro.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/voices_catalog.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/control_http.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech_plugins/voices/*.json",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/deploy/speech.example.json",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/speech/**",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/speech/server_next.py"
+  ],
+  "gates": [
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/speech  => exit 0",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/stt_eval_test.py  => same count as before the change, no failures",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/test_unit.py tests/test_agc_reporter.py tests/test_e2e.py tests/stt_eval_test.py  => 65 passed, 8 skipped",
+   "git -C \"/Users/aryavora/Desktop/Personal Projects/mira\" diff --exit-code -- wall/tests/test_unit.py wall/tests/test_agc_reporter.py wall/tests/test_e2e.py wall/tests/stt_eval_test.py wall/tests/conftest.py wall/tests/room_eval.py wall/speech/bench_stt.py wall/speech/bench_tts.py wall/tests/stt_eval.py  => exit 0, no output",
+   "G-dash over every owned file => dash files: []"
+  ],
+  "brief_path": "/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/briefs/P5.md"
+ },
+ {
+  "id": "P6",
+  "title": "Control API, CLI, docs generator, lint, scaffold, deploy, units, tokens",
+  "wave": 2,
+  "depends_on": [
+   "P1"
+  ],
+  "model": "sonnet",
+  "owned_files": [
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/control.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/cli.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/docsgen.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/lint.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/scaffold.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/deploy.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/unitgen.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mirakit/tokens.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/bin/mira",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/deploy/manifest.json",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/deploy/mira-listen.dropin.tmpl",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_control.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_cli.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_docsgen.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_lint.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_scaffold.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_deploy.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_unitgen.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/kit/test_kit_tokens.py"
+  ],
+  "gates": [
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/kit/test_kit_control.py tests/kit/test_kit_cli.py tests/kit/test_kit_docsgen.py tests/kit/test_kit_lint.py tests/kit/test_kit_scaffold.py tests/kit/test_kit_deploy.py tests/kit/test_kit_unitgen.py tests/kit/test_kit_tokens.py  => exit 0",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m mirakit.cli --help  => exit 0, lists every command of SPEC 2.8",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/test_unit.py tests/test_agc_reporter.py tests/test_e2e.py tests/stt_eval_test.py  => 65 passed, 8 skipped",
+   "git -C \"/Users/aryavora/Desktop/Personal Projects/mira\" diff --exit-code -- wall/tests/test_unit.py wall/tests/test_agc_reporter.py wall/tests/test_e2e.py wall/tests/stt_eval_test.py wall/tests/conftest.py wall/tests/room_eval.py wall/speech/bench_stt.py wall/speech/bench_tts.py wall/tests/stt_eval.py  => exit 0, no output",
+   "G-dash over every owned file => dash files: []"
+  ],
+  "brief_path": "/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/briefs/P6.md"
+ },
+ {
+  "id": "P7",
+  "title": "Hermes surface (mira MCP, dialogue tests) and the knowledge texts",
+  "wave": 2,
+  "depends_on": [
+   "P1"
+  ],
+  "model": "sonnet",
+  "owned_files": [
+   "/Users/aryavora/Desktop/Personal Projects/agentic-os/pi/mira-mcp/server.py",
+   "/Users/aryavora/Desktop/Personal Projects/agentic-os/pi/mira-mcp/requirements.txt",
+   "/Users/aryavora/Desktop/Personal Projects/agentic-os/pi/mira-mcp/smoke_test.py",
+   "/Users/aryavora/Desktop/Personal Projects/agentic-os/pi/mira-mcp/dialogue_test.py",
+   "/Users/aryavora/Desktop/Personal Projects/agentic-os/pi/mira-mcp/dialogue_eval.py",
+   "/Users/aryavora/Desktop/Personal Projects/agentic-os/pi/mira-mcp/README.md",
+   "/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/knowledge/**"
+  ],
+  "gates": [
+   "cd \"/Users/aryavora/Desktop/Personal Projects/agentic-os/pi/mira-mcp\" && PYTHONDONTWRITEBYTECODE=1 \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv-mcp/bin/python\" -B -m pytest -q -p no:cacheprovider smoke_test.py dialogue_test.py  => exit 0",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/agentic-os/pi/mira-mcp\" && \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv-mcp/bin/python\" -B -c \"import server; print(len(server.TOOLS))\"  => 12",
+   "wc -c \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/knowledge/MIRA_WALL_IDENTITY.md\"  => at most 3000",
+   "wc -c \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/knowledge/hermes-MEMORY-line.txt\"  => at most 100",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/test_unit.py tests/test_agc_reporter.py tests/test_e2e.py tests/stt_eval_test.py  => 65 passed, 8 skipped",
+   "git -C \"/Users/aryavora/Desktop/Personal Projects/mira\" diff --exit-code -- wall/tests/test_unit.py wall/tests/test_agc_reporter.py wall/tests/test_e2e.py wall/tests/stt_eval_test.py wall/tests/conftest.py wall/tests/room_eval.py wall/speech/bench_stt.py wall/speech/bench_tts.py wall/tests/stt_eval.py  => exit 0, no output",
+   "G-dash over every owned file => dash files: []"
+  ],
+  "brief_path": "/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/briefs/P7.md"
+ },
+ {
+  "id": "P8",
+  "title": "Listener integration: facade, launcher, shadow runner, integration tests, generated docs",
+  "wave": 3,
+  "depends_on": [
+   "P1",
+   "P2",
+   "P3",
+   "P4",
+   "P5",
+   "P6",
+   "P7"
+  ],
+  "model": "opus",
+  "owned_files": [
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mira_listen.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mira_launch.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/mira_shadow.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/integration/test_int_facade.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/integration/test_int_launcher.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/integration/test_int_safe_point.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/integration/test_int_preview_order.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/integration/test_int_session_flow.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/integration/test_int_speech_boot.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/integration/test_int_mirror.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/integration/test_int_shadow.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/integration/test_int_agents_example.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/tests/tools/shadow_compare.py",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/docs/PLUGINS.md",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/docs/KNOBS.md",
+   "/Users/aryavora/Desktop/Personal Projects/mira/wall/docs/contracts/schema.generated.json"
+  ],
+  "gates": [
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/test_unit.py tests/test_agc_reporter.py tests/test_e2e.py tests/stt_eval_test.py  => 65 passed, 8 skipped (now against the facade)",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests/test_golden_parity.py tests/test_characterize.py tests/test_pwsource.py  => exit 0",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && PYTHONDONTWRITEBYTECODE=1 MIRA_SPEECH_TOKEN_FILE=/nonexistent \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m pytest -q -p no:cacheprovider tests  => exit 0 (8 e2e skips expected)",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -m mirakit.cli check  => exit 0",
+   "cd \"/Users/aryavora/Desktop/Personal Projects/mira/wall\" && \"/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/venv/bin/python\" -B -c \"import sys; sys.path.insert(0, 'tests'); import room_eval\"  => exit 0",
+   "git -C \"/Users/aryavora/Desktop/Personal Projects/mira\" diff --exit-code -- wall/tests/test_unit.py wall/tests/test_agc_reporter.py wall/tests/test_e2e.py wall/tests/stt_eval_test.py wall/tests/conftest.py wall/tests/room_eval.py wall/speech/bench_stt.py wall/speech/bench_tts.py wall/tests/stt_eval.py  => exit 0, no output",
+   "G-dash over every owned file => dash files: []"
+  ],
+  "brief_path": "/private/tmp/claude-501/-Users-aryavora-Desktop-Personal-Projects-agentic-os/a699da48-f6d2-4aec-8907-3db40e3fb372/scratchpad/mira-plugins/briefs/P8.md"
+ }
+]
