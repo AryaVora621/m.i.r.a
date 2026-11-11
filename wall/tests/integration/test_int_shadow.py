@@ -218,3 +218,25 @@ def test_the_shadow_log_of_a_real_run_passes_against_its_own_journal(tmp_path, m
                          f"{stamp('shadow hit') + 0.3:.6f} pi mira-listen[1]: 12:00:00 wake spotter hit 'MIRA', agc {gain:.1f}x"])
     r = sc.compare(journal, out)
     assert r["pass"], r
+
+
+def test_workdir_must_be_private(tmp_path):
+    """A folder others can write to, a folder that is a link, and a planted config link are all refused."""
+    import os
+    import pytest
+    import mira_shadow
+
+    shared = tmp_path / "shared"
+    shared.mkdir()
+    os.chmod(shared, 0o777)
+    with pytest.raises(SystemExit):
+        mira_shadow.private_workdir(shared)
+    real = tmp_path / "real"
+    real.mkdir(mode=0o700)
+    link = tmp_path / "link"
+    link.symlink_to(real)
+    with pytest.raises(SystemExit):
+        mira_shadow.private_workdir(link)
+    made = mira_shadow.private_workdir(tmp_path / "fresh")
+    assert (os.stat(made).st_mode & 0o777) == 0o700
+    assert not mira_shadow.default_workdir().startswith("/tmp/")

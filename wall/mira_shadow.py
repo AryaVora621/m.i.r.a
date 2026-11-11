@@ -12,7 +12,7 @@ one line per event on stdout:
 
 tests/tools/shadow_compare.py compares these lines with the live journal.
 
-    python mira_shadow.py --config /tmp/mira-shadow/mira.json [--workdir /tmp/mira-shadow] [--wav FILE]
+    python mira_shadow.py --config ~/.config/mira/mira.json [--workdir DIR] [--wav FILE]
 """
 
 import argparse
@@ -74,12 +74,40 @@ def shadow_config(src_path, wav=None):
     return doc
 
 
+def default_workdir():
+    """A per-user folder: the runtime dir when there is one (0700 by the system), else a name under the home."""
+    base = os.environ.get("XDG_RUNTIME_DIR") or str(Path.home() / ".cache")
+    return str(Path(base) / "mira-shadow")
+
+
+def private_workdir(workdir):
+    """Create the work folder 0700, or refuse one another user could have prepared or can write to.
+
+    The shadow reads its config back from this folder, so a shared or planted folder would let another local
+    user choose what the core loads."""
+    workdir = Path(workdir)
+    workdir.mkdir(mode=0o700, parents=True, exist_ok=True)
+    st = os.lstat(workdir)
+    import stat as _stat
+    if _stat.S_ISLNK(st.st_mode) or not _stat.S_ISDIR(st.st_mode):
+        raise SystemExit(f"shadow: {workdir} is not a plain folder")
+    if st.st_uid != os.getuid():
+        raise SystemExit(f"shadow: {workdir} belongs to another user")
+    if st.st_mode & 0o022:
+        raise SystemExit(f"shadow: {workdir} is writable by others; use a private folder")
+    return workdir
+
+
 def build_core(config, workdir, wav=None):
     """The shadow's Core: file copy under workdir, HOME under workdir, no mirror, no change log."""
-    workdir = Path(workdir)
-    (workdir / "home").mkdir(parents=True, exist_ok=True)
+    workdir = private_workdir(workdir)
+    (workdir / "home").mkdir(mode=0o700, exist_ok=True)
     path = workdir / "shadow-config.json"
-    path.write_text(json.dumps(shadow_config(config, wav), indent=1), encoding="utf-8")
+    # The config is read back by the core, so it must not be a file or link someone else planted here.
+    path.unlink(missing_ok=True)
+    fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(json.dumps(shadow_config(config, wav), indent=1))
     os.environ["HOME"] = str(workdir / "home")
     specs = [s for s in listener_plugins.specs() if s.name in KEEP]
     return Core.from_file(str(path), argv=[], machine="listener", specs=specs, parser=None, mirror=False,
@@ -123,7 +151,7 @@ def run(core, stats_s=600.0, stop=None, out=say):
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Counting-only shadow of the listener front end")
     ap.add_argument("--config", required=True, help="the adopted mira.json (read only)")
-    ap.add_argument("--workdir", default="/tmp/mira-shadow")
+    ap.add_argument("--workdir", default=default_workdir())
     ap.add_argument("--wav", help="read this WAV instead of the microphone (tests)")
     ap.add_argument("--stats-s", type=float, default=600.0)
     args = ap.parse_args(argv)
