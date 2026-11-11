@@ -72,7 +72,8 @@ class Box:
 
 
 @pytest.fixture
-def box(tmp_path, monkeypatch):
+def box(tmp_path, monkeypatch, request):
+    control_on = getattr(request, "param", True)
     for k in ENV:
         monkeypatch.delenv(k, raising=False)
     home = tmp_path / "home"
@@ -91,7 +92,7 @@ def box(tmp_path, monkeypatch):
         "plugins": {
             "server.http": {"enabled": True, "config": {"bind": ["127.0.0.1"], "port": port, "base_dir": str(base),
                                                         "token_file": str(cfgdir / "speech.token")}},
-            "control.http": {"enabled": True, "config": {"owner_token_file": str(cfgdir / "control.owner.token"),
+            "control.http": {"enabled": control_on, "config": {"owner_token_file": str(cfgdir / "control.owner.token"),
                                                          "pi_token_file": str(cfgdir / "control.pi.token")}},
             "stt.engine": {"enabled": True, "config": {"kind": "faster-whisper:tiny.en", "warm": False}},
             "tts.engine": {"enabled": True, "config": {"voice": AMY, "warm": False}},
@@ -231,3 +232,30 @@ def test_a_voice_switch_through_ctl_waits_for_the_request_in_flight(box):
     assert ch["status"] == "applied" and ch["machine"] == "speech"
     assert (box.cfgdir / "changes.jsonl").exists()
     assert json.loads(box.cfg.read_text())["plugins"]["tts.engine"]["config"]["voice"] == kristin
+
+
+def _run_cli(box, *argv, machine=None):
+    out, err = [], []
+    env = {"HOME": str(box.cfgdir.parent.parent)}
+    if machine:
+        env["MIRA_MACHINE"] = machine
+    from mirakit import cli
+    code = cli.main(list(argv), env=env, home=box.cfgdir.parent.parent, out=out.append, err=err.append)
+    return code, "\n".join(out), "\n".join(err)
+
+
+def test_the_real_cli_reaches_the_running_speech_server(box):
+    """`mira status` and `mira inventory` on the mini, with the machine detected from the config directory alone."""
+    code, out, err = _run_cli(box, "status")
+    assert code == 0 and "speech" in out, (out, err)
+    code, out, err = _run_cli(box, "inventory")
+    assert code == 0 and "control.http" in out, (out, err)
+
+
+@pytest.mark.parametrize("box", [False], indirect=True)
+def test_the_cli_names_the_cause_when_the_control_plugin_is_off(box):
+    """`adopt` writes control.http off, so a mini with tokens installed but the plugin never enabled answers 404 on
+    /ctl/v1. The CLI used to print only `the request failed [not_found]`."""
+    code, out, err = _run_cli(box, "status")
+    assert code != 0
+    assert "control.http is disabled" in err and "mira enable control.http --offline" in err and "[not_found]" in err

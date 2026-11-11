@@ -317,7 +317,9 @@ def test_ctl_tokens_are_reread_on_every_request(srv):
 def test_ctl_is_404_when_the_control_plugin_is_not_running(srv):
     srv.ctx.release_all()                  # drops every service this FakeCtx holds, including "control"
     srv.ctx.provide("stt", srv.stt)
-    assert call(srv, "GET", "/ctl/v1/status", token=OWNER)[:2] == (404, {"error": "not_found"})
+    code, body, _ = call(srv, "GET", "/ctl/v1/status", token=OWNER)
+    assert code == 404 and body["error"] == "not_found"
+    assert "control.http is disabled" in body["message"] and "mira enable control.http --offline" in body["message"]
 
 
 def test_a_failing_control_handler_is_a_500_internal(srv):

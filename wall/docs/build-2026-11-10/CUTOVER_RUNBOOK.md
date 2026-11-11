@@ -112,6 +112,10 @@ Expect exactly three rows, source `plist`: `server.http.bind ["127.0.0.1","100.7
 MINI '"$HOME/.local/bin/mira" adopt --write'     # wrote /Users/aryavora/.config/mira/speech.json (core.engine stays legacy ...)
 MINI '"$HOME/.local/bin/mira" tokens install --machine speech'     # owner and pi tokens created, 0600, values never printed
 ```
+`adopt` writes `control.http` disabled, and tokens alone do not turn it on: until it is enabled and the server restarted, every `/ctl/v1` call answers 404, which the CLI prints as `the control service is not running: control.http is disabled` (older builds: `the request failed [not_found]`). Enable it in the same restart as the engine switch:
+```
+MINI '"$HOME/.local/bin/mira" enable control.http --offline'     # applies on the restart of 2.3
+```
 Copy the Pi token to the Pi without printing it (used by the Pi to mini proxy at M8; harmless now):
 ```
 MINI 'cat "$HOME/.config/mira/control.pi.token"' | PI 'umask 077; cat > /home/mira/.config/mira/speech.control.token && chmod 400 /home/mira/.config/mira/speech.control.token && ls -l /home/mira/.config/mira/speech.control.token'
@@ -135,7 +139,12 @@ sleep 25; MINI 'tail -n 8 "$HOME/Library/Logs/mira-speech/server.log"; tail -5 "
 Expect in the log `engine plugins: core.engine is plugins` then `plugin engine running`; an empty or warnings-only err log; `/health` equal to before (`ok`, `stt`, `tts`, `voice` amy, small `uptime_s`) plus the additive fields `engine`, `revision`, `voice_id`. If `/health` is not up after 60 s, roll back at once.
 Round trip from the Pi over the real path, token on stdin (never in argv):
 ```
-cat "$WALL/tests/fixtures/mira_pause_the_music.wav" | PI 'printf "header = \"Authorization: Bearer %s\"\n" "$(cat /home/mira/.config/mira/speech.token)" | curl -s -m20 -K - -H "Content-Type: audio/wav" --data-binary @- http://100.77.98.89:8765/stt'
+# the server needs 16 kHz mono 16-bit WAV; the fixture is 22.05 kHz, so convert it first
+afconvert -f WAVE -d LEI16@16000 -c 1 "$WALL/tests/fixtures/mira_pause_the_music.wav" /tmp/stt16k.wav
+PI 'umask 077; cat > /tmp/stt16k.wav' < /tmp/stt16k.wav
+# stdin carries only the header config (curl -K -), the audio goes from the file, so the two never share a pipe
+PI 'printf "header = \"Authorization: Bearer %s\"\n" "$(cat /home/mira/.config/mira/speech.token)" | curl -s -m20 -K - -H "Content-Type: audio/wav" --data-binary @/tmp/stt16k.wav http://100.77.98.89:8765/stt; rm -f /tmp/stt16k.wav'
+rm -f /tmp/stt16k.wav
 ```
 Expect `{"text": "pause the music"...` (case and punctuation may differ) and `ms` under 3000.
 ```

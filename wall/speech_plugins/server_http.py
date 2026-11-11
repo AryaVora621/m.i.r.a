@@ -136,7 +136,11 @@ def make_handler(plugin: "ServerHttpPlugin"):
         def _ctl(self):
             control = ctx.get("control", None)
             if control is None:
-                return self._json(404, {"error": "not_found"})
+                # control.http ships off and `adopt` writes it off, so a machine with tokens installed but the plugin
+                # never enabled lands here. A bare not_found made `mira status` look like a routing bug.
+                return self._json(404, {"error": "not_found", "message":
+                                        "the control service is not running: control.http is disabled on this machine "
+                                        "(run `mira enable control.http --offline`, then `mira restart`)"})
             scope = control.scope_for(self.headers.get("Authorization", ""))
             if scope is None:
                 # The data-plane token is not a control token. Nothing is read from the body.

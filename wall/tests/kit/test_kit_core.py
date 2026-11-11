@@ -460,23 +460,43 @@ def test_submit_never_runs_plugin_code_for_any_apply_class(rig):
     assert rig.j == []
 
 
+def _count_slow_path(rig):
+    """Count entries into the slow path. The fast path is a promise about work done (no lock, no timer scan, no
+    drain), so it is measured by counting that work, not by a wall-clock limit a loaded machine can break."""
+    core, calls = rig.core, []
+    real = core._safe_point_slow
+
+    def counting(armed):
+        calls.append(armed)
+        return real(armed)
+    core._safe_point_slow = counting
+    return calls
+
+
 def test_empty_safe_point_is_cheap_and_returns_zero(rig):
-    start = time.perf_counter()
-    for _ in range(100000):
-        rig.core.safe_point(True)
-    took = time.perf_counter() - start
-    assert took < 0.2, f"100000 empty safe points took {took:.3f}s"
+    slow = _count_slow_path(rig)
+    assert all(rig.core.safe_point(True) == 0 for _ in range(100000))
+    assert slow == [], "an empty safe point must never reach the slow path"
     assert rig.sp() == 0 and rig.sp(False) == 0
 
 
 def test_safe_point_with_a_long_due_timer_stays_on_the_fast_path(rig):
-    agent(rig, [E("agc.mic.target", 0.06)]) if False else None
     owner(rig, [E("agc.mic.target", 0.06)], trial_s=600)
     rig.sp()
-    start = time.perf_counter()
-    for _ in range(100000):
-        rig.core.safe_point(True)
-    assert time.perf_counter() - start < 0.2
+    assert rig.core._next_due > rig.core._wall() + 300, "the trial timer is far in the future, not due"
+    slow = _count_slow_path(rig)
+    assert all(rig.core.safe_point(True) == 0 for _ in range(100000))
+    assert slow == [], "a timer that is not due must not pull safe_point onto the slow path"
+
+
+def test_safe_point_goes_slow_once_the_timer_is_due(rig):
+    """The counter above would pass for a safe_point that never goes slow, so prove it can see the slow path."""
+    owner(rig, [E("agc.mic.target", 0.06)], trial_s=600)
+    rig.sp()
+    slow = _count_slow_path(rig)
+    rig.core._next_due = rig.core._wall() - 1
+    rig.core.safe_point(True)
+    assert slow == [True]
 
 
 def test_the_apply_queue_is_not_a_locked_queue(rig):
