@@ -88,7 +88,8 @@ def _normalize_audio(lines):
 def argv_for(sc, tmp, urls, tokens, audio_bin):
     argv = ["--kws-dir", str(REPO / "voice" / "models" / "kws"),
             "--vad-model", str(WALL / "models" / "silero_vad.onnx"),
-            "--identity", str(WALL / "MIRA_WALL_IDENTITY.md"), "--chime", str(WALL / "assets" / "offline.wav"),
+            "--identity", str(Path(__file__).parent / "persona_fixture.md"),  # frozen text: the recordings embed it, the shipped persona changes
+             "--chime", str(WALL / "assets" / "offline.wav"),
             "--speech-url", urls["speech"], "--speech-token-file", tokens["speech"],
             "--hermes-url", urls["hermes"], "--hermes-key-file", tokens["hermes"],
             "--voice-url", urls["voice"] + "/api/hooks/voice", "--voice-token-file", tokens["voice"],

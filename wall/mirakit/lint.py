@@ -30,12 +30,12 @@ SKIP_DIRS = {"__pycache__", "models", ".git", "venv", "node_modules", ".pytest_c
 TRIVIAL_NUMBERS = (0, 1, -1)
 
 # Values the example files may carry that differ from the schema default (spec 2.4.5, plus the owner decision of
-# 2026-11-10 that the Pi example sets a night window). "plugin.key" or "plugin.enabled".
+# 2026-11-10 that the Pi example sets a night window and speaks through the local splitter). "plugin.key" or "plugin.enabled".
 DEPLOYMENT_DIFFS = {
     "listener": {"core.engine", "core.legacy_env", "wake.kws.kws_dir", "wake.kws.threshold", "vad.silero.model",
                  "speech.link.token_file", "intent.music.url", "intent.music.auth_file", "brain.hermes.key_file",
                  "persona.file.path", "playback.miraaudio.chime", "reporter.agentos.token_file",
-                 "loop.turns.events_max", "playback.miraaudio.night_window"},
+                 "loop.turns.events_max", "playback.miraaudio.night_window", "speech.link.url"},
     "speech": {"core.engine", "core.legacy_env", "stt.engine.kind", "server.http.token_file", "server.http.base_dir",
                "control.http.enabled"},
 }

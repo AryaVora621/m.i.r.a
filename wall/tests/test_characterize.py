@@ -54,7 +54,7 @@ def test_s01_calendar_round_trip(run):
     assert kinds(r).count("wake") == 1 and "followup" in kinds(r) and r["exception"] is None
     assert chat_messages(r) == [CAL]  # the wake word is stripped
     chat = [h for h in r["hermes_bodies"] if h["path"].endswith("/chat/stream")][0]["body"]
-    assert chat["instructions"] == (WALL / "MIRA_WALL_IDENTITY.md").read_text()
+    assert chat["instructions"] == (record.GOLDEN / "persona_fixture.md").read_text()
     assert r["audio_calls"][0] == "duck" and r["audio_calls"][-1] == "unduck" and len(says(r)) == 1
     assert r["hook"][-1]["reply"].startswith("You have a physics review") and r["hook"][-1]["heard"] == CAL
     assert r["tts_bodies"] == [{"text": scenarios.CAL_REPLY}]

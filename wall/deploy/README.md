@@ -13,7 +13,9 @@ Backends (Hermes, Agent OS, music-api) are plain URLs in `listen.env`; none is a
 
    Pin 1.12.40: sherpa-onnx 2.0.x lost the espeak frontend (Piper TTS breaks) and the listener is tested on 1.12.40.
 
-2. Copy from the Mac (repo `mira`): `wall/mira_listen.py`, `wall/MIRA_WALL_IDENTITY.md` to `~/mira-listen/`,
+2. Copy from the Mac (repo `mira`): `wall/mira_listen.py`, `wall/MIRA_WALL_IDENTITY.md` to `~/mira-listen/`
+   (the persona lives at that one absolute path, shared by every release and edited in place; set `persona.file.path` and
+   `playback.miraaudio.chime` to the absolute `/home/mira/mira-listen/...` paths, because `${HERE}` of a release folder holds code only),
    `wall/assets/offline.wav` to `~/mira-listen/assets/`, `wall/models/silero_vad.onnx` to `~/mira-listen/models/`
    (or fetch it, see `wall/models/README.md`), and the keyword model `voice/models/kws/{tokens.txt,encoder.onnx,decoder.onnx,joiner.onnx,keywords.txt}`
    to `~/mira-listen/kws/` (that folder is gitignored in the repo; recipe in `voice/adapters/wake.py`).
@@ -59,3 +61,11 @@ Journal: every spotter hit logs `wake spotter hit 'MIRA', agc 4.6x` and then its
 Offline replay of a room recording through the live wake path (Pi, in the venv, niced; needs the speech token file):
 `nice -n 19 ~/mira-listen/venv/bin/python -I wall/tests/room_eval.py TAKE.wav ... --kws-dir ~/mira-listen/kws --vad-model ~/mira-listen/models/silero_vad.onnx --speech-token-file ~/.config/mira/speech.token`.
 Keep the recordings out of the repo.
+
+5. Things the live wall has that this list does not install (2026-11-10):
+
+   - The speech splitter `mira-speech-split` on 127.0.0.1:8766 is the one speech address (`MIRA_SPEECH_URL` or `speech.link.url`); the
+     engine has no second address or fallback, so do not point it at the mini. Start it before the listener.
+   - Her speaking level is `/etc/mira/say-volume` (percent, 12 today), read by `/usr/local/bin/mira-audio` and set with
+     `/usr/local/bin/mira-say-volume` (3 to 40). The night gain multiplies on top of it. Check
+     `md5sum /usr/local/bin/mira-audio` against `agentic-os:pi/deploy/mira-audio/mira-audio` after any speaker install.

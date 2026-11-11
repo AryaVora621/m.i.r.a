@@ -18,7 +18,7 @@
     "threshold": 0.05, "score": 1.0, "threads": 1}},
   "vad.silero": {"enabled": true, "config": {"model": "/home/mira/mira-listen/models/silero_vad.onnx", "threshold": 0.5,
     "end_silence": 0.7, "min_speech": 0.15, "max_speech": 30.0, "threads": 1, "buffer_s": 30.0}},
-  "speech.link": {"enabled": true, "config": {"url": "http://100.77.98.89:8765",
+  "speech.link": {"enabled": true, "config": {"url": "http://127.0.0.1:8766",
     "token_file": "/home/mira/.config/mira/speech.token", "stt_timeout_s": 30.0, "tts_timeout_s": 45.0}},
   "stt.remote": {"enabled": true, "config": {}},
   "tts.remote": {"enabled": true, "config": {"voice": "", "speed": 0.0, "peak": 0.0, "chunk_limit": 280, "max_chunks": 3,

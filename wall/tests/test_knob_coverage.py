@@ -270,12 +270,13 @@ CORE_DEFAULTS = {"engine": "legacy", "legacy_env": "fallback", "unit_memory_max"
                  "unit_nice": 5, "unit_restart": "always", "unit_restart_sec": 3.0, "crash_window_s": 600,
                  "crash_guard_after": 3, "crash_legacy_after": 4, "crash_guard_revert_s": 1800}
 
-# Spec 2.4.5 for the Pi, plus playback.miraaudio.night_window (owner decision 2026-11-10: the Pi runs 23:00-06:00).
+# Spec 2.4.5 for the Pi, plus playback.miraaudio.night_window (owner decision 2026-11-10: the Pi runs 23:00-06:00), plus the splitter address.
 EXPECTED_DIFFS = {
     "core.engine", "core.legacy_env", "wake.kws.kws_dir", "wake.kws.threshold", "vad.silero.model",
     "speech.link.token_file", "intent.music.url", "intent.music.auth_file", "brain.hermes.key_file",
     "persona.file.path", "playback.miraaudio.chime", "reporter.agentos.token_file", "loop.turns.events_max",
     "playback.miraaudio.night_window",
+    "speech.link.url",  # the Pi speaks through the local splitter (127.0.0.1:8766), see deploy/README.md
 }
 
 
