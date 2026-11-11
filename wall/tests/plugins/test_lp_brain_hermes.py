@@ -151,7 +151,8 @@ def test_live_knobs_apply(key):
         "url": ("http://127.0.0.1:9/", lambda p: h.url, "http://127.0.0.1:9"), "key_file": ("/k", lambda p: h.key_file),
         "session_ttl": (300.0, lambda p: h.session_ttl), "session_timeout_s": (20.0, lambda p: h.session_timeout_s),
         "stream_timeout_s": (200.0, lambda p: h.stream_timeout_s), "title_prefix": ("T", lambda p: h.title_prefix),
-        "fail_reply": ("nope", lambda p: h.fail_reply), "empty_reply": ("none", lambda p: h.empty_reply)})
+        "fail_reply": ("nope", lambda p: h.fail_reply), "empty_reply": ("none", lambda p: h.empty_reply),
+        "timeout_reply": ("slow", lambda p: h.timeout_reply), "deadline_s": (20.0, lambda p: h.deadline_s)})
 
 
 def test_needs_persona_and_validate_loopback():
@@ -167,3 +168,133 @@ def test_agent_policy_is_session_ttl_only():
     k = {k.name: k for k in SPEC.knobs}
     assert [n for n, x in k.items() if x.agent == "bounded"] == ["session_ttl"]
     assert (k["session_ttl"].agent_min, k["session_ttl"].agent_max, k["session_ttl"].agent_step) == (60, 600, 60)
+
+
+# ------------------------------------------------------------------------- deadline and cancel (2026-11-11)
+
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+
+class StallServer:
+    """Hermes that opens the answer stream, sends one delta and then goes quiet with the socket open, like the SSE
+    stall of 2026-11-11 (every socket read stayed alive, so stream_timeout_s never fired). mode "headers" never
+    answers the stream request at all."""
+
+    def __init__(self, mode="stream"):
+        self.sessions, self.chats, self.release = 0, 0, threading.Event()
+        outer = self
+
+        class H(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.0"
+
+            def log_message(self, *a):
+                pass
+
+            def do_POST(self):
+                n = int(self.headers.get("Content-Length") or 0)
+                self.rfile.read(n)
+                if self.path == "/api/sessions":
+                    outer.sessions += 1
+                    data = json.dumps({"id": f"s{outer.sessions}"}).encode()
+                    self.send_response(200)
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    self.wfile.write(data)
+                    return
+                outer.chats += 1
+                if mode == "stream":
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/event-stream")
+                    self.end_headers()
+                    self.wfile.write(sse([("run.started", {}), ("assistant.delta", {"delta": "Let me"})]))
+                    self.wfile.flush()
+                outer.release.wait(30)
+
+        self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), H)
+        self.url = f"http://127.0.0.1:{self.httpd.server_address[1]}"
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+
+    def stop(self):
+        self.release.set()
+        self.httpd.shutdown()
+        self.httpd.server_close()
+
+
+@pytest.mark.parametrize("mode", ["stream", "headers"])
+def test_a_stalled_answer_ends_at_the_deadline_and_the_next_ask_gets_a_fresh_session(key, mode):
+    s = StallServer(mode)
+    try:
+        h = bh.Hermes(s.url, key, "p", stream_timeout_s=60, deadline_s=0.6)
+        t0 = time.monotonic()
+        with pytest.raises(bh.HermesTimeout):
+            h.ask("what time is it", 180, 10.0)
+        assert 0.5 < time.monotonic() - t0 < 2.0
+        assert h.session_id is None  # Hermes may still be working on that message: never queue behind it
+        h.deadline_s = 0.4
+        with pytest.raises(bh.HermesTimeout):
+            h.ask("again", 180, 11.0)
+        assert s.sessions == 2  # the second ask did not reuse the stalled session
+    finally:
+        s.stop()
+
+
+def test_cancel_returns_at_once_and_leaves_hermes_to_finish(key):
+    s = StallServer()
+    try:
+        h = bh.Hermes(s.url, key, "p", stream_timeout_s=60, deadline_s=30)
+        cancel = threading.Event()
+        threading.Timer(0.3, cancel.set).start()
+        t0 = time.monotonic()
+        with pytest.raises(bh.HermesCancelled):
+            h.ask("what time is it", 180, 10.0, cancel=cancel)
+        assert time.monotonic() - t0 < 1.0
+        assert h.session_id is None
+    finally:
+        s.stop()
+
+
+def test_cancel_already_set_returns_without_waiting_for_the_answer(key):
+    s = StallServer("headers")
+    try:
+        h = bh.Hermes(s.url, key, "p", stream_timeout_s=60, deadline_s=30)
+        cancel = threading.Event()
+        cancel.set()
+        t0 = time.monotonic()
+        with pytest.raises(bh.HermesCancelled):
+            h.ask("x", 180, 10.0, cancel=cancel)
+        assert time.monotonic() - t0 < 1.0
+    finally:
+        s.stop()
+
+
+def test_the_abandoned_request_cannot_overwrite_the_session_afterwards(key):
+    s = StallServer()
+    try:
+        h = bh.Hermes(s.url, key, "p", stream_timeout_s=60, deadline_s=0.3)
+        with pytest.raises(bh.HermesTimeout):
+            h.ask("x", 180, 10.0)
+        s.release.set()           # the stalled request now ends cleanly on the server side
+        time.sleep(0.3)
+        assert h.session_id is None and h.last_used == 0.0
+    finally:
+        s.stop()
+
+
+def test_a_normal_answer_is_unchanged_and_carries_the_timeout_reply_default(key):
+    s = _hermes_server()
+    try:
+        h = bh.Hermes(s.url, key, "p", deadline_s=5)
+        assert h.ask("hello", 180, 1.0) == REPLY and h.session_id == "s1" and h.last_used == 1.0
+        assert h.timeout_reply == "Hermes is taking too long."
+    finally:
+        s.stop()
+
+
+def test_errors_keep_their_type_through_the_helper_thread(key):
+    s = _hermes_server(error_event=True)
+    try:
+        with pytest.raises(RuntimeError):
+            bh.Hermes(s.url, key, "p").ask("x", 180, 1.0)
+    finally:
+        s.stop()

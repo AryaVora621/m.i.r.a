@@ -13,7 +13,7 @@ from mirakit.testkit import FakeCore, FakeCtx, run_plugin_contract
 SPECS = H.lp.specs()
 NAMES = [s.name for s in SPECS]
 EXPECTED = ["agc.mic", "brain.hermes", "control.http", "gate.wake", "intent.calendar", "intent.music",
-            "intent.printers", "intent.school", "intent.time", "intent.weather", "loop.turns", "mute.zero",
+            "intent.printers", "intent.school", "intent.screens", "intent.time", "intent.weather", "loop.turns", "mute.zero",
             "persona.file", "playback.miraaudio", "reporter.agentos", "source.pipewire", "source.wav", "speech.link",
             "stt.remote", "tts.remote", "vad.silero", "wake.kws"]
 
@@ -71,8 +71,8 @@ def _stub_control(monkeypatch):
     monkeypatch.setattr(mirakit, "control", mod, raising=False)
 
 
-def test_the_twenty_two_specs_are_unique_and_listed():
-    assert sorted(NAMES) == EXPECTED and len(set(NAMES)) == 22
+def test_the_twenty_three_specs_are_unique_and_listed():
+    assert sorted(NAMES) == EXPECTED and len(set(NAMES)) == 23
     assert all(isinstance(s, PluginSpec) and s.machine == "listener" for s in SPECS)
     assert all(s.kind == s.name.split(".")[0] for s in SPECS)
 
@@ -128,10 +128,12 @@ def test_provider_rules():
     assert [s.name for s in SPECS if s.core] == ["loop.turns"]
     # The quick-answer intents are optional too: a failure in one must never take the listener down (exit 78).
     quick = ["intent.calendar", "intent.printers", "intent.school", "intent.time", "intent.weather"]
-    assert sorted(s.name for s in SPECS if not s.required) == sorted(["control.http"] + quick)
+    # intent.screens is optional too, and the one intent that is on by default: it only acts on a clear screen request.
+    assert sorted(s.name for s in SPECS if not s.required) == sorted(["control.http", "intent.screens"] + quick)
     assert all(not H.spec_named(n).default_enabled for n in quick)
+    assert H.spec_named("intent.screens").default_enabled is True
     # control.http is restart class: the CLI that would enable it needs the API it starts (stage.verify defect 5)
-    assert {s.name for s in SPECS if s.toggle == "live"} == {"intent.music"} | set(quick)
+    assert {s.name for s in SPECS if s.toggle == "live"} == {"intent.music", "intent.screens"} | set(quick)
     assert H.spec_named("control.http").toggle == "restart"
 
 

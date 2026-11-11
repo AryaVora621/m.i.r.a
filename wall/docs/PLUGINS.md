@@ -41,8 +41,10 @@ Hermes through Agent OS's session API.
 | session_ttl | float | 180 | 30..1800 | s | live | 60..600 step 60 | Idle time before she starts a fresh conversation. |
 | session_timeout_s | float | 15 | 3..60 | s | live | deny | Seconds creating a session may take. |
 | stream_timeout_s | float | 150 | 10..600 | s | live | deny | Seconds one socket read of the answer may wait. |
+| deadline_s | float | 35 | 5..120 | s | live | deny | Longest one answer may take in all, however the stream behaves; past it she stops waiting. |
 | title_prefix | str | Mira wall | 1..60 chars | chars | live | deny | Start of every session title. |
 | fail_reply | str | I cannot reach Hermes right now. | 1..200 chars | chars | live | deny | Spoken when Hermes cannot be reached. |
+| timeout_reply | str | Hermes is taking too long. | 1..200 chars | chars | live | deny | Spoken when the answer deadline passes. |
 | empty_reply | str | I have nothing to add. | 1..200 chars | chars | live | deny | Spoken when Hermes answers with nothing. |
 
 ### control.http
@@ -156,6 +158,22 @@ Local answers to what is due and what is missing, from Agent OS.
 | max_words | int | 25 | 12..60 | words | live | deny | Longest spoken answer; titles and items are dropped to fit. |
 | stale_hours | float | 10 | 1..72 | h | live | deny | A school list older than this goes to Hermes instead of being spoken. |
 
+### intent.screens
+
+Bring up and close wall screens by voice in about a second, without Hermes.
+
+- version 1; provides: intent; needs: nothing; optional; on by default; toggle live
+
+| key | type | default | bounds | unit | applies | agent | description |
+|---|---|---|---|---|---|---|---|
+| priority | int | 95 | 0..1000 | rank | live | deny | Higher runs first among intents; music is 100. |
+| url | url | http://127.0.0.1:3456 |  |  | live | deny | Agent OS address; loopback only. |
+| token_file | path | ~/.config/mira/screen_token |  |  | live | deny | Bearer token file for the screen hook, read per call. |
+| timeout_s | float | 4 | 0.5..8 | s | live | deny | Seconds a screen call may take before the request goes to Hermes. |
+| minutes | float | 5 | 1..30 | min | live | deny | How long a screen stays up. |
+| aliases | map[str,str] | {"print-studio": "printers\|printer\|3d printers\|3d printer\|my prints\|prints\|print\|3d prints\|3d print\|print studio\|printer status\|print status\|the print studio\|print farm", "school": "school\|school board\|assignments\|assignment\|homework\|classroom\|google classroom\|classwork\|school work\|schoolwork\|whats due\|what is due\|due\|school stuff", "week": "week\|my week\|this week\|calendar\|my calendar\|schedule\|my schedule\|week view\|weekly\|the week ahead", "homelab": "homelab\|home lab\|servers\|server\|home server\|home servers\|server status\|homelab status\|home lab status", "morning": "brief\|morning brief\|daily brief\|briefing\|morning briefing\|morning\|my morning brief", "recap": "recap\|evening recap\|daily recap\|day recap\|evening brief\|my recap", "exams": "exams\|exam\|exam schedule\|finals\|upcoming exams\|my exams", "board": "build board\|board\|robotics board\|task board\|project board\|kanban"} |  |  | live | deny | Spoken names of each screen, separated by \|; a close match to one name also counts. |
+| replies | map[str,str] | {"print-studio": "Printers are up.", "school": "School is up.", "week": "Week is up.", "homelab": "Homelab is up.", "morning": "Brief is up.", "recap": "Recap is up.", "exams": "Exams are up.", "board": "Board is up.", "cleared": "Cleared."} |  |  | live | deny | Spoken confirmations, five words or fewer. |
+
 ### intent.time
 
 Local answers to the time and the date, with no network.
@@ -201,6 +219,13 @@ The turn loop's timing: waits, limits, pre-roll and follow-up.
 | offline_text | str | Speech is offline | 1..80 chars | chars | live | deny | Wall text when speech is offline. |
 | events_max | int | 0 | 0..100000 | events | restart | deny | In-memory event trail length; 0 is unbounded (legacy). |
 | log_text | bool | true |  |  | live | deny | Heard text and replies in the journal. |
+| barge_in | bool | true |  |  | live | deny | Her name interrupts her while she thinks or speaks, on the live microphone. |
+| barge_ignore_s | float | 0.6 | 0..5 | s | live | deny | After she starts speaking, how long her name is ignored, so the first syllables cannot wake her. |
+| barge_head_chunks | int | 8 | 2..15 | chunks(100ms) | live | deny | Audio kept before her name when she is cut off mid-speech, so her own voice stays out of the request. |
+| barge_guard_words | regex | \b(?:mir\w*\|mar[ia]\w*\|m[iy]r\w*\|me+r[ao]\w*\|[vb][ei]+r[ao]h?)\b |  |  | live | deny | Words in a reply that sound like her name: while such a reply plays, her name does not interrupt it. |
+| cancel_words | list[str] | ["cancel", "cancel that", "never mind", "nevermind", "forget it", "forget that", "stop talking", "stop that", "stop it"] | 0..30 items | items | live | deny | Requests that only cancel what she is doing and are never sent to Hermes. |
+| cancel_after_barge | list[str] | ["stop", "quiet", "enough", "that's enough"] | 0..30 items | items | live | deny | Extra cancel words, taken only when they interrupted a running turn; otherwise a bare stop stays a music command. |
+| cancel_reply | str |  | 0..40 chars | chars | live | deny | What she says after a cancel; empty is silence. |
 | sigterm_idle | bool | false |  |  | restart | deny | SIGTERM posts a final idle and exits through the finally. |
 
 ### mute.zero

@@ -10,6 +10,7 @@ FIXED: the sub-commands duck, unduck and say FILE, and a blocking `say` while a 
 """
 
 import os
+import signal
 import tempfile
 import threading
 import time
@@ -23,6 +24,8 @@ from mirakit.plugin import Knob, PluginBase, PluginSpec
 from .common import RATE, expand_path, in_window, local_minute, log, read_wav_float_bytes
 
 LEGACY_CLASSES = ()
+
+KILL_WAIT_S = 0.5  # how long a terminated `say` gets to exit before its group is killed
 
 
 def wav_envelope(wav_bytes, step=0.1, scale=8.0):
@@ -68,13 +71,59 @@ class MiraAudio:
         self.night_window, self.night_gain = night_window, night_gain
         self.minute_of_day = local_minute  # injectable so a test can pick the hour
         self.lock = threading.Lock()  # held by previews only (spec 2.6)
+        self._say_procs = set()
+        self._say_lock = threading.Lock()
+        self.stopped = 0  # says cut short by stop(), for status and tests
 
     def _run(self, *cmd):
+        # Own process group: `mira-audio say` starts the player as a child, and ending only the wrapper would leave
+        # the sound playing. Only `say` is ever registered for stop(); duck and unduck are never killed.
         try:
-            return subprocess.run([self.bin, *cmd], timeout=self.call_timeout_s, capture_output=True).returncode
-        except (OSError, subprocess.TimeoutExpired) as e:
+            proc = subprocess.Popen([self.bin, *cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                    start_new_session=True)
+        except OSError as e:
             log(f"mira-audio {cmd[0]} failed: {type(e).__name__}")
             return 1
+        is_say = cmd[0] == "say"
+        if is_say:
+            with self._say_lock:
+                self._say_procs.add(proc)
+        try:
+            proc.communicate(timeout=self.call_timeout_s)
+            return proc.returncode
+        except subprocess.TimeoutExpired:
+            self._kill(proc)
+            proc.communicate()
+            log(f"mira-audio {cmd[0]} failed: TimeoutExpired")
+            return 1
+        finally:
+            if is_say:
+                with self._say_lock:
+                    self._say_procs.discard(proc)
+
+    @staticmethod
+    def _kill(proc):
+        try:
+            os.killpg(proc.pid, signal.SIGTERM)
+        except (OSError, ProcessLookupError):
+            pass
+        try:
+            proc.wait(timeout=KILL_WAIT_S)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except (OSError, ProcessLookupError):
+                pass
+
+    def stop(self):
+        """End every running `say` at once (barge-in), player child included. Returns how many were running."""
+        with self._say_lock:
+            procs = list(self._say_procs)
+        for proc in procs:
+            if proc.poll() is None:
+                self._kill(proc)
+        self.stopped += len(procs)
+        return len(procs)
 
     def call(self, *cmd):
         if self.night_window and len(cmd) > 1 and cmd[0] == "say" and in_window(self.night_window, self.minute_of_day()):

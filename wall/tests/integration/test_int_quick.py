@@ -53,7 +53,7 @@ def replies(r):
 
 def test_default_config_has_only_music_and_the_calendar_question_goes_to_hermes(rig_factory):
     r = rig_factory(cal_audio(), stt=[CAL_TEXT], hermes=[CAL_REPLY], mode="file")
-    assert [p.name for p in r.lis.intents] == ["intent.music"]
+    assert [p.name for p in r.lis.intents] == ["intent.music", "intent.screens"]  # screens is on by default
     r.run()
     assert replies(r) == [CAL_REPLY] and r.marks().count("reply") == 1
     assert not any(k.startswith("quick_") for k in r.marks())
@@ -63,7 +63,7 @@ def test_default_config_has_only_music_and_the_calendar_question_goes_to_hermes(
 def test_a_clear_match_is_answered_without_hermes(rig_factory, quick):
     srv, token = quick()
     r = rig_factory(cal_audio(), stt=[CAL_TEXT], hermes=[CAL_REPLY], mode="file", file_plugins=enabled(srv, token))
-    assert [p.name for p in r.lis.intents] == ["intent.music", "intent.calendar"]
+    assert [p.name for p in r.lis.intents] == ["intent.music", "intent.screens", "intent.calendar"]
     sources = []
     r.core.on("turn.replied", lambda p: sources.append(p["source"]))
     r.run()

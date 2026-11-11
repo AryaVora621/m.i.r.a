@@ -15,6 +15,7 @@ import argparse
 import collections
 import os
 import queue
+import re
 import signal
 import sys
 import tempfile
@@ -25,7 +26,7 @@ import numpy as np
 
 import listener_plugins
 from listener_plugins.agc_mic import MicAGC
-from listener_plugins.brain_hermes import Hermes
+from listener_plugins.brain_hermes import Hermes, HermesCancelled, HermesTimeout
 from listener_plugins.common import (CHUNK, RATE, http, log, pcm16_wav_bytes, read_secret, read_wav_float,
                                      read_wav_float_bytes, resample)
 from listener_plugins.gate_wake import HALLUCINATIONS, WAKE_OK, WAKE_PREFIX, WAKE_WORD, has_wake, strip_wake
@@ -41,6 +42,7 @@ from listener_plugins.wake_kws import build_kws
 from mirakit.core import RESET_STREAM, Core
 
 HERE = Path(__file__).resolve().parent
+EOF_JOIN_S = 10.0  # how long the loop waits for a turn that is still working when the microphone source ends
 
 DEFAULTS = {
     "kws_dir": os.environ.get("MIRA_KWS_DIR", str(HERE.parent / "voice" / "models" / "kws")),
@@ -101,7 +103,7 @@ class TurnBrain:
     def _brain(self):
         return self._core.service("brain")
 
-    def ask(self, text, session_ttl, now):
+    def ask(self, text, session_ttl, now, cancel=None):
         core, brain = self._core, self._brain()
         if core.cfg("persona.file").reread == "turn":
             persona = core.service("persona", None)
@@ -109,7 +111,7 @@ class TurnBrain:
                 brain.persona = persona.text()
         core.turn_begin()
         try:
-            return brain.ask(text, session_ttl, now)
+            return brain.ask(text, session_ttl, now) if cancel is None else brain.ask(text, session_ttl, now, cancel=cancel)
         finally:
             core.turn_end()
 
@@ -118,6 +120,26 @@ class TurnBrain:
 
     def __setattr__(self, name, value):
         setattr(self._brain(), name, value)
+
+
+class _Turn:
+    """One request being worked on. Cancelling sets `cancel`; the worker checks it before every effect (a mark, a wall
+    post, a sound, the follow-up window), so a cancelled turn that is still unwinding changes nothing."""
+
+    def __init__(self, n=0):
+        self.n = n
+        self.cancel = threading.Event()
+        self.done = threading.Event()
+        self.phase = "stt"          # stt (not interruptible yet), thinking, speaking, done
+        self.speaking_since = 0.0   # source clock when the sound started
+        self.guarded = False        # the reply holds a word that sounds like her name
+        self.ducked = False
+        self.unducked = False
+        self.lock = threading.Lock()
+
+    @property
+    def live(self):
+        return not self.cancel.is_set()
 
 
 class Listener:
@@ -157,6 +179,8 @@ class Listener:
         self._heard = ""
         self._reply = ""
         self._hit_mark = None
+        self._turn = None           # the running worker's _Turn (live microphone only)
+        self._turn_seq = 0
 
     # -- helpers
     def heard_texts(self):
@@ -193,7 +217,7 @@ class Listener:
                 if hit is not None:
                     source = "fail" if detail == hit.fail_reply else "intent"
                 else:
-                    source = "fail" if detail == self.hermes.fail_reply else "brain"
+                    source = "fail" if detail in (self.hermes.fail_reply, self.hermes.timeout_reply) else "brain"
                 emit("turn.replied", source=source)
             elif kind == "followup":
                 emit("turn.spoken", chunks=len(self.tts.chunks(self._reply)))
@@ -212,8 +236,9 @@ class Listener:
     def _audio(self, *cmd):
         return self.playback.call(*cmd)
 
-    def _read(self):
-        """One mic chunk through the AGC, with the wall's level taken from it (silence reads as 0)."""
+    def _read(self, report_level=True):
+        """One mic chunk through the AGC, with the wall's level taken from it (silence reads as 0). While a turn runs the
+        playback feeds the wall her own loudness, so the mic level is then left alone."""
         c = self.src.read()
         if c is None:
             return None
@@ -224,8 +249,9 @@ class Listener:
             self.rep.set_mic(self.mute.state)
         if self.agc is not None:
             c = self.agc.process(c)
-            self.rep.set_level(self.agc.level)
-        else:
+            if report_level:
+                self.rep.set_level(self.agc.level)
+        elif report_level:
             self.rep.set_level(min(1.0, float(np.sqrt(np.mean(c ** 2))) * self.a.level_scale))
         return c
 
@@ -258,8 +284,43 @@ class Listener:
                 break
         return np.concatenate(clip) if heard else None
 
-    def say(self, text):
-        """TTS the text (pipelined per chunk) and play it ducked. Raises SpeechOffline."""
+    @property
+    def _lc(self):
+        return self.core.service("loop")
+
+    def _barge_on(self):
+        """Interruptible turns need a live microphone: a WAV source hands audio over faster than real time, so reading
+        it during a turn would eat the file. Anything without `live` (a test fake) keeps the plain sequential loop."""
+        try:
+            return bool(self._lc.barge_in) and bool(getattr(self.src, "live", False))
+        except Exception:
+            return False
+
+    def _guarded(self, text):
+        try:
+            return bool(re.search(self._lc.barge_guard_words, text, re.I))
+        except re.error:
+            return False
+
+    def _next_wav(self, q, t):
+        while True:
+            try:
+                return q.get(timeout=0.1)
+            except queue.Empty:
+                if t.cancel.is_set():
+                    return None
+
+    def _unduck(self, t):
+        with t.lock:
+            if not t.ducked or t.unducked:
+                return
+            t.unducked = True
+        self._audio("unduck")
+
+    def say(self, text, turn=None):
+        """TTS the text (pipelined per chunk) and play it ducked. Raises SpeechOffline. A cancelled `turn` stops at the
+        next chunk boundary; the playback itself is ended by cancel_turn."""
+        t = turn or _Turn()
         chunks = self.tts.chunks(text)
         if not chunks:
             return
@@ -269,29 +330,38 @@ class Listener:
         def synth():
             try:
                 for i, ch in enumerate(chunks):
+                    if t.cancel.is_set():
+                        break
                     q.put(self.tts.tts(ch, pin=i > 0))
             except SpeechOffline as e:
                 err.append(e)
             q.put(None)
 
         threading.Thread(target=synth, daemon=True).start()
-        first = q.get()
+        first = self._next_wav(q, t)
+        if t.cancel.is_set():
+            return
         if first is None:
             raise err[0] if err else SpeechOffline("no audio")
+        t.guarded = self._guarded(text)
+        t.speaking_since = self.src.clock()
+        t.phase = "speaking"
         self.rep.update("speaking", self._heard, self._reply)
+        with t.lock:
+            t.ducked = True
         self._audio("duck")
         try:
             wav = first
-            while wav is not None:
+            while wav is not None and t.live:
                 with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
                     f.write(wav)
                 try:
                     self._say_file(f.name, wav)
                 finally:
                     os.unlink(f.name)
-                wav = q.get()
+                wav = self._next_wav(q, t)
         finally:
-            self._audio("unduck")
+            self._unduck(t)
 
     def _say_file(self, path, wav):
         """mira-audio say FILE (blocking) while a thread feeds the reporter the reply's loudness in step with playback."""
@@ -304,14 +374,55 @@ class Listener:
             self._audio("say", self.a.chime)
         self.rep.update("idle")
 
-    def handle_clip(self, clip, verify=False):
+    # -- cancelling a running turn (barge-in)
+    def cancel_turn(self, t):
+        """Fence the turn off and silence it now: the worker stops waiting for Hermes and speaking, any playing sound
+        is ended, queued speech is dropped by the worker's checks, the music comes back up. Hermes finishes on its own."""
+        t.cancel.set()
+        stop = getattr(self.playback, "stop", None)
+        if stop is not None:
+            try:
+                stop()
+            except Exception as e:
+                log(f"stop playback failed: {type(e).__name__}")
+        self.rep.set_level(0.0)
+        self._unduck(t)
+
+    def _cancel_word(self, text, interrupted):
+        lc = self._lc
+        words = set(lc.cancel_words) | (set(lc.cancel_after_barge) if interrupted else set())
+        norm = self.gate.normalize(text)
+        norm = re.sub(r"^(?:ok|okay|oh|um|uh|yeah|yes|just) ", "", norm)
+        norm = re.sub(r"(?: please| now| thanks| thank you)+$", "", norm)
+        return norm in words
+
+    def _barge_trim(self, text):
+        """After a cut-off the clip can hold her own last words ahead of the name; the name is looked for in the first
+        few words so a real request is not thrown away with them."""
+        if not text.strip() or self.gate.has_wake(text):
+            return text
+        words = text.split()
+        for i in range(1, min(len(words), 5)):
+            rest = " ".join(words[i:])
+            if self.gate.has_wake(rest):
+                return rest
+        return text
+
+    def handle_clip(self, clip, verify=False, turn=None, interrupted=False):
+        t = turn or _Turn()
         self._heard = ""
         self._reply = ""
         self.rep.update("thinking")
         try:
             text = self.stt.stt(pcm16_wav_bytes(clip))
         except SpeechOffline as e:
+            if not t.live:
+                return
             return self.fail_offline(f"stt: {e}")
+        if not t.live:
+            return
+        if verify and interrupted:
+            text = self._barge_trim(text)
         if verify and not (text.strip() and self.gate.has_wake(text)):
             # The tiny spotter fires on look-alikes (mirror, miracle, Miranda); the transcript decides. An empty
             # transcript is a reject too: the low threshold lets room noise through, and accepting nothing would
@@ -333,7 +444,24 @@ class Listener:
         self._heard = text
         self.rep.update("thinking", text)
         self._mark("heard", text)
+        if self._cancel_word(text, interrupted):
+            # Checked before the intents and Hermes: a cancel is never a question, and a bare "stop" is only one
+            # when it interrupted something (otherwise it stays the music command it always was).
+            self._mark("cancel", text)
+            reply = self._lc.cancel_reply
+            try:
+                if reply:
+                    self._reply = reply
+                    self.say(reply, t)
+            except SpeechOffline as e:
+                return self.fail_offline(f"tts: {e}")
+            if t.live:
+                self.rep.update("idle", text, reply)
+            return
+        t.phase = "thinking"
         hit = next(((p, i) for p in self.intents for i in [p.match(text)] if i), None)
+        if not t.live:
+            return
         try:
             if hit:
                 p, intent = hit
@@ -345,19 +473,63 @@ class Listener:
                     self._reply = p.fail_reply
             else:
                 try:
-                    self._reply = self.hermes.ask(text, self.a.session_ttl, self.src.clock()) or self.hermes.empty_reply
+                    self._reply = self.hermes.ask(text, self.a.session_ttl, self.src.clock(),
+                                                  cancel=t.cancel) or self.hermes.empty_reply
+                except HermesCancelled:
+                    return
+                except HermesTimeout:
+                    log("hermes timed out: stopped waiting")
+                    self._reply = self.hermes.timeout_reply
+                    self.rep.update("error", text, self._reply)
                 except Exception as e:
                     log(f"hermes failed: {type(e).__name__}: {str(e)[:100]}")
                     self._reply = self.hermes.fail_reply
                     self.rep.update("error", text, self._reply)
+            if not t.live:
+                return
             self._mark("reply", self._reply)
-            self.say(self._reply)
+            self.say(self._reply, t)
         except SpeechOffline as e:
+            if not t.live:
+                return
             return self.fail_offline(f"tts: {e}")
+        if not t.live:
+            return
         self.rep.update("idle", text, self._reply)
         self.src.flush()
         self.followup_until = self.src.clock() + self.a.followup_s
         self._mark("followup", f"{self.a.followup_s}s")
+
+    # -- running a turn: on a worker thread while the microphone is live, inline otherwise
+    def _turn_main(self, t, clip, verify, interrupted):
+        try:
+            self.handle_clip(clip, verify, t, interrupted)
+        except Exception as e:  # a failed turn must never end the listener
+            log(f"turn failed: {type(e).__name__}: {str(e)[:100]}")
+            if t.live:
+                self.rep.update("idle")
+        finally:
+            t.phase = "done"
+            t.done.set()
+
+    def _dispatch(self, clip, verify, interrupted=False):
+        if not self._barge_on():
+            self.handle_clip(clip, verify, None, interrupted)
+            return
+        self._turn_seq += 1
+        t = _Turn(self._turn_seq)
+        self._turn = t
+        threading.Thread(target=self._turn_main, args=(t, clip, verify, interrupted), daemon=True,
+                         name=f"mira-turn-{t.n}").start()
+
+    def _barge_refusal(self, t):
+        """Why a spotter hit during this turn must not cancel it, or None."""
+        if t.phase == "speaking":
+            if t.guarded:
+                return "reply holds a word like her name"
+            if self.src.clock() - t.speaking_since < self._lc.barge_ignore_s:
+                return "she had only just started speaking"
+        return None
 
     def run(self):
         stream = self.kws.create_stream()
@@ -366,16 +538,24 @@ class Listener:
         fvad_on = False
         try:
             while True:
-                flags = self.core.safe_point(self.src.clock() >= self.followup_until)
-                if flags & RESET_STREAM:
+                t = self._turn
+                if t is not None and t.done.is_set():
+                    # Everything heard while she worked was her own voice or the room: start the spotter clean.
+                    self._turn = t = None
                     stream = self.kws.create_stream()
                     pre.clear()
                     fvad_on = False
-                c = self._read()
+                if t is None:
+                    flags = self.core.safe_point(self.src.clock() >= self.followup_until)
+                    if flags & RESET_STREAM:
+                        stream = self.kws.create_stream()
+                        pre.clear()
+                        fvad_on = False
+                c = self._read(report_level=t is None)
                 if c is None:
                     break
                 pre.append(c)
-                if self.src.clock() < self.followup_until:
+                if t is None and self.src.clock() < self.followup_until:
                     # No wake word needed in the window: speech starting is enough.
                     if not fvad_on:
                         self._reset_vad()
@@ -390,20 +570,35 @@ class Listener:
                         pre.clear()
                         if clip is not None:
                             self._mark("followup_capture", f"{len(clip)/RATE:.1f}s")
-                            self.handle_clip(clip)
+                            self._dispatch(clip, False)
                         else:
                             self.rep.update("idle")
                     continue
                 fvad_on = False
+                if t is not None and (t.phase not in ("thinking", "speaking") or not self._barge_on()):
+                    continue  # not interruptible yet (still being transcribed) or barge-in is off
                 stream.accept_waveform(RATE, c)
                 while self.kws.is_ready(stream):
                     self.kws.decode_stream(stream)
                 hit = self.kws.get_result(stream)
                 if hit:
+                    interrupted, phase = False, ""
+                    if t is not None:
+                        why = self._barge_refusal(t)
+                        if why:
+                            self.kws.reset_stream(stream)
+                            self._mark("barge_ignored", why)
+                            continue
+                        phase = t.phase
                     self.wakes += 1
                     agc = f", agc {self.agc.gain:.1f}x" if self.agc else ""
                     self._mark("wake", f"spotter hit {hit!r}{agc}")
                     self.kws.reset_stream(stream)
+                    if t is not None:
+                        interrupted = True
+                        self._mark("barge", f"cancelled while {phase}")
+                        self.cancel_turn(t)
+                        self._turn = None
                     self.rep.update("listening")
                     # The keyword fires just after the word ends, so a short pre-roll catches an
                     # "in one breath" request without dragging in much of the word itself.
@@ -411,6 +606,8 @@ class Listener:
                     # transcript still contains the wake word and can confirm the spotter was right.
                     before = list(pre)
                     k = self.a.wake_seed_chunks
+                    if phase == "speaking":
+                        before = before[-self._lc.barge_head_chunks:]  # her own voice stays out of the clip
                     clip = self.capture(np.concatenate(before[-k:]), wait_speech_s=self.a.wait_speech,
                                         max_s=self.a.max_s)
                     stream = self.kws.create_stream()
@@ -420,9 +617,15 @@ class Listener:
                         self.rep.update("idle")
                         continue
                     head = np.concatenate(before[:-k]) if len(before) > k else clip[:0]
-                    self.handle_clip(np.concatenate([head, clip]), verify=True)
+                    self._dispatch(np.concatenate([head, clip]), True, interrupted)
+            t = self._turn
+            if t is not None:
+                t.done.wait(EOF_JOIN_S)  # the source ended while a turn was still working: let it finish
             self._mark("eof")
         finally:
+            t = self._turn
+            if t is not None and not t.done.is_set():
+                self.cancel_turn(t)
             self.rep.update("idle", self._heard, self._reply)
             self.rep.close()
             self.src.close()

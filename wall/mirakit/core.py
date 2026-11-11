@@ -161,6 +161,8 @@ class Core(CoreAPI):
         # write side
         self._wlock = threading.RLock()
         self._inline_lock = threading.Lock()
+        # A barge-in leaves the cancelled turn's worker finishing turn_end() while the loop already runs safe points.
+        self._apply_lock = threading.RLock()
         self._trials: dict[str, dict] = {}          # change id -> {"due": epoch, "session": id|None}
         self._session: Optional[dict] = None
         self._sess_f: dict[str, float] = {}         # float view of the open session's clocks
@@ -474,8 +476,9 @@ class Core(CoreAPI):
         self._last_turn_event = self._mono()
         with self._inline_lock:         # an inline preview that is still playing finishes before the reply
             pass
-        self._drain(armed=False, live_only=True)
-        self._apply_overlay()
+        with self._apply_lock:
+            self._drain(armed=False, live_only=True)
+            self._apply_overlay()
 
     def safe_point(self, armed: bool) -> int:
         # the empty case is a handful of attribute reads and one float compare: no lock, no allocation
@@ -487,6 +490,10 @@ class Core(CoreAPI):
         return self._safe_point_slow(armed)
 
     def _safe_point_slow(self, armed: bool) -> int:
+        with self._apply_lock:
+            return self._safe_point_locked(armed)
+
+    def _safe_point_locked(self, armed: bool) -> int:
         self._armed = armed
         if self.restart_requested:
             self._do_restart()

@@ -24,7 +24,7 @@ KNOBS = {f"{s.name}.{k.name}": (s, k) for s in lp.specs() for k in s.knobs}
 
 # Loop and reporter attributes that are new in the plugin engine: they have a knob `arg` but no v1 flag.
 # Plugins that exist only in the plugin engine: v1 reads none of their keys (control.http, and the five quick-answer intents).
-NEW_PLUGINS = ("control.http.", "intent.time.", "intent.weather.", "intent.school.", "intent.calendar.", "intent.printers.")
+NEW_PLUGINS = ("control.http.", "intent.time.", "intent.weather.", "intent.school.", "intent.calendar.", "intent.printers.", "intent.screens.")
 NEW_ARGS = {"followup_wait_s", "followup_seed_chunks", "wake_seed_chunks", "preroll_chunks", "offline_text",
             "level_scale"}
 
@@ -258,6 +258,10 @@ def test_every_knob_default_is_accounted_for():
         "persona.file.reread", "wake.kws.keywords",
         "intent.music.priority", "intent.music.patterns", "intent.music.replies",
         "playback.miraaudio.night_window", "playback.miraaudio.night_gain",
+        # barge-in and cancel words (2026-11-11) and the answer deadline: nothing in v1 reads them
+        "loop.turns.barge_in", "loop.turns.barge_ignore_s", "loop.turns.barge_head_chunks", "loop.turns.barge_guard_words",
+        "loop.turns.cancel_words", "loop.turns.cancel_after_barge", "loop.turns.cancel_reply",
+        "brain.hermes.deadline_s", "brain.hermes.timeout_reply",
     }
     unexplained = set(KNOBS) - from_flag_env - from_literal - new_in_plugin_engine
     unexplained = {k for k in unexplained if not k.startswith(NEW_PLUGINS)}

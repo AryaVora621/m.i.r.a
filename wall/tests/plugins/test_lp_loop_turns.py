@@ -52,7 +52,13 @@ def test_live_knobs_apply():
     H.assert_live_knobs(SPEC, plugin, {
         "wait_speech": (6.0, lambda p: s.wait_speech), "max_s": (12.0, lambda p: s.max_s),
         "followup_s": (10.0, lambda p: s.followup_s), "followup_wait_s": (2.0, lambda p: s.followup_wait_s),
-        "offline_text": ("Offline", lambda p: s.offline_text), "log_text": (False, lambda p: s.log_text)})
+        "offline_text": ("Offline", lambda p: s.offline_text), "log_text": (False, lambda p: s.log_text),
+        "barge_in": (False, lambda p: s.barge_in), "barge_ignore_s": (1.5, lambda p: s.barge_ignore_s),
+        "barge_head_chunks": (8, lambda p: s.barge_head_chunks),
+        "barge_guard_words": (r"\bmirror\b", lambda p: s.barge_guard_words),
+        "cancel_words": (["cancel"], lambda p: s.cancel_words),
+        "cancel_after_barge": (["stop"], lambda p: s.cancel_after_barge),
+        "cancel_reply": ("Okay.", lambda p: s.cancel_reply)})
 
 
 def _values(**over):

@@ -22,8 +22,10 @@
 | brain.hermes | session_ttl | float | 180 | 30..1800 | s | live | 60..600 step 60 |  | --session-ttl |  |
 | brain.hermes | session_timeout_s | float | 15 | 3..60 | s | live | deny |  |  | literal |
 | brain.hermes | stream_timeout_s | float | 150 | 10..600 | s | live | deny |  |  | literal |
+| brain.hermes | deadline_s | float | 35 | 5..120 | s | live | deny |  |  | literal |
 | brain.hermes | title_prefix | str | Mira wall | 1..60 chars | chars | live | deny |  |  | literal |
 | brain.hermes | fail_reply | str | I cannot reach Hermes right now. | 1..200 chars | chars | live | deny |  |  | literal |
+| brain.hermes | timeout_reply | str | Hermes is taking too long. | 1..200 chars | chars | live | deny |  |  | literal |
 | brain.hermes | empty_reply | str | I have nothing to add. | 1..200 chars | chars | live | deny |  |  | literal |
 | control.http | bind | str | 127.0.0.1 |  |  | restart | deny |  |  | literal |
 | control.http | port | int | 8650 | 1024..65535 | port | restart | deny |  |  | literal |
@@ -82,6 +84,13 @@
 | intent.school | patterns | map[str,str] | {"missing": "what'?s missing\|what is missing\|what am i missing\|what (assignments\|work\|homework) am i missing\|(do i have\|is there) anything missing\|(do i have )?(any )?(missing\|overdue\|late) (assignments\|homework\|work)\|what'?s overdue\|anything overdue\|anything late\|what (assignments are\|work is\|homework is) missing\|what'?s missing (from\|in) school\|what do i have missing\|how many (assignments\|things) am i missing", "week": "(what'?s\|what is\|what do i have\|do i have anything\|do i have any (homework\|assignments\|work)\|is there anything\|anything\|any (homework\|assignments\|work)\|what (homework\|assignments\|work) (is\|are)) due (this week\|in the next (7\|seven) days\|over the next (7\|seven) days\|for the week)\|what (homework\|assignments\|work) do i have( due)? this week", "tomorrow": "(what'?s\|what is\|what do i have\|do i have anything\|do i have any (homework\|assignments\|work)\|is there anything\|anything\|any (homework\|assignments\|work)\|what (homework\|assignments\|work) (is\|are)) due tomorrow\|what (homework\|assignments\|work) do i have( due)? tomorrow\|do i have (any )?(homework\|assignments\|work)( due)? tomorrow\|(what )?(homework\|assignments) (do i have \|is \|are )?(due )?tomorrow", "today": "(what'?s\|what is\|what do i have\|do i have anything\|do i have any (homework\|assignments\|work)\|is there anything\|anything\|any (homework\|assignments\|work)\|what (homework\|assignments\|work) (is\|are)) due( (today\|tonight))?\|what (homework\|assignments\|work) do i have( due)?( (today\|tonight))?\|do i have (any )?(homework\|assignments\|work)( due)?( (today\|tonight))?\|(what )?(homework\|assignments) (do i have \|is \|are )?(due )?(today\|tonight)"} |  |  | live | deny |  |  | literal |
 | intent.school | max_words | int | 25 | 12..60 | words | live | deny |  |  | literal |
 | intent.school | stale_hours | float | 10 | 1..72 | h | live | deny |  |  | literal |
+| intent.screens | priority | int | 95 | 0..1000 | rank | live | deny |  |  | literal |
+| intent.screens | url | url | http://127.0.0.1:3456 |  |  | live | deny |  |  | literal |
+| intent.screens | token_file | path | ~/.config/mira/screen_token |  |  | live | deny |  |  | literal |
+| intent.screens | timeout_s | float | 4 | 0.5..8 | s | live | deny |  |  | literal |
+| intent.screens | minutes | float | 5 | 1..30 | min | live | deny |  |  | literal |
+| intent.screens | aliases | map[str,str] | {"print-studio": "printers\|printer\|3d printers\|3d printer\|my prints\|prints\|print\|3d prints\|3d print\|print studio\|printer status\|print status\|the print studio\|print farm", "school": "school\|school board\|assignments\|assignment\|homework\|classroom\|google classroom\|classwork\|school work\|schoolwork\|whats due\|what is due\|due\|school stuff", "week": "week\|my week\|this week\|calendar\|my calendar\|schedule\|my schedule\|week view\|weekly\|the week ahead", "homelab": "homelab\|home lab\|servers\|server\|home server\|home servers\|server status\|homelab status\|home lab status", "morning": "brief\|morning brief\|daily brief\|briefing\|morning briefing\|morning\|my morning brief", "recap": "recap\|evening recap\|daily recap\|day recap\|evening brief\|my recap", "exams": "exams\|exam\|exam schedule\|finals\|upcoming exams\|my exams", "board": "build board\|board\|robotics board\|task board\|project board\|kanban"} |  |  | live | deny |  |  | literal |
+| intent.screens | replies | map[str,str] | {"print-studio": "Printers are up.", "school": "School is up.", "week": "Week is up.", "homelab": "Homelab is up.", "morning": "Brief is up.", "recap": "Recap is up.", "exams": "Exams are up.", "board": "Board is up.", "cleared": "Cleared."} |  |  | live | deny |  |  | literal |
 | intent.time | priority | int | 90 | 0..1000 | rank | live | deny |  |  | literal |
 | intent.time | timezone | str | America/New_York | 3..40 chars | zone | live | deny |  |  | literal |
 | intent.time | patterns | map[str,str] | {"time": "(what'?s \|what is )?the (current )?time( is it)?( now\| right now)?\|what time (is it\|it is)( now\| right now\| currently)?\|current time\|time now", "date": "((what'?s\|what is) (the \|today'?s )?\|the \|today'?s )(date\|day)( is it)?( today)?\|what('?s\| is) today\|what (day\|date) is it( today)?\|what day of the week is it( today)?\|today'?s date"} |  |  | live | deny |  |  | literal |
@@ -101,6 +110,13 @@
 | loop.turns | offline_text | str | Speech is offline | 1..80 chars | chars | live | deny |  |  | literal |
 | loop.turns | events_max | int | 0 | 0..100000 | events | restart | deny |  |  | literal |
 | loop.turns | log_text | bool | true |  |  | live | deny |  |  | literal |
+| loop.turns | barge_in | bool | true |  |  | live | deny |  |  | literal |
+| loop.turns | barge_ignore_s | float | 0.6 | 0..5 | s | live | deny |  |  | literal |
+| loop.turns | barge_head_chunks | int | 8 | 2..15 | chunks(100ms) | live | deny |  |  | literal |
+| loop.turns | barge_guard_words | regex | \b(?:mir\w*\|mar[ia]\w*\|m[iy]r\w*\|me+r[ao]\w*\|[vb][ei]+r[ao]h?)\b |  |  | live | deny |  |  | literal |
+| loop.turns | cancel_words | list[str] | ["cancel", "cancel that", "never mind", "nevermind", "forget it", "forget that", "stop talking", "stop that", "stop it"] | 0..30 items | items | live | deny |  |  | literal |
+| loop.turns | cancel_after_barge | list[str] | ["stop", "quiet", "enough", "that's enough"] | 0..30 items | items | live | deny |  |  | literal |
+| loop.turns | cancel_reply | str |  | 0..40 chars | chars | live | deny |  |  | literal |
 | loop.turns | sigterm_idle | bool | false |  |  | restart | deny |  |  | literal |
 | mute.zero | mute_s | float | 10 | 2..60 | s | live | deny |  |  | literal |
 | mute.zero | mute_share | float | 0.99 | 0.5..1 | share | live | deny |  |  | literal |

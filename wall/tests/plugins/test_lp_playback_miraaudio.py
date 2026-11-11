@@ -276,3 +276,84 @@ def test_status_reports_night_without_text(tmp_path):
     assert plugin.status() == {"night": True}
     a.minute_of_day = Clock(12)
     assert plugin.status() == {"night": False}
+
+
+# ------------------------------------------------------------------------- stop() for barge-in (2026-11-11)
+
+def _slow_say_bin(tmp_path):
+    """A mira-audio whose `say` starts a long-running child of its own, like the real helper's pw-play, and records the
+    child's pid; duck and unduck return at once."""
+    import stat
+    log, pidfile = tmp_path / "log", tmp_path / "child.pid"
+    b = tmp_path / "mira-audio"
+    b.write_text(f"""#!/bin/sh
+echo "$1" >> "{log}"
+if [ "$1" = say ]; then
+  sleep 30 &
+  echo $! > "{pidfile}"
+  wait
+fi
+exit 0
+""")
+    b.chmod(b.stat().st_mode | stat.S_IEXEC)
+    return b, log, pidfile
+
+
+def _alive(pid):
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
+def test_stop_ends_a_running_say_and_its_player_child_at_once(tmp_path):
+    import threading
+    import time
+    b, log, pidfile = _slow_say_bin(tmp_path)
+    a = pm.MiraAudio(bin=str(b))
+    rc = []
+    th = threading.Thread(target=lambda: rc.append(a.call("say", "x.wav")))
+    th.start()
+    for _ in range(100):
+        if pidfile.exists() and pidfile.read_text().strip():
+            break
+        time.sleep(0.05)
+    child = int(pidfile.read_text())
+    assert _alive(child)
+    t0 = time.monotonic()
+    assert a.stop() == 1
+    th.join(5)
+    assert not th.is_alive() and time.monotonic() - t0 < 1.5
+    time.sleep(0.2)
+    assert not _alive(child), "the player child kept playing after stop()"
+    assert rc and rc[0] != 0
+
+
+def test_stop_never_touches_duck_or_unduck_and_is_a_noop_when_idle(tmp_path):
+    import threading
+    import time
+    b, log, pidfile = _slow_say_bin(tmp_path)
+    a = pm.MiraAudio(bin=str(b))
+    assert a.stop() == 0
+    assert a.call("duck") == 0 and a.call("unduck") == 0
+    assert a._say_procs == set()
+    # a duck running while a say is stopped is left alone
+    th = threading.Thread(target=lambda: a.call("say", "x.wav"))
+    th.start()
+    for _ in range(100):
+        if pidfile.exists() and pidfile.read_text().strip():
+            break
+        time.sleep(0.05)
+    a.stop()
+    th.join(5)
+    assert a.call("unduck") == 0 and log.read_text().split() == ["duck", "unduck", "say", "unduck"]
+
+
+def test_a_say_that_outlives_call_timeout_is_killed_with_its_child(tmp_path):
+    import time
+    b, log, pidfile = _slow_say_bin(tmp_path)
+    a = pm.MiraAudio(bin=str(b), call_timeout_s=0.6)
+    assert a.call("say", "x.wav") == 1
+    time.sleep(0.2)
+    assert not _alive(int(pidfile.read_text()))

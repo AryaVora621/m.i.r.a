@@ -6,6 +6,7 @@ FIXED: POST /api/sessions then POST /api/sessions/{id}/chat/stream {message, ins
 """
 
 import json
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -14,7 +15,46 @@ from mirakit.plugin import ConfigError, Knob, PluginBase, PluginSpec
 
 from .common import expand_path, host_is_loopback, http, read_secret
 
-LEGACY_CLASSES = ("Hermes",)
+LEGACY_CLASSES = ("Hermes", "HermesTimeout", "HermesCancelled", "_Call")
+
+
+class HermesTimeout(Exception):
+    """The whole answer took longer than the deadline (a stalled SSE stream keeps every socket read alive)."""
+
+
+class HermesCancelled(Exception):
+    """The listener cancelled the turn (barge-in): nobody wants this answer any more."""
+
+
+class _Call:
+    """One ask() in flight. The request runs on its own thread so the caller can stop waiting at any moment, even
+    when a socket read or connect never returns; the thread is then abandoned and its result is dropped."""
+
+    def __init__(self):
+        self.sid = None
+        self.result = None
+        self.error = None
+        self.resp = None
+        self.abandoned = False
+        self.done = threading.Event()
+
+
+def _hang_up(call):
+    """Best effort: shut the answer's socket down so the blocked read returns now. Closing a response from another
+    thread alone does not wake a recv that is already waiting; shutdown does."""
+    call.abandoned = True
+    r = call.resp
+    if r is None:
+        return
+    try:
+        sock = r.fp.raw._sock
+        sock.shutdown(2)  # socket.SHUT_RDWR
+    except Exception:
+        pass
+    try:
+        r.close()
+    except Exception:
+        pass
 
 
 class Hermes:
@@ -23,10 +63,13 @@ class Hermes:
 
     fail_reply = "I cannot reach Hermes right now."  # spoken when ask() raises (the v1 literal)
     empty_reply = "I have nothing to add."  # spoken when the answer is empty (the v1 literal)
+    timeout_reply = "Hermes is taking too long."  # spoken when the total deadline passes
 
-    def __init__(self, url, key_file, persona, session_timeout_s=15, stream_timeout_s=150, title_prefix="Mira wall"):
+    def __init__(self, url, key_file, persona, session_timeout_s=15, stream_timeout_s=150, title_prefix="Mira wall",
+                 deadline_s=35.0):
         self.url, self.key_file, self.persona = url.rstrip("/"), key_file, persona
         self.session_timeout_s, self.stream_timeout_s, self.title_prefix = session_timeout_s, stream_timeout_s, title_prefix
+        self.deadline_s = deadline_s
         self.session_id = None
         self.last_used = 0.0
 
@@ -49,14 +92,50 @@ class Hermes:
                     continue
                 raise
 
-    def ask(self, text, session_ttl, now):
-        if self.session_id is None or now - self.last_used > session_ttl:
-            self.session_id = self.new_session()
+    def ask(self, text, session_ttl, now, cancel=None):
+        """The answer text. Raises HermesTimeout past `deadline_s` in all (0 turns the deadline off) and
+        HermesCancelled as soon as the `cancel` event is set; both leave Hermes finishing on its own side, and the
+        next ask starts a fresh session so it never queues behind a message Hermes is still working on."""
+        call = _Call()
+        threading.Thread(target=self._ask_inner, args=(call, text, session_ttl, now), daemon=True).start()
+        end = time.monotonic() + self.deadline_s if self.deadline_s > 0 else None
+        while not call.done.wait(0.05):
+            if cancel is not None and cancel.is_set():
+                _hang_up(call)
+                self.session_id = None
+                raise HermesCancelled()
+            if end is not None and time.monotonic() >= end:
+                _hang_up(call)
+                self.session_id = None
+                raise HermesTimeout()
+        if call.sid is not None and not call.abandoned:
+            self.session_id = call.sid
+        if call.error is not None:
+            raise call.error
+        self.last_used = now
+        return call.result
+
+    def _ask_inner(self, call, text, session_ttl, now):
+        try:
+            sid = self.session_id
+            if sid is None or now - self.last_used > session_ttl:
+                sid = self.new_session()
+            call.sid = sid
+            call.result = self._stream(call, sid, text)
+        except BaseException as e:  # handed to the waiting ask(); a thread must not die with it unseen
+            call.error = e
+        finally:
+            call.done.set()
+
+    def _stream(self, call, sid, text):
         payload = {"message": text, "instructions": self.persona}
-        req = urllib.request.Request(f"{self.url}/api/sessions/{self.session_id}/chat/stream",
+        req = urllib.request.Request(f"{self.url}/api/sessions/{sid}/chat/stream",
                                      data=json.dumps(payload).encode(), method="POST", headers=self._hdr())
         reply, deltas, event = None, [], None
         with urllib.request.urlopen(req, timeout=self.stream_timeout_s) as r:
+            call.resp = r
+            if call.abandoned:
+                return ""
             for raw in r:
                 line = raw.decode("utf-8", "replace").rstrip("\r\n")
                 if line.startswith("event:"):
@@ -74,7 +153,6 @@ class Hermes:
                         raise RuntimeError(str(d.get("error") or d.get("message") or "hermes error")[:200])
                 elif not line:
                     event = None
-        self.last_used = now
         return (reply if reply is not None else "".join(deltas)).strip()
 
 
@@ -83,8 +161,8 @@ class BrainHermes(PluginBase):
         c = self.cfg
         persona = self.ctx.get("persona").text()
         h = Hermes(c.url, expand_path(c.key_file, self.ctx.paths), persona, session_timeout_s=c.session_timeout_s,
-                   stream_timeout_s=c.stream_timeout_s, title_prefix=c.title_prefix)
-        h.fail_reply, h.empty_reply = c.fail_reply, c.empty_reply
+                   stream_timeout_s=c.stream_timeout_s, title_prefix=c.title_prefix, deadline_s=c.deadline_s)
+        h.fail_reply, h.empty_reply, h.timeout_reply = c.fail_reply, c.empty_reply, c.timeout_reply
         h.session_ttl = c.session_ttl  # the loop passes the live value on every ask(); kept here for status
         self.hermes = h
         self.ctx.provide("brain", h)
@@ -95,7 +173,8 @@ class BrainHermes(PluginBase):
         h.url, h.key_file = cfg.url.rstrip("/"), expand_path(cfg.key_file, self.ctx.paths)
         h.session_ttl = cfg.session_ttl
         h.session_timeout_s, h.stream_timeout_s, h.title_prefix = cfg.session_timeout_s, cfg.stream_timeout_s, cfg.title_prefix
-        h.fail_reply, h.empty_reply = cfg.fail_reply, cfg.empty_reply
+        h.fail_reply, h.empty_reply, h.timeout_reply = cfg.fail_reply, cfg.empty_reply, cfg.timeout_reply
+        h.deadline_s = cfg.deadline_s
 
     def status(self):
         return {"session": self.hermes.session_id is not None}
@@ -122,8 +201,12 @@ SPEC = PluginSpec(
         Knob("session_timeout_s", "float", 15.0, "Seconds creating a session may take.", unit="s", min=3, max=60),
         Knob("stream_timeout_s", "float", 150.0, "Seconds one socket read of the answer may wait.", unit="s", min=10,
              max=600),
+        Knob("deadline_s", "float", 35.0, "Longest one answer may take in all, however the stream behaves; past it she "
+             "stops waiting.", unit="s", min=5, max=120),
         Knob("title_prefix", "str", "Mira wall", "Start of every session title.", unit="chars", min=1, max=60),
         Knob("fail_reply", "str", "I cannot reach Hermes right now.", "Spoken when Hermes cannot be reached.",
+             unit="chars", min=1, max=200),
+        Knob("timeout_reply", "str", "Hermes is taking too long.", "Spoken when the answer deadline passes.",
              unit="chars", min=1, max=200),
         Knob("empty_reply", "str", "I have nothing to add.", "Spoken when Hermes answers with nothing.", unit="chars",
              min=1, max=200),
