@@ -299,3 +299,25 @@ def test_errors_keep_their_type_through_the_helper_thread(key):
             bh.Hermes(s.url, key, "p").ask("x", 180, 1.0)
     finally:
         s.stop()
+
+
+def test_on_text_gets_every_delta_in_order_before_the_answer_returns(key):
+    s = _hermes_server()
+    seen = []
+    try:
+        h = bh.Hermes(s.url, key, "p", deadline_s=5)
+        assert h.ask("hello", 180, 1.0, on_text=seen.append) == REPLY
+        assert seen == [REPLY[:5]]
+    finally:
+        s.stop()
+
+
+def test_a_failing_on_text_never_costs_the_answer(key):
+    s = _hermes_server()
+    try:
+        def boom(piece):
+            raise ValueError("speaker broke")
+        assert bh.Hermes(s.url, key, "p", deadline_s=5).ask("hello", 180, 1.0, on_text=boom) == REPLY
+    finally:
+        s.stop()
+
