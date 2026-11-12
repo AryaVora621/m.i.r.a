@@ -92,10 +92,19 @@ def test_stream_finish_without_deltas_uses_the_final_text():
     assert sp.StreamSplitter().finish("Just this.") == ["Just this."]
 
 
+def test_stream_splitter_never_hands_out_more_than_the_tts_limit():
+    s = sp.StreamSplitter(first_chars=0, chunk_limit=50, max_chars=140)
+    long = "word " * 200
+    out = s.feed(long)
+    out += s.finish(long)
+    assert out and all(len(c) <= 50 for c in out)
+    assert sum(len(c) for c in out) <= 140
+
+
 def test_stream_splitter_total_length_cap():
     s = sp.StreamSplitter(first_chars=0, max_chars=30)
     out = s.feed("Aaaaaaaaaaaaaaaaaaaa. Bbbbbbbbbbbbbbbbbbbb. Cccccccccc. ")
-    assert out == ["Aaaaaaaaaaaaaaaaaaaa.", "Bbbbbbbbbbbbbbbbbbbb."]
+    assert out == ["Aaaaaaaaaaaaaaaaaaaa."]  # the next sentence would pass the cap: dropped whole, not cut mid-word
 
 
 def test_caption_words_groups_of_two_to_four():

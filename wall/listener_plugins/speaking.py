@@ -90,8 +90,9 @@ class StreamSplitter:
     it extends what the deltas spelled). The first chunk is cut early (see cut_first) so speech can start sooner.
     `max_sentences` caps how many chunks are produced (0 is no cap), `max_chars` the total spoken length."""
 
-    def __init__(self, first_chars=90, max_sentences=0, max_chars=840):
+    def __init__(self, first_chars=90, max_sentences=0, max_chars=840, chunk_limit=280):
         self.first_chars, self.max_sentences, self.max_chars = first_chars, max_sentences, max_chars
+        self.chunk_limit = chunk_limit  # one TTS request never carries more than this, however long the sentence
         self.raw = ""
         self.pos = 0       # raw[:pos] has been handed out
         self.count = 0
@@ -101,8 +102,18 @@ class StreamSplitter:
     def done(self):
         return (self.max_sentences > 0 and self.count >= self.max_sentences) or self.chars >= self.max_chars
 
+    def _clip(self, chunk):
+        """The chunk cut to the TTS limit at a word boundary; once something has been handed out, a chunk that no longer
+        fits under the total length cap is dropped whole rather than cut in the middle of a word."""
+        if len(chunk) > self.chunk_limit:
+            head = chunk[:self.chunk_limit]
+            chunk = head.rsplit(" ", 1)[0] if " " in head else head
+        if self.chars and self.chars + len(chunk) > self.max_chars:
+            return ""
+        return chunk[:self.max_chars]
+
     def _take(self, end, out):
-        chunk = self.raw[self.pos:end].strip()
+        chunk = self._clip(self.raw[self.pos:end].strip())
         self.pos = end
         if chunk:
             self.count += 1
@@ -122,11 +133,12 @@ class StreamSplitter:
                     if cut > 0:
                         end = cut
                 self._take(self.pos + end, out)
-            elif self.count == 0 and self.first_chars > 0 and len(pending) > self.first_chars:
-                cut = _clause_cut(pending, len(pending), first=True)
-                if cut <= 0:
-                    break
-                self._take(self.pos + cut, out)
+            elif self.count == 0 and self.first_chars > 0 and len(pending) > self.first_chars and \
+                    _clause_cut(pending, len(pending), first=True) > 0:
+                self._take(self.pos + _clause_cut(pending, len(pending), first=True), out)
+            elif len(pending) > self.chunk_limit and " " in pending[:self.chunk_limit]:
+                # A sentence with no end in sight: speak what fits instead of buffering it whole.
+                self._take(self.pos + (len(pending[:self.chunk_limit].rsplit(" ", 1)[0]) or self.chunk_limit), out)
             else:
                 break
         return out
@@ -138,7 +150,8 @@ class StreamSplitter:
         elif not self.raw.strip() and final:
             self.raw = final
         for s in split_sentences(self.raw[self.pos:]):
-            if self.done:
+            s = self._clip(s)
+            if self.done or not s:
                 break
             self.count += 1
             self.chars += len(s)

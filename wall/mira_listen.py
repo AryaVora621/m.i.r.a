@@ -560,7 +560,8 @@ class Listener:
             return None
         return _Streamed(self._speaker(t), StreamSplitter(
             first_chars=int(getattr(self.tts, "first_chunk_chars", 90)), max_sentences=self._speak_cap(),
-            max_chars=int(getattr(self.tts, "chunk_limit", 280)) * int(getattr(self.tts, "max_chunks", 3))))
+            max_chars=int(getattr(self.tts, "chunk_limit", 280)) * int(getattr(self.tts, "max_chunks", 3)),
+            chunk_limit=int(getattr(self.tts, "chunk_limit", 280))))
 
     # -- running a turn: on a worker thread while the microphone is live, inline otherwise
     def _turn_main(self, t, clip, verify, interrupted):
