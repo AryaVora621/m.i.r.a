@@ -53,7 +53,7 @@
     "fallback": "You are Mira.", "reread": "start"}},
   "playback.miraaudio": {"enabled": true, "config": {"bin": "mira-audio", "call_timeout_s": 120.0, "level_lag": 0.15,
     "chime": "/home/mira/mira-listen/assets/offline.wav", "envelope_step_s": 0.1, "follow_join_s": 1.0,
-    "night_window": "23:00-06:00", "night_gain": 0.5, "caption_shift_s": 0.15, "chunk_overlap_s": 0.2}},
+    "night_window": "23:00-06:00", "night_gain": 0.5, "caption_shift_s": 0.15, "gapless_chunks": true, "chunk_prestart_s": 0.0}},
   "reporter.agentos": {"enabled": true, "config": {"url": "http://127.0.0.1:3456/api/hooks/voice",
     "token_file": "/home/mira/.config/mira/voice_token", "error_hold": 4.0, "min_gap": 0.5, "level_gap": 0.2,
     "level_step": 0.03, "post_timeout_s": 3.0, "close_wait_s": 20.0, "level_scale": 8.0}},

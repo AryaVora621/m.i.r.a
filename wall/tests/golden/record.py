@@ -113,7 +113,7 @@ def legacy_speech(lis):
         tts.first_chunk_chars = 0
     playback = lis.core.service("playback", None)
     if playback is not None:
-        playback.chunk_overlap_s = 0.0
+        playback.gapless_chunks = False
     lis.core.service("loop").caption_sync = False
 
 

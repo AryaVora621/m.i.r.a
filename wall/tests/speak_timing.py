@@ -2,10 +2,10 @@
 """Silent timing of Mira's reply path: how long after the text is known the first audio would start, and how far the
 wall's caption runs ahead of (or behind) the voice. Nothing is played and nothing is posted to the wall.
 
-Run it from a release or checkout of the code under test, with that code first on the path (so the same script times
-the old and the new facade):
+Run it against a release or checkout of the code under test (MIRA_CODE names the directory holding mira_listen.py; the
+default is the checkout the script lives in), so the same script times the old and the new facade:
 
-    cd <release>/wall && python3 -B tests/speak_timing.py --speech-url http://127.0.0.1:8766 \\
+    MIRA_CODE=<release> python3 -B speak_timing.py --speech-url http://127.0.0.1:8766 \\
         --speech-token-file ~/.config/mira/speech.token
 
 It uses the REAL speech server for the TTS calls (the Pi's splitter in production), the real facade `say` and the real
@@ -14,11 +14,11 @@ Pi: `duck` 0.2 s, a `say` start-up 0.3 s before sound, then the clip's length) a
 The wall is assumed to show a post `--post-latency` seconds after it is made (Agent OS cue, SSE, render).
 
 The caption of the OLD flow is the page's own estimate (2.6 words a second from the moment it shows the whole reply); the
-NEW flow's captions are the posts the playback makes on its clock. Lead = when the words are shown minus when they are
-spoken, so a positive lead means the text is ahead of the voice.
+NEW flow's captions are the posts the playback makes on its clock. For each group of words the printout gives the time it
+is shown and the time it is spoken, and "text ahead by" is spoken minus shown: positive means the text is ahead of the
+voice, negative that the voice is ahead.
 """
 import argparse
-import json
 import os
 import re
 import sys
@@ -26,7 +26,7 @@ import threading
 import time
 import types
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.environ.get("MIRA_CODE") or os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import mira_listen as ml  # noqa: E402
 from listener_plugins.playback_miraaudio import MiraAudio  # noqa: E402
@@ -76,8 +76,6 @@ class Sim:
 
 
 def run(label, text, sim, speech, voice_first_chars):
-    clean = []
-
     class Audio(MiraAudio):
         def call(self, *cmd):
             if cmd[0] == "duck":
@@ -86,9 +84,10 @@ def run(label, text, sim, speech, voice_first_chars):
                 sim.log("duck done")
             elif cmd[0] == "say":
                 sim.log("say launched")
+                chunk, dur = here.chunk, here.dur
                 time.sleep(sim.start_s)
-                dur = clean[-1] if clean else 0
-                sim.log("sound start")
+                sim.sound.append([chunk, sim.now(), dur])
+                sim.log("sound start", chunk[:24])
                 time.sleep(dur)
                 sim.log("sound end")
             return 0
@@ -105,13 +104,12 @@ def run(label, text, sim, speech, voice_first_chars):
     real_say_file = audio.say_file
 
     def say_file(path, wav, set_level, captions=None, on_caption=None):
-        clean.append(ml.wav_seconds(wav) if hasattr(ml, "wav_seconds") else _wav_s(wav))
-        t_launch = sim.now()
-        sim.sound.append([wavs.get(id(wav), ""), t_launch + sim.start_s, clean[-1]])
+        here.chunk, here.dur = wavs.get(id(wav), ""), _wav_s(wav)
         return real_say_file(path, wav, set_level, captions=captions, on_caption=on_caption) if captions is not None \
             else real_say_file(path, wav, set_level)
 
     wavs = {}
+    here = threading.local()   # the chunk the calling thread is playing (chunks may overlap in time)
     audio.say_file = say_file
     try:
         tts = TtsRemote(speech, first_chunk_chars=voice_first_chars)
@@ -181,11 +179,11 @@ def report(label, sim):
             pos = idx + len(g[1])
     # match groups by their first word in order
     for (ts, tw), (tshow, gshow) in zip(spoken, shown):
-        leads.append(tshow - ts)
-        print(f"  group {gshow[:28]!r:32} shown {tshow - known:6.2f}s  spoken {ts - known:6.2f}s  lead {tshow - ts:+.2f}s")
+        leads.append(ts - tshow)
+        print(f"  group {gshow[:28]!r:32} shown {tshow - known:6.2f}s  spoken {ts - known:6.2f}s  text ahead by {ts - tshow:+.2f}s")
     if leads:
-        print(f"  caption lead: first {leads[0]:+.2f}s, max {max(leads):+.2f}s, min {min(leads):+.2f}s, "
-              f"mean {sum(leads) / len(leads):+.2f}s")
+        print(f"  text ahead of the voice by (negative = text behind): first {leads[0]:+.2f}s, most {max(leads):+.2f}s, "
+              f"least {min(leads):+.2f}s, mean {sum(leads) / len(leads):+.2f}s")
     gaps = [b[1] - (a[1] + a[2]) for a, b in zip(sim.sound, sim.sound[1:])]
     if gaps:
         print(f"  pause between spoken chunks: {', '.join(f'{g:.2f}s' for g in gaps)}")

@@ -215,7 +215,7 @@ def _speaker(lis, t, **kw):
 
 def test_speaker_ducks_with_the_first_synthesis_and_plays_in_order():
     lis, t = FakeLis(), FakeTurn()
-    s = _speaker(lis, t, overlap_s=0.0)
+    s = _speaker(lis, t, gapless=False)
     s.feed("First one.")
     s.feed("Second one.")
     s.end()
@@ -231,7 +231,7 @@ def test_speaker_ducks_with_the_first_synthesis_and_plays_in_order():
 
 def test_speaker_synthesises_the_next_chunk_while_the_current_one_plays():
     lis, t = FakeLis(synth_s=0.05, play_s=0.4), FakeTurn()
-    s = _speaker(lis, t, overlap_s=0.0)
+    s = _speaker(lis, t, gapless=False)
     for c in ("One.", "Two.", "Three."):
         s.feed(c)
     s.end()
@@ -242,15 +242,15 @@ def test_speaker_synthesises_the_next_chunk_while_the_current_one_plays():
     assert play_at["Two."] - play_at["One."] >= 0.38  # played one after the other
 
 
-def test_speaker_overlap_starts_the_next_player_early():
+def test_speaker_gapless_launches_the_next_player_one_clip_length_after_the_last():
     lis, t = FakeLis(play_s=0.5), FakeTurn()
-    s = _speaker(lis, t, overlap_s=0.2)
+    s = _speaker(lis, t, gapless=True, prestart_s=0.0)
     s.feed("One.")
     s.feed("Two.")
     s.end()
     s.wait()
     play_at = {e[2]: e[0] for e in lis.log if e[1] == "play"}
-    assert 0.25 <= play_at["Two."] - play_at["One."] <= 0.4
+    assert 0.45 <= play_at["Two."] - play_at["One."] <= 0.58  # the clip length, not the clip length plus a start-up
 
 
 def test_speaker_with_no_audio_raises_offline_and_unducks():
@@ -275,7 +275,7 @@ def test_speaker_keeps_what_it_already_said_when_a_later_chunk_fails():
 
 def test_speaker_cancel_stops_everything():
     lis, t = FakeLis(play_s=1.0), FakeTurn()
-    s = _speaker(lis, t, overlap_s=0.0)
+    s = _speaker(lis, t, gapless=False)
     s.feed("One.")
     s.feed("Two.")
     s.feed("Three.")

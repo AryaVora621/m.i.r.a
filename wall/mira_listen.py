@@ -350,8 +350,8 @@ class Listener:
 
     def _speaker(self, t, full_text=None):
         pb = self.playback
-        return Speaker(self, t, caption_sync=self._lc.caption_sync, overlap_s=float(getattr(pb, "chunk_overlap_s", 0.0) or 0.0),
-                       full_text=full_text)
+        return Speaker(self, t, caption_sync=self._lc.caption_sync, gapless=bool(getattr(pb, "gapless_chunks", False)),
+                       prestart_s=float(getattr(pb, "chunk_prestart_s", 0.0) or 0.0), full_text=full_text)
 
     def say(self, text, turn=None):
         """TTS the text (pipelined per chunk) and play it ducked. Raises SpeechOffline. A cancelled `turn` stops at the

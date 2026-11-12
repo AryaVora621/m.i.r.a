@@ -256,7 +256,8 @@ def test_live_knobs_apply():
         "level_lag": (0.3, lambda p: a.level_lag), "chime": ("/x/c.wav", lambda p: a.chime),
         "envelope_step_s": (0.2, lambda p: a.envelope_step_s), "follow_join_s": (2.0, lambda p: a.follow_join_s),
         "night_window": ("22:00-07:00", lambda p: a.night_window), "night_gain": (0.25, lambda p: a.night_gain),
-        "caption_shift_s": (0.4, lambda p: a.caption_shift_s), "chunk_overlap_s": (0.1, lambda p: a.chunk_overlap_s)})
+        "caption_shift_s": (0.4, lambda p: a.caption_shift_s), "gapless_chunks": (False, lambda p: a.gapless_chunks),
+        "chunk_prestart_s": (0.1, lambda p: a.chunk_prestart_s)})
     assert not [k for k in SPEC.knobs if k.applies != "live"]
 
 

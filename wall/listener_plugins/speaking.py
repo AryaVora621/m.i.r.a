@@ -246,8 +246,9 @@ class Speaker:
     Threads: synthesis (one chunk ahead of playback, so chunk N+1 is made while N plays), the duck (started with the
     first synthesis so it is done by the time the first audio is, not a serial step after it), and playback."""
 
-    def __init__(self, lis, t, caption_sync=True, overlap_s=0.0, full_text=None):
-        self.lis, self.t, self.caption_sync, self.overlap_s = lis, t, caption_sync, overlap_s
+    def __init__(self, lis, t, caption_sync=True, gapless=False, prestart_s=0.0, full_text=None):
+        self.lis, self.t, self.caption_sync = lis, t, caption_sync
+        self.gapless, self.prestart_s = gapless, prestart_s
         self.full_text = full_text  # with caption_sync off: the caption is this, posted once when the voice starts
         self.inq, self.outq = queue.Queue(), queue.Queue()
         self.err = None
@@ -340,12 +341,14 @@ class Speaker:
                 started = time.monotonic()
                 th.start()
                 threads.append(th)
-                # Launch the next chunk's player a little before this one ends: a mira-audio say needs about 0.3 s to
-                # reach the speaker, which otherwise is a pause between every two chunks.
-                hold = max(0.0, wav_seconds(wav) - self.overlap_s)
-                while th.is_alive() and time.monotonic() - started < hold and t.live:
-                    th.join(0.02)
-                if self.overlap_s <= 0:
+                if self.gapless:
+                    # Launch the next chunk's player one clip length after this one was launched: both pay the same
+                    # start-up (about 0.3 s from `mira-audio say` to sound), so the second one's sound begins as the first
+                    # one's ends, instead of a pause after every chunk.
+                    hold = max(0.0, wav_seconds(wav) - self.prestart_s)
+                    while th.is_alive() and time.monotonic() - started < hold and t.live:
+                        th.join(0.02)
+                else:
                     th.join()
         finally:
             for th in threads:

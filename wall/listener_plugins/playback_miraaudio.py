@@ -66,11 +66,11 @@ class MiraAudio:
 
     def __init__(self, bin="mira-audio", call_timeout_s=120.0, level_lag=0.15, chime="", envelope_step_s=0.1,
                  follow_join_s=1.0, level_scale=8.0, night_window="", night_gain=0.5, caption_shift_s=0.15,
-                 chunk_overlap_s=0.2):
+                 gapless_chunks=True, chunk_prestart_s=0.0):
         self.bin, self.call_timeout_s, self.level_lag, self.chime = bin, call_timeout_s, level_lag, chime
         self.envelope_step_s, self.follow_join_s, self.level_scale = envelope_step_s, follow_join_s, level_scale
         self.night_window, self.night_gain = night_window, night_gain
-        self.caption_shift_s, self.chunk_overlap_s = caption_shift_s, chunk_overlap_s
+        self.caption_shift_s, self.gapless_chunks, self.chunk_prestart_s = caption_shift_s, gapless_chunks, chunk_prestart_s
         self.minute_of_day = local_minute  # injectable so a test can pick the hour
         self.lock = threading.Lock()  # held by previews only (spec 2.6)
         self._say_procs = set()
@@ -157,15 +157,17 @@ class MiraAudio:
         `captions` is [(offset_s, text)] and `on_caption(text)` posts one: each caption is posted on this same clock, a
         little later (caption_shift_s) because the post takes a moment to reach the page, so the wall shows each group
         of words as it is spoken instead of all of them when the text was known."""
-        env = self.envelope(wav)
         done = threading.Event()
-        events = [(at, 0, lvl) for at, lvl in env]
-        if captions and on_caption is not None:
-            events += [(max(0.0, off + self.caption_shift_s), 1, text) for off, text in captions]
-        events.sort(key=lambda e: (e[0], e[1]))
+        called = time.monotonic()
 
         def follow():
-            t0 = time.monotonic() + self.level_lag  # pw-play needs a moment to start
+            # The loudness is worked out here, while the player starts: on the Pi it costs a tenth of a second or more,
+            # which used to be spent before the sound could begin.
+            events = [(at, 0, lvl) for at, lvl in self.envelope(wav)]
+            if captions and on_caption is not None:
+                events += [(max(0.0, off + self.caption_shift_s), 1, text) for off, text in captions]
+            events.sort(key=lambda e: (e[0], e[1]))
+            t0 = called + self.level_lag  # pw-play needs a moment to start
             for at, kind, val in events:
                 wait = t0 + at - time.monotonic()
                 if wait > 0 and done.wait(wait):
@@ -205,7 +207,7 @@ class PlaybackMiraaudio(PluginBase):
         p.chime = expand_path(cfg.chime, self.ctx.paths)
         p.envelope_step_s, p.follow_join_s, p.level_scale = cfg.envelope_step_s, cfg.follow_join_s, self._level_scale()
         p.night_window, p.night_gain = cfg.night_window, cfg.night_gain
-        p.caption_shift_s, p.chunk_overlap_s = cfg.caption_shift_s, cfg.chunk_overlap_s
+        p.caption_shift_s, p.gapless_chunks, p.chunk_prestart_s = cfg.caption_shift_s, cfg.gapless_chunks, cfg.chunk_prestart_s
 
     def start(self):
         self.audio = MiraAudio()
@@ -239,9 +241,10 @@ SPEC = PluginSpec(
         Knob("caption_shift_s", "float", 0.15, "How much later than the ring level a caption group is posted, to cover the "
              "post's trip to the wall; raise it if words show before the voice.", unit="s",
              min=-0.5, max=1.5),
-        Knob("chunk_overlap_s", "float", 0.2, "The next spoken chunk's player starts this long before the current one "
-             "ends, hiding the player's start-up pause (about 0.3 s); 0 plays them back to back.", unit="s",
-             min=0, max=0.28),
+        Knob("gapless_chunks", "bool", True, "Start the next spoken chunk's player as the current one's clip length has passed, "
+             "so the sound carries on instead of pausing about 0.3 s between chunks."),
+        Knob("chunk_prestart_s", "float", 0.0, "Launch the next chunk's player this much earlier (a gap is negative), on top "
+             "of gapless_chunks; both players start up alike, so 0 is meant to be seamless.", unit="s", min=-0.3, max=0.3),
         Knob("night_window", "time_window", "", "Local time window (HH:MM-HH:MM) in which she plays more quietly; empty is off."),
         Knob("night_gain", "float", 0.5, "How loud she is inside the night window, as a share of normal.",
              unit="share", min=0.1, max=1.0),
