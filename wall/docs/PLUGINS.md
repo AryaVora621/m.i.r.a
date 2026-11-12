@@ -42,6 +42,8 @@ Hermes through Agent OS's session API.
 | session_timeout_s | float | 15 | 3..60 | s | live | deny | Seconds creating a session may take. |
 | stream_timeout_s | float | 150 | 10..600 | s | live | deny | Seconds one socket read of the answer may wait. |
 | deadline_s | float | 35 | 5..120 | s | live | deny | Longest one answer may take in all, however the stream behaves; past it she stops waiting. |
+| stream_speech | bool | true |  |  | live | deny | Speak the first sentence as soon as it arrives while the rest of the answer is still coming, instead of waiting for the whole answer. |
+| speak_max_sentences | int | 2 | 0..10 | sentences | live | deny | She speaks only this many sentences of a Hermes answer, since it can run past the persona's 25 words; the wall still gets all of it. 0 speaks it all. |
 | title_prefix | str | Mira wall | 1..60 chars | chars | live | deny | Start of every session title. |
 | fail_reply | str | I cannot reach Hermes right now. | 1..200 chars | chars | live | deny | Spoken when Hermes cannot be reached. |
 | timeout_reply | str | Hermes is taking too long. | 1..200 chars | chars | live | deny | Spoken when the answer deadline passes. |
@@ -226,6 +228,7 @@ The turn loop's timing: waits, limits, pre-roll and follow-up.
 | cancel_words | list[str] | ["cancel", "cancel that", "never mind", "nevermind", "forget it", "forget that", "stop talking", "stop that", "stop it"] | 0..30 items | items | live | deny | Requests that only cancel what she is doing and are never sent to Hermes. |
 | cancel_after_barge | list[str] | ["stop", "quiet", "enough", "that's enough"] | 0..30 items | items | live | deny | Extra cancel words, taken only when they interrupted a running turn; otherwise a bare stop stays a music command. |
 | cancel_reply | str |  | 0..40 chars | chars | live | deny | What she says after a cancel; empty is silence. |
+| caption_sync | bool | true |  |  | live | deny | The wall's caption shows each few words as they are spoken, posted on the playback clock; off posts the whole chunk and lets the page time it. |
 | sigterm_idle | bool | false |  |  | restart | deny | SIGTERM posts a final idle and exits through the finally. |
 
 ### mute.zero
@@ -268,6 +271,8 @@ Plays replies through mira-audio, ducking the music, quieter inside the night wi
 | chime | path | ${HERE}/assets/offline.wav |  |  | live | deny | Sound played when speech is offline. |
 | envelope_step_s | float | 0.1 | 0.05..0.5 | s | live | deny | Step of the reply level. |
 | follow_join_s | float | 1 | 0.1..5 | s | live | deny | Seconds to wait for the level thread after a say. |
+| caption_shift_s | float | 0.15 | -0.5..1.5 | s | live | deny | How much later than the ring level a caption group is posted, to cover the post's trip to the wall; raise it if words show before the voice. |
+| chunk_overlap_s | float | 0.2 | 0..0.28 | s | live | deny | The next spoken chunk's player starts this long before the current one ends, hiding the player's start-up pause (about 0.3 s); 0 plays them back to back. |
 | night_window | time_window |  |  |  | live | deny | Local time window (HH:MM-HH:MM) in which she plays more quietly; empty is off. |
 | night_gain | float | 0.5 | 0.1..1 | share | live | deny | How loud she is inside the night window, as a share of normal. |
 
@@ -346,6 +351,7 @@ Text-to-speech through the speech server, with chunking and a pinned voice per r
 | chunk_limit | int | 280 | 80..600 | chars | live | deny | Longest spoken chunk. |
 | max_chunks | int | 3 | 1..10 | chunks | live | deny | Chunks spoken per reply; the rest is dropped. |
 | pin_voice | bool | true |  |  | live | deny | Later chunks of one reply use the voice id the first chunk got. |
+| first_chunk_chars | int | 90 | 0..300 | chars | live | deny | The first spoken chunk is one sentence, or its first clause when longer than this, so the voice starts sooner; 0 packs it like the rest. |
 
 ### vad.silero
 

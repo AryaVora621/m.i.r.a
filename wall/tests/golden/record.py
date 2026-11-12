@@ -100,6 +100,23 @@ def argv_for(sc, tmp, urls, tokens, audio_bin):
     return argv + list(sc.get("extra", []))
 
 
+def legacy_speech(lis):
+    """The golden scenarios pin v1's way of speaking: whole-answer, packed chunks, one caption post, no sentence cap.
+    The facade's newer speech behaviours are knobs; they are set to their v1 values here and tested on their own."""
+    if not hasattr(lis, "_speaker"):
+        return
+    brain = lis.core.service("brain", None)
+    if brain is not None:
+        brain.stream_speech, brain.speak_max_sentences = False, 0
+    tts = lis.core.service("tts", None)
+    if tts is not None:
+        tts.first_chunk_chars = 0
+    playback = lis.core.service("playback", None)
+    if playback is not None:
+        playback.chunk_overlap_s = 0.0
+    lis.core.service("loop").caption_sync = False
+
+
 def run_scenario(module, scenario, tmpdir):
     """Run `scenario` (dict or name) through `module` (an imported listener module); return the canonical dict."""
     sc = scenarios.BY_NAME[scenario] if isinstance(scenario, str) else scenario
@@ -126,6 +143,7 @@ def run_scenario(module, scenario, tmpdir):
     try:
         args = module.build_parser().parse_args(argv_for(sc, tmp, urls, tokens, audio.bin))
         lis = module.Listener(args, module.WavSource(str(wav)))
+        legacy_speech(lis)
 
         if lis.agc is not None:
             orig_process = lis.agc.process

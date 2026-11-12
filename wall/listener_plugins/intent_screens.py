@@ -80,6 +80,9 @@ _CLEAR_ALL = re.compile(
     rf"|{_LEAD}take (?:everything|them|it all) down|{_LEAD}close them(?: all)?")
 _GENERIC_TAIL = re.compile(r"(?: (?:screen|page|view|display|dashboard|stuff|info|up))+$")
 _THREE_D = re.compile(r"\b(?:3|three|free|tree|the) ?d\b")
+# The recogniser hears "3D" as a word: "duty printers", "dirty printers", "3 printers", "d printers". Only in front of a
+# print noun, so "duty roster" or "3 apples" are left alone and go to Hermes.
+_THREE_D_HEARD = re.compile(r"\b(?:duty|dirty|dewey|dee|3|three|tree|d) (?=(?:printers?|prints?)\b)")
 
 CASES = [
     ("bring up my 3D printers", "show:print-studio"), ("Bring up my 3d printers.", "show:print-studio"),
@@ -95,6 +98,10 @@ CASES = [
     ("pull up the servers", "show:homelab"), ("bring up the morning brief", "show:morning"), ("show me my brief", "show:morning"),
     ("bring up the recap", "show:recap"), ("show the evening recap", "show:recap"), ("bring up my exams", "show:exams"),
     ("show me the exams", "show:exams"), ("bring up the build board", "show:board"), ("show the board", "show:board"),
+    ("bring up my duty printers", "show:print-studio"), ("bring up my duty printers.", "show:print-studio"),
+    ("show me the dirty printers", "show:print-studio"), ("bring up the D printers", "show:print-studio"),
+    ("bring up my 3 printers", "show:print-studio"), ("bring up tree D printers", "show:print-studio"),
+    ("bring up the three printers", "show:print-studio"), ("pull up my duty prints", "show:print-studio"),
     ("bring up my printer's", "show:print-studio"), ("bring up the printerz", "show:print-studio"),
     ("bring up the scool board", "show:school"), ("bring up the home lab status", "show:homelab"),
     ("close it", "clear:last"), ("Close that.", "clear:last"), ("take it down", "clear:last"), ("dismiss it", "clear:last"),
@@ -104,7 +111,8 @@ CASES = [
     # not clear: Hermes decides
     ("bring up my journey", None), ("bring up my journey, Hermes", None), ("show me the weather", None),
     ("bring up a timer for five minutes", None), ("show me how to print a benchy", None), ("open the pod bay doors", None),
-    ("pull up a chair", None), ("show me my school grades", None), ("bring up", None), ("show me", None),
+    ("pull up a chair", None), ("bring up my duty roster", None), ("show me 3 apples", None),
+    ("bring up my duty", None), ("show me the duty printers menu", None), ("show me my school grades", None), ("bring up", None), ("show me", None),
     ("put up a list of things to pack", None), ("bring up the alarm", None), ("show the printers menu options", None),
     ("what's on my calendar", None), ("turn it down", None), ("turn the volume down", None), ("take it down a notch", None),
     ("close the door", None), ("close", None), ("clear", None), ("clear my schedule", None), ("pause", None), ("stop", None),
@@ -122,6 +130,7 @@ def normalize(text):
     t = text.lower().replace("’", "'")
     t = re.sub(r"[^a-z0-9' ]", " ", t).replace("'", "")
     t = _THREE_D.sub("3d", " ".join(t.split()))
+    t = _THREE_D_HEARD.sub("3d ", t)
     return " ".join(t.split())
 
 

@@ -37,7 +37,9 @@ def test_inline_preview_plays_before_the_reply_and_the_next_safe_point_flushes(r
     posts = [b for _, b in r.hook.posts()]
     labels = [(b["state"], b.get("reply", "")) for b in posts]
     i_prev = next(i for i, (s, t) in enumerate(labels) if s == "speaking" and t.startswith("Voice preview"))
-    i_reply = next(i for i, (s, t) in enumerate(labels) if s == "speaking" and t == CAL_REPLY)
+    # the reply's speaking state carries no caption of its own: its words are posted in groups as they are spoken (the fake
+    # player here returns at once, so none are due)
+    i_reply = next(i for i, (s, t) in enumerate(labels) if s == "speaking" and i > i_prev and not t.startswith("Voice preview"))
     assert i_prev < i_reply
     # the sample was rendered through the normal /tts with the overrides and the text, never stored anywhere
     tts_bodies = [b for b in r.speech.json_bodies("/tts")]

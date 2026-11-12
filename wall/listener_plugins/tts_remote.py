@@ -41,12 +41,15 @@ def speech_chunks(text, limit=280, max_chunks=3):
 class TtsRemote:
     """The `tts` service (spec 2.2). Chunking reads its limits per call, so a live knob needs no rebuild."""
 
-    def __init__(self, speech, voice="", speed=0.0, peak=0.0, chunk_limit=280, max_chunks=3, pin_voice=True):
+    def __init__(self, speech, voice="", speed=0.0, peak=0.0, chunk_limit=280, max_chunks=3, pin_voice=True,
+                 first_chunk_chars=0):
         self.speech, self.voice, self.speed, self.peak = speech, voice, speed, peak
         self.chunk_limit, self.max_chunks, self.pin_voice = chunk_limit, max_chunks, pin_voice
+        self.first_chunk_chars = first_chunk_chars
 
     def chunks(self, text):
-        return speech_chunks(clean_for_speech(text), self.chunk_limit, self.max_chunks)
+        from .speaking import split_for_speech  # speaking imports this module's helpers: the import waits for first use
+        return split_for_speech(text, self.chunk_limit, self.max_chunks, self.first_chunk_chars)
 
     def tts(self, text, pin=False):
         """Chunk 1 of a reply goes out unpinned and records the voice the server chose; later chunks (pin=True)
@@ -63,7 +66,8 @@ class TtsRemotePlugin(PluginBase):
     def start(self):
         c = self.cfg
         speech = self.ctx.get("speech")
-        self.tts = TtsRemote(speech, c.voice, c.speed, c.peak, c.chunk_limit, c.max_chunks, c.pin_voice)
+        self.tts = TtsRemote(speech, c.voice, c.speed, c.peak, c.chunk_limit, c.max_chunks, c.pin_voice,
+                              c.first_chunk_chars)
         speech.voice = c.voice  # v1 kept the configured voice on the Speech object; the tts calls pass it too
         self.ctx.provide("tts", self.tts)
 
@@ -72,6 +76,7 @@ class TtsRemotePlugin(PluginBase):
         t = self.tts
         t.voice, t.speed, t.peak = cfg.voice, cfg.speed, cfg.peak
         t.chunk_limit, t.max_chunks, t.pin_voice = cfg.chunk_limit, cfg.max_chunks, cfg.pin_voice
+        t.first_chunk_chars = cfg.first_chunk_chars
         t.speech.voice = cfg.voice
 
     def status(self):
@@ -99,6 +104,9 @@ SPEC = PluginSpec(
         Knob("chunk_limit", "int", 280, "Longest spoken chunk.", unit="chars", min=80, max=600),
         Knob("max_chunks", "int", 3, "Chunks spoken per reply; the rest is dropped.", unit="chunks", min=1, max=10),
         Knob("pin_voice", "bool", True, "Later chunks of one reply use the voice id the first chunk got."),
+        Knob("first_chunk_chars", "int", 90, "The first spoken chunk is one sentence, or its first clause when longer than "
+             "this, so the voice starts sooner; 0 packs it like the rest.",
+             unit="chars", min=0, max=300),
     ),
     tests=("wall/tests/plugins/test_lp_tts_remote.py",),
 )

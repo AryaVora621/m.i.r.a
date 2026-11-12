@@ -23,6 +23,8 @@
 | brain.hermes | session_timeout_s | float | 15 | 3..60 | s | live | deny |  |  | literal |
 | brain.hermes | stream_timeout_s | float | 150 | 10..600 | s | live | deny |  |  | literal |
 | brain.hermes | deadline_s | float | 35 | 5..120 | s | live | deny |  |  | literal |
+| brain.hermes | stream_speech | bool | true |  |  | live | deny |  |  | literal |
+| brain.hermes | speak_max_sentences | int | 2 | 0..10 | sentences | live | deny |  |  | literal |
 | brain.hermes | title_prefix | str | Mira wall | 1..60 chars | chars | live | deny |  |  | literal |
 | brain.hermes | fail_reply | str | I cannot reach Hermes right now. | 1..200 chars | chars | live | deny |  |  | literal |
 | brain.hermes | timeout_reply | str | Hermes is taking too long. | 1..200 chars | chars | live | deny |  |  | literal |
@@ -117,6 +119,7 @@
 | loop.turns | cancel_words | list[str] | ["cancel", "cancel that", "never mind", "nevermind", "forget it", "forget that", "stop talking", "stop that", "stop it"] | 0..30 items | items | live | deny |  |  | literal |
 | loop.turns | cancel_after_barge | list[str] | ["stop", "quiet", "enough", "that's enough"] | 0..30 items | items | live | deny |  |  | literal |
 | loop.turns | cancel_reply | str |  | 0..40 chars | chars | live | deny |  |  | literal |
+| loop.turns | caption_sync | bool | true |  |  | live | deny |  |  | literal |
 | loop.turns | sigterm_idle | bool | false |  |  | restart | deny |  |  | literal |
 | mute.zero | mute_s | float | 10 | 2..60 | s | live | deny |  |  | literal |
 | mute.zero | mute_share | float | 0.99 | 0.5..1 | share | live | deny |  |  | literal |
@@ -132,6 +135,8 @@
 | playback.miraaudio | chime | path | ${HERE}/assets/offline.wav |  |  | live | deny | MIRA_CHIME | --chime |  |
 | playback.miraaudio | envelope_step_s | float | 0.1 | 0.05..0.5 | s | live | deny |  |  | literal |
 | playback.miraaudio | follow_join_s | float | 1 | 0.1..5 | s | live | deny |  |  | literal |
+| playback.miraaudio | caption_shift_s | float | 0.15 | -0.5..1.5 | s | live | deny |  |  | literal |
+| playback.miraaudio | chunk_overlap_s | float | 0.2 | 0..0.28 | s | live | deny |  |  | literal |
 | playback.miraaudio | night_window | time_window |  |  |  | live | deny |  |  | literal |
 | playback.miraaudio | night_gain | float | 0.5 | 0.1..1 | share | live | deny |  |  | literal |
 | reporter.agentos | url | url | http://127.0.0.1:3456/api/hooks/voice |  |  | live | deny | MIRA_VOICE_URL | --voice-url |  |
@@ -157,6 +162,7 @@
 | tts.remote | chunk_limit | int | 280 | 80..600 | chars | live | deny |  |  | literal |
 | tts.remote | max_chunks | int | 3 | 1..10 | chunks | live | deny |  |  | literal |
 | tts.remote | pin_voice | bool | true |  |  | live | deny |  |  | literal |
+| tts.remote | first_chunk_chars | int | 90 | 0..300 | chars | live | deny |  |  | literal |
 | vad.silero | model | path | ${HERE}/models/silero_vad.onnx |  |  | restart | deny | MIRA_VAD_MODEL | --vad-model |  |
 | vad.silero | threshold | float | 0.5 | 0.1..0.9 | prob | live | deny |  | --vad-threshold |  |
 | vad.silero | end_silence | float | 0.7 | 0.2..3 | s | live | 0.5..1.2 step 0.1 |  | --end-silence |  |

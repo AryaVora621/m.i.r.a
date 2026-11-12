@@ -262,6 +262,10 @@ def test_every_knob_default_is_accounted_for():
         "loop.turns.barge_in", "loop.turns.barge_ignore_s", "loop.turns.barge_head_chunks", "loop.turns.barge_guard_words",
         "loop.turns.cancel_words", "loop.turns.cancel_after_barge", "loop.turns.cancel_reply",
         "brain.hermes.deadline_s", "brain.hermes.timeout_reply",
+        # speaking while she acts (2026-11-11): the first-chunk rule, streamed speech, the sentence guard, captions on the
+        # playback clock and the overlapped chunk player
+        "brain.hermes.stream_speech", "brain.hermes.speak_max_sentences", "tts.remote.first_chunk_chars",
+        "loop.turns.caption_sync", "playback.miraaudio.caption_shift_s", "playback.miraaudio.chunk_overlap_s",
     }
     unexplained = set(KNOBS) - from_flag_env - from_literal - new_in_plugin_engine
     unexplained = {k for k in unexplained if not k.startswith(NEW_PLUGINS)}

@@ -36,6 +36,7 @@ from listener_plugins.playback_miraaudio import wav_envelope
 from listener_plugins.reporter_agentos import VoiceReporter
 from listener_plugins.source_pipewire import PwSource
 from listener_plugins.source_wav import WavSource
+from listener_plugins.speaking import Speaker, StreamSplitter, caption_schedule, limit_sentences, wav_seconds
 from listener_plugins.speech_link import Speech, SpeechOffline
 from listener_plugins.tts_remote import clean_for_speech, speech_chunks
 from listener_plugins.wake_kws import build_kws
@@ -103,7 +104,7 @@ class TurnBrain:
     def _brain(self):
         return self._core.service("brain")
 
-    def ask(self, text, session_ttl, now, cancel=None):
+    def ask(self, text, session_ttl, now, cancel=None, on_text=None):
         core, brain = self._core, self._brain()
         if core.cfg("persona.file").reread == "turn":
             persona = core.service("persona", None)
@@ -111,7 +112,10 @@ class TurnBrain:
                 brain.persona = persona.text()
         core.turn_begin()
         try:
-            return brain.ask(text, session_ttl, now) if cancel is None else brain.ask(text, session_ttl, now, cancel=cancel)
+            kw = {} if cancel is None else {"cancel": cancel}
+            if on_text is not None:
+                kw["on_text"] = on_text
+            return brain.ask(text, session_ttl, now, **kw)
         finally:
             core.turn_end()
 
@@ -140,6 +144,33 @@ class _Turn:
     @property
     def live(self):
         return not self.cancel.is_set()
+
+
+class _Streamed:
+    """An answer being spoken while Hermes is still writing it: the sentence splitter feeds the speaker from the stream's
+    thread (on_text) and, once the answer is complete, with whatever sentences were still pending (finish)."""
+
+    def __init__(self, speaker, splitter):
+        self.speaker, self.splitter = speaker, splitter
+        self.lock = threading.Lock()
+        self.ended = False
+
+    def on_text(self, piece):
+        with self.lock:
+            if self.ended:
+                return
+            for ch in self.splitter.feed(piece):
+                self.speaker.feed(ch)
+
+    def finish(self, final, partial=False):
+        """`partial`: the answer broke off (deadline, Hermes error); the sentences already complete were spoken as they
+        came and the unfinished tail is dropped rather than read out as a fragment."""
+        with self.lock:
+            self.ended = True
+            if not partial:
+                for ch in self.splitter.finish(final):
+                    self.speaker.feed(ch)
+            self.speaker.end()
 
 
 class Listener:
@@ -317,6 +348,11 @@ class Listener:
             t.unducked = True
         self._audio("unduck")
 
+    def _speaker(self, t, full_text=None):
+        pb = self.playback
+        return Speaker(self, t, caption_sync=self._lc.caption_sync, overlap_s=float(getattr(pb, "chunk_overlap_s", 0.0) or 0.0),
+                       full_text=full_text)
+
     def say(self, text, turn=None):
         """TTS the text (pipelined per chunk) and play it ducked. Raises SpeechOffline. A cancelled `turn` stops at the
         next chunk boundary; the playback itself is ended by cancel_turn."""
@@ -324,48 +360,26 @@ class Listener:
         chunks = self.tts.chunks(text)
         if not chunks:
             return
-        q = queue.Queue()
-        err = []
-
-        def synth():
-            try:
-                for i, ch in enumerate(chunks):
-                    if t.cancel.is_set():
-                        break
-                    q.put(self.tts.tts(ch, pin=i > 0))
-            except SpeechOffline as e:
-                err.append(e)
-            q.put(None)
-
-        threading.Thread(target=synth, daemon=True).start()
-        first = self._next_wav(q, t)
-        if t.cancel.is_set():
-            return
-        if first is None:
-            raise err[0] if err else SpeechOffline("no audio")
         t.guarded = self._guarded(text)
-        t.speaking_since = self.src.clock()
-        t.phase = "speaking"
-        self.rep.update("speaking", self._heard, self._reply)
-        with t.lock:
-            t.ducked = True
-        self._audio("duck")
-        try:
-            wav = first
-            while wav is not None and t.live:
-                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
-                    f.write(wav)
-                try:
-                    self._say_file(f.name, wav)
-                finally:
-                    os.unlink(f.name)
-                wav = self._next_wav(q, t)
-        finally:
-            self._unduck(t)
+        sp = self._speaker(t, full_text=text)
+        for ch in chunks:
+            sp.feed(ch)
+        sp.end()
+        sp.wait()
 
-    def _say_file(self, path, wav):
-        """mira-audio say FILE (blocking) while a thread feeds the reporter the reply's loudness in step with playback."""
-        self.playback.say_file(path, wav, self.rep.set_level)
+    def _say_file(self, path, wav, text=None, turn=None):
+        """mira-audio say FILE (blocking) while a thread feeds the reporter the reply's loudness in step with playback,
+        and, when `text` is given, each few words of it as they are spoken."""
+        if not text:
+            return self.playback.say_file(path, wav, self.rep.set_level)
+        heard = self._heard
+
+        def caption(group):
+            if turn is None or turn.live:
+                self.rep.update("speaking", heard, group, fast=True)
+
+        self.playback.say_file(path, wav, self.rep.set_level, captions=caption_schedule(text, wav_seconds(wav)),
+                               on_caption=caption)
 
     def fail_offline(self, why):
         self._mark("offline", why)
@@ -472,19 +486,45 @@ class Listener:
                     log(f"{p.log_name} failed: {type(e).__name__}")
                     self._reply = p.fail_reply
             else:
+                streamed = self._stream_begin(t)
+                broke = False   # the answer ended early (deadline or error) with part of it already spoken
                 try:
+                    kw = {} if streamed is None else {"on_text": streamed.on_text}
                     self._reply = self.hermes.ask(text, self.a.session_ttl, self.src.clock(),
-                                                  cancel=t.cancel) or self.hermes.empty_reply
+                                                  cancel=t.cancel, **kw) or self.hermes.empty_reply
                 except HermesCancelled:
                     return
                 except HermesTimeout:
                     log("hermes timed out: stopped waiting")
-                    self._reply = self.hermes.timeout_reply
-                    self.rep.update("error", text, self._reply)
+                    if streamed is not None and streamed.speaker.fed:
+                        # Part of the answer is already being spoken: she finishes that, no apology on top of it.
+                        self._reply, broke = streamed.splitter.raw.strip(), True
+                    else:
+                        self._reply = self.hermes.timeout_reply
+                        self.rep.update("error", text, self._reply)
+                        streamed = None
                 except Exception as e:
                     log(f"hermes failed: {type(e).__name__}: {str(e)[:100]}")
-                    self._reply = self.hermes.fail_reply
-                    self.rep.update("error", text, self._reply)
+                    if streamed is not None and streamed.speaker.fed:
+                        self._reply, broke = streamed.splitter.raw.strip(), True
+                    else:
+                        self._reply = self.hermes.fail_reply
+                        self.rep.update("error", text, self._reply)
+                        streamed = None
+                if streamed is not None and t.live:
+                    # The rest of the answer joins what was already spoken; the speaker outlives the ask.
+                    self._mark("reply", self._reply)
+                    t.guarded = t.guarded or self._guarded(self._reply)
+                    streamed.finish(self._reply, partial=broke)
+                    streamed.speaker.wait()
+                    return self._turn_done(t, text)
+                if self._speak_cap() and self._reply not in (self.hermes.fail_reply, self.hermes.timeout_reply):
+                    spoken = limit_sentences(self._reply, self._speak_cap())
+                    if not t.live:
+                        return
+                    self._mark("reply", self._reply)
+                    self.say(spoken, t)
+                    return self._turn_done(t, text)
             if not t.live:
                 return
             self._mark("reply", self._reply)
@@ -493,12 +533,34 @@ class Listener:
             if not t.live:
                 return
             return self.fail_offline(f"tts: {e}")
+        return self._turn_done(t, text)
+
+    def _turn_done(self, t, text):
         if not t.live:
             return
         self.rep.update("idle", text, self._reply)
         self.src.flush()
         self.followup_until = self.src.clock() + self.a.followup_s
         self._mark("followup", f"{self.a.followup_s}s")
+
+    def _speak_cap(self):
+        """How many sentences of a Hermes answer she speaks (0 is all)."""
+        try:
+            return int(self.hermes.speak_max_sentences)
+        except (AttributeError, TypeError, ValueError):
+            return 0
+
+    def _stream_begin(self, t):
+        """The speaker and sentence splitter for an answer that is spoken while it arrives, or None when streaming is
+        off or the brain cannot stream."""
+        try:
+            if not self.hermes.stream_speech:
+                return None
+        except AttributeError:
+            return None
+        return _Streamed(self._speaker(t), StreamSplitter(
+            first_chars=int(getattr(self.tts, "first_chunk_chars", 90)), max_sentences=self._speak_cap(),
+            max_chars=int(getattr(self.tts, "chunk_limit", 280)) * int(getattr(self.tts, "max_chunks", 3))))
 
     # -- running a turn: on a worker thread while the microphone is live, inline otherwise
     def _turn_main(self, t, clip, verify, interrupted):

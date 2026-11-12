@@ -26,6 +26,7 @@ class LoopSlot:
         self.barge_guard_words = cfg.barge_guard_words
         self.cancel_words, self.cancel_after_barge = list(cfg.cancel_words), list(cfg.cancel_after_barge)
         self.cancel_reply = cfg.cancel_reply
+        self.caption_sync = cfg.caption_sync
 
 
 class LoopTurns(PluginBase):
@@ -92,6 +93,8 @@ SPEC = PluginSpec(
              "Extra cancel words, taken only when they interrupted a running turn; otherwise a bare stop stays a music command.",
              unit="items", min=0, max=30),
         Knob("cancel_reply", "str", "", "What she says after a cancel; empty is silence.", unit="chars", min=0, max=40),
+        Knob("caption_sync", "bool", True, "The wall's caption shows each few words as they are spoken, posted on the "
+             "playback clock; off posts the whole chunk and lets the page time it."),
         Knob("sigterm_idle", "bool", False, "SIGTERM posts a final idle and exits through the finally.",
              applies="restart"),
     ),

@@ -53,6 +53,14 @@ def test_chunks_use_the_configured_limits_and_match_the_v1_loop_input():
     assert len(t.chunks(text)) == 2
 
 
+def test_first_chunk_rule_makes_the_first_chunk_one_sentence():
+    t = tr.TtsRemote(FakeSpeech(), first_chunk_chars=90)
+    out = t.chunks("Printers are up on the wall (print studio, 5 minutes). I took duty printers to mean your 3D printers.")
+    assert out[0] == "Printers are up on the wall (print studio, 5 minutes)." and len(out) == 2
+    t.first_chunk_chars = 0
+    assert len(t.chunks("Printers are up. I took duty printers to mean your 3D printers.")) == 1
+
+
 def test_tts_passes_voice_speed_peak_and_gates_pin():
     fs = FakeSpeech()
     t = tr.TtsRemote(fs, voice="amy#0", speed=1.1, peak=0.8, pin_voice=True)
@@ -98,7 +106,7 @@ def test_live_knobs_apply_and_mirror_voice_to_speech():
     H.assert_live_knobs(SPEC, plugin, {
         "voice": ("kristin#0", lambda p: t.voice), "speed": (1.2, lambda p: t.speed), "peak": (0.7, lambda p: t.peak),
         "chunk_limit": (200, lambda p: t.chunk_limit), "max_chunks": (5, lambda p: t.max_chunks),
-        "pin_voice": (False, lambda p: t.pin_voice)})
+        "pin_voice": (False, lambda p: t.pin_voice), "first_chunk_chars": (50, lambda p: t.first_chunk_chars)})
     plugin.apply({"voice": "x"}, plugin.cfg.replace(voice="x"))
     assert speech.voice == "x"
 

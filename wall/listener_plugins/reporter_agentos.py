@@ -50,12 +50,16 @@ class VoiceReporter:
     def set_level(self, v):
         self.level = float(v)
 
-    def update(self, state, heard="", reply=""):
+    def update(self, state, heard="", reply="", fast=False):
+        """`fast` skips the state gap before this post: a caption that follows the voice is due now, and the page's
+        own cue limit (five a second) already protects Agent OS."""
         key = (state, heard, reply)
         with self.cv:
             if key == self.last:
                 return
             item = {"state": state, "level": round(self.level, 3), "heard": heard, "reply": reply}
+            if fast:
+                item["fast"] = True
             if self.mic:
                 item["mic"] = self.mic
             if self.q and self.q[-1]["state"] == state and self.last and self.last[0] == state:
@@ -100,9 +104,10 @@ class VoiceReporter:
             item, level_only = self._next(posted, last_level_at)
             if item is None:
                 return
+            fast = bool(item.pop("fast", False))  # a hint for this loop only, never part of the post body
             if not level_only:
                 wait = max(last_sent + self.MIN_GAP, hold_until) - time.monotonic()
-                if wait > 0:
+                if wait > 0 and not (fast and hold_until <= time.monotonic()):
                     time.sleep(wait)
             item["at"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
             self._post(item)

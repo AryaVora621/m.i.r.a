@@ -58,7 +58,7 @@ def test_live_knobs_apply():
         "barge_guard_words": (r"\bmirror\b", lambda p: s.barge_guard_words),
         "cancel_words": (["cancel"], lambda p: s.cancel_words),
         "cancel_after_barge": (["stop"], lambda p: s.cancel_after_barge),
-        "cancel_reply": ("Okay.", lambda p: s.cancel_reply)})
+        "cancel_reply": ("Okay.", lambda p: s.cancel_reply), "caption_sync": (False, lambda p: s.caption_sync)})
 
 
 def _values(**over):

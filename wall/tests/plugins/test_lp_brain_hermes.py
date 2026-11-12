@@ -152,7 +152,8 @@ def test_live_knobs_apply(key):
         "session_ttl": (300.0, lambda p: h.session_ttl), "session_timeout_s": (20.0, lambda p: h.session_timeout_s),
         "stream_timeout_s": (200.0, lambda p: h.stream_timeout_s), "title_prefix": ("T", lambda p: h.title_prefix),
         "fail_reply": ("nope", lambda p: h.fail_reply), "empty_reply": ("none", lambda p: h.empty_reply),
-        "timeout_reply": ("slow", lambda p: h.timeout_reply), "deadline_s": (20.0, lambda p: h.deadline_s)})
+        "timeout_reply": ("slow", lambda p: h.timeout_reply), "deadline_s": (20.0, lambda p: h.deadline_s),
+        "stream_speech": (False, lambda p: h.stream_speech), "speak_max_sentences": (3, lambda p: h.speak_max_sentences)})
 
 
 def test_needs_persona_and_validate_loopback():
