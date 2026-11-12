@@ -136,7 +136,8 @@
 | playback.miraaudio | envelope_step_s | float | 0.1 | 0.05..0.5 | s | live | deny |  |  | literal |
 | playback.miraaudio | follow_join_s | float | 1 | 0.1..5 | s | live | deny |  |  | literal |
 | playback.miraaudio | caption_shift_s | float | 0.15 | -0.5..1.5 | s | live | deny |  |  | literal |
-| playback.miraaudio | chunk_overlap_s | float | 0.2 | 0..0.28 | s | live | deny |  |  | literal |
+| playback.miraaudio | gapless_chunks | bool | true |  |  | live | deny |  |  | literal |
+| playback.miraaudio | chunk_prestart_s | float | 0 | -0.3..0.3 | s | live | deny |  |  | literal |
 | playback.miraaudio | night_window | time_window |  |  |  | live | deny |  |  | literal |
 | playback.miraaudio | night_gain | float | 0.5 | 0.1..1 | share | live | deny |  |  | literal |
 | reporter.agentos | url | url | http://127.0.0.1:3456/api/hooks/voice |  |  | live | deny | MIRA_VOICE_URL | --voice-url |  |

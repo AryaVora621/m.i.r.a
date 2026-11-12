@@ -272,7 +272,8 @@ Plays replies through mira-audio, ducking the music, quieter inside the night wi
 | envelope_step_s | float | 0.1 | 0.05..0.5 | s | live | deny | Step of the reply level. |
 | follow_join_s | float | 1 | 0.1..5 | s | live | deny | Seconds to wait for the level thread after a say. |
 | caption_shift_s | float | 0.15 | -0.5..1.5 | s | live | deny | How much later than the ring level a caption group is posted, to cover the post's trip to the wall; raise it if words show before the voice. |
-| chunk_overlap_s | float | 0.2 | 0..0.28 | s | live | deny | The next spoken chunk's player starts this long before the current one ends, hiding the player's start-up pause (about 0.3 s); 0 plays them back to back. |
+| gapless_chunks | bool | true |  |  | live | deny | Start the next spoken chunk's player as the current one's clip length has passed, so the sound carries on instead of pausing about 0.3 s between chunks. |
+| chunk_prestart_s | float | 0 | -0.3..0.3 | s | live | deny | Launch the next chunk's player this much earlier (a gap is negative), on top of gapless_chunks; both players start up alike, so 0 is meant to be seamless. |
 | night_window | time_window |  |  |  | live | deny | Local time window (HH:MM-HH:MM) in which she plays more quietly; empty is off. |
 | night_gain | float | 0.5 | 0.1..1 | share | live | deny | How loud she is inside the night window, as a share of normal. |
 
